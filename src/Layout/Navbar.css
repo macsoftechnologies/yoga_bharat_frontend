@@ -1,0 +1,22 @@
+.orange-btn {
+  background-color: #ff7a00;      /* main orange */
+  border: 2px solid #ff7a00;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 20px;
+  transition: 0.3s ease;
+}
+
+/* Hover effect */
+.orange-btn:hover {
+  background-color: #e56d00;
+  border-color: #e56d00;
+  color: white;
+}
+
+/* Icon color */
+.orange-btn i {
+  color: white !important;
+  font-size: 22px;
+}

@@ -1,0 +1,38 @@
+.dashboard-wrapper {
+  background: #f8f9fc;
+  min-height: 100vh;
+}
+
+.dashboard-title {
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  transition: 0.2s;
+  border: 1px solid #eee;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 600;
+  color: #222;
+}
+
+.progress {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 5px;
+}
+
+.bg-pink {
+  background-color: #ff6fa8 !important;
+}

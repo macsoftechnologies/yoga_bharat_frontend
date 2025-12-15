@@ -1,0 +1,195 @@
+/* Sidebar Container */
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  padding: 20px 15px;
+  color: white;
+  background: linear-gradient(135deg, #28a745, #fd7e14);
+  /* background: linear-gradient(180deg, #4e54c8, #8f94fb, #f26a7d); */
+  font-family: 'Roboto', sans-serif;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+/* Header */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.logo-box {
+  width: 230px;
+  height: 50px;
+  background: #e63946;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.logo-title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.github-icon {
+  margin-left: auto;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+/* Menu List */
+.sidebar-menu {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.menu-item {
+  margin-bottom: 10px;
+}
+
+.menu-item a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #ffffffd9;
+  padding: 10px 12px;
+  border-radius: 6px;
+  transition: 0.3s;
+  font-size: 15px;
+  gap: 12px;
+}
+
+.sidebar.closed {
+  width: 0px !important;
+  padding: 0px !important;
+}
+
+.sidebar.closed .menu-item a span,
+.sidebar.closed .menu-item a {
+  overflow: hidden;
+}
+
+.menu-item a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Active Menu */
+.menu-item.active a {
+  background: rgba(255, 255, 255, 0.23);
+  color: white;
+}
+
+/* Icons */
+.menu-icon {
+  font-size: 18px;
+  margin-right: 14px;
+  opacity: 0.9;
+}
+
+.small-icon {
+  font-size: 14px;
+  margin-right: 14px;
+}
+
+/* Dropdown Arrow */
+.arrow-icon {
+  margin-left: auto;
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+/* Submenu (Indented) */
+.subitem a {
+  padding-left: 40px;
+  opacity: 0.85;
+}
+.bg-light {
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+}
+/* dropdown */
+.dropdown-toggle::after {
+  display: none !important;
+}
+
+
+.dropdown-toggle {
+  margin-left: 11px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.arrow-icon {
+  margin-left: auto;
+  transition: 0.3s;
+}
+
+.arrow-icon.rotate {
+  transform: rotate(180deg);
+}
+
+/* .subitem {
+  padding-left: 40px;
+} */
+
+.subitem a.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.user-icon{
+  margin-right: 25px;
+}
+/* Chrome, Edge, Safari */
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: #22c8d8;
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: #22c8d8;
+}
+
+/* Firefox */
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #22c8d8 #f0f0f0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+ .menu-item a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #ffffffd9;
+  padding: 10px 12px;
+  border-radius: 6px;
+  transition: 0.3s;
+  font-size: 15px;
+  gap: 12px;
+}
+
+.menu-item a.active {
+  background: rgb(34 200 216);
+  border-radius: 10px;
+}
+
+.menu-item a.active .menu-icon {
+  color: #fff;
+} 
+

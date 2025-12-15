@@ -1,0 +1,38 @@
+.custom-form .form-control,
+.custom-form .form-select {
+  border-radius: 8px;
+  padding: 10px;
+  border: 2px solid #fe9e2a;
+}
+
+.custom-form .form-label {
+  font-weight: 600;
+}
+
+.custom-form button {
+  padding: 8px 20px;
+  border-radius: 6px;
+}
+
+
+.pending {
+  background-color: #f44336; /* red */
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.approved {
+  background-color: #4caf50; /* green */
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actions button {
+  margin-right: 5px;
+}

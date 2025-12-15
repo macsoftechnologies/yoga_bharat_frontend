@@ -1,0 +1,117 @@
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+  padding: 20px;
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.custom-table th,
+.custom-table td {
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.custom-table thead {
+  background-color: #f1f3f6;
+  border-bottom: 2px solid #e0e0e0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.custom-table tbody tr {
+  background-color: #fff;
+  transition: background 0.2s;
+}
+
+.custom-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #e6f7ff;
+}
+
+.actions button {
+  margin-right: 5px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.actions button.view {
+  background-color: #007bff;
+  color: white;
+}
+
+.actions button.edit {
+  background-color: #ffc107;
+  color: white;
+}
+
+.actions button.delete {
+  background-color: #dc3545;
+  color: white;
+}
+
+.progress-bar {
+  height: 6px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background-color: #007bff;
+  width: 0%;
+}
+
+.change-positive {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.change-negative {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+
+/*...pagination... */
+
+.pagination {
+  margin: 30px 0px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.page-btn, .page-number {
+  padding: 8px 16px;
+  font-size: 14px;
+  background: #f3f3f3;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.page-btn:disabled {
+  /* opacity: 0.4; */
+  cursor: not-allowed;
+}
+
+.page-number.active {
+  background: #ec8519;
+  color: white;
+}

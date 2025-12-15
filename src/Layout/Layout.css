@@ -1,0 +1,36 @@
+/* Layout container */
+.layout-container {
+  display: flex;
+  height: 100vh;      /* Full viewport height */
+  overflow: hidden;   /* Prevent body scroll */
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background-color: #1f1f1f;
+  color: #fff;
+  overflow-y: auto;   /* Scroll sidebar independently */
+}
+
+/* Main content wrapper */
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;       /* Fill the height */
+  overflow: hidden;   /* Prevent main container scroll */
+}
+
+/* Navbar fixed height */
+.main-content > .navbar {
+  flex-shrink: 0;     /* Keep navbar fixed */
+}
+
+/* Page content scrollable */
+.page-content {
+  flex-grow: 1;
+  overflow-y: auto;   /* Scroll only the Outlet/content */
+  padding: 20px;
+  background-color: #f8f9fa;
+}
