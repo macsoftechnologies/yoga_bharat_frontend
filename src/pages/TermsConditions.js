@@ -1,44 +1,151 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
+import Swal from "sweetalert2";
+import {
+  addTerms,
+  getTerms,
+  getTermsById,
+  updateTerms,
+  deleteTerms,
+} from "../services/authService";
 import "../forms/form.css";
 
 function TermsConditions() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [termsList, setTermsList] = useState([
-    {
-      id: 1,
-      title: "General Terms",
-      description: "All users must follow yoga class rules and maintain discipline.",
-    },
-  ]);
+  const [termsList, setTermsList] = useState([]);
 
-  // Add/Edit submission
-  const handleSubmit = (data) => {
-    if (selectedItem && editOpen) {
-      setTermsList(termsList.map((item) => (item.id === selectedItem.id ? { ...item, ...data } : item)));
-    } else {
-      const newId = termsList.length ? termsList[termsList.length - 1].id + 1 : 1;
-      setTermsList([...termsList, { id: newId, ...data }]);
+  /* =========================
+     FETCH TERMS LIST
+     ========================= */
+  const fetchTerms = async () => {
+    try {
+      const res = await getTerms();
+      setTermsList(res.data || []);
+    } catch (err) {
+      Swal.fire("Error", "Failed to fetch terms", "error");
     }
   };
 
+  useEffect(() => {
+    fetchTerms();
+  }, []);
+
+  /* =========================
+     VIEW TERMS
+     ========================= */
+  const handleView = async (termsId) => {
+    try {
+      const res = await getTermsById(termsId);
+      setSelectedItem(res.data);
+      setViewOpen(true);
+    } catch {
+      Swal.fire("Error", "Failed to fetch details", "error");
+    }
+  };
+
+  /* =========================
+     EDIT TERMS
+     ========================= */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this term?")) return;
-    setTermsList(termsList.filter((t) => t.id !== id));
+  /* =========================
+     DELETE TERMS
+     ========================= */
+  const handleDelete = async (termsId) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This Terms & Conditions will be deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#ff7a00",
+      cancelButtonColor: "#28a745",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    const res = await deleteTerms(termsId);
+
+    Swal.fire({
+      title: "Deleted!",
+      text: res.message || "Terms deleted successfully",
+      icon: "success",
+      position: "top-end",
+      toast: true,
+      showConfirmButton: false,
+      timer: 6000,
+      timerProgressBar: true,
+      background: "#ff7a00",
+      color: "#ffffff",
+    });
+
+    fetchTerms();
   };
 
+  /* =========================
+     ADD / UPDATE
+     ========================= */
+  const handleSubmit = async (data) => {
+    let res;
+
+    if (selectedItem && editOpen) {
+      res = await updateTerms({
+        termsId: selectedItem.termsId,
+        ...data,
+      });
+
+      Swal.fire({
+        title: "Updated!",
+        text: res.message || "Terms updated successfully",
+        icon: "success",
+        iconColor: "#22c8d8",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 6000,
+        timerProgressBar: true,
+        background: "#35a542",
+        color: "#ffffff",
+      });
+    } else {
+      res = await addTerms(data);
+
+      Swal.fire({
+        title: "Added!",
+        text: res.message || "Terms added successfully",
+        icon: "success",
+        iconColor: "#22c8d8",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 6000,
+        timerProgressBar: true,
+        background: "#35a542",
+        color: "#ffffff",
+      });
+    }
+
+    setOpen(false);
+    setEditOpen(false);
+    setSelectedItem(null);
+    fetchTerms();
+  };
+
+  /* =========================
+     TABLE
+     ========================= */
   const columns = [
-    { header: "Title", accessor: "title" },
-    { header: "Description", accessor: "description" },
+    { header: "User Type", accessor: "usertype" },
+    { header: "Text", accessor: "text" },
     { header: "Actions", accessor: "actions" },
   ];
 
@@ -46,8 +153,15 @@ function TermsConditions() {
     ...item,
     actions: (
       <div className="actions">
-        <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>Delete</button>
+        <button className="view" onClick={() => handleView(item.termsId)}>
+          View
+        </button>
+        <button className="edit" onClick={() => handleEdit(item)}>
+          Edit
+        </button>
+        <button className="delete" onClick={() => handleDelete(item.termsId)}>
+          Delete
+        </button>
       </div>
     ),
   }));
@@ -56,65 +170,83 @@ function TermsConditions() {
     <div>
       <div className="d-flex justify-content-between mb-3">
         <h2>Terms & Conditions</h2>
-        <Button text="+ Add Term" color="orange" onClick={() => setOpen(true)} />
+        <Button text="+ Add Terms" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
-      {/* ADD MODAL */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Term" size="lg">
-        <TermForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
+      {/* ADD */}
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Terms" size="lg">
+        <TermsForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT MODAL */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Term" size="lg">
-        <TermForm
+      {/* EDIT */}
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Terms" size="lg">
+        <TermsForm
           onClose={() => setEditOpen(false)}
           initialData={selectedItem}
           isEdit
           onSubmit={handleSubmit}
         />
       </Modal>
+
+      {/* VIEW */}
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Terms"  size="md">
+        {selectedItem && (
+          <div style={{ padding: 10 }}>
+            <p><b>User Type:</b> {selectedItem.usertype}</p>
+            <p><b>Text:</b> {selectedItem.text}</p>
+            <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
+              Close
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
 
-// Reusable form inside same file
-function TermForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [description, setDescription] = useState(initialData?.description || "");
+/* =========================
+   FORM
+   ========================= */
+function TermsForm({ onClose, initialData, isEdit, onSubmit }) {
+  const [text, setText] = useState(initialData?.text || "");
+  const [usertype, setUsertype] = useState(initialData?.usertype || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (onSubmit) onSubmit({ title, description });
+    onSubmit({ text, usertype });
     onClose();
   };
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label className="form-label">Title</label>
-        <input
-          type="text"
+        <label className="form-label">User Type</label>
+        <select
           className="form-control"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter title"
+          value={usertype}
+          onChange={(e) => setUsertype(e.target.value)}
           required
-        />
+        >
+          <option value="">Select User Type</option>
+          <option value="client">Client</option>
+          <option value="trainer">Trainer</option>
+        </select>
       </div>
+
       <div className="mb-3">
-        <label className="form-label">Description</label>
+        <label className="form-label">Terms Text</label>
         <textarea
           className="form-control"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows="4"
-          placeholder="Enter description"
+          rows="5"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
           required
         />
       </div>
-      <div className="text-end mt-3">
+
+      <div className="text-end">
         <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
           Cancel
         </button>

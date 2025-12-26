@@ -1,155 +1,286 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
+import Swal from "sweetalert2";
+import {
+  addFeature,
+  getFeatures,
+  getFeatureById,
+  updateFeature,
+  deleteFeature,
+} from "../services/authService";
 import "../forms/form.css";
 
 function FeatureBanners() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [bannersList, setBannersList] = useState([
-    {
-      id: 1,
-      title: "Morning Yoga Classes",
-      description: "Start your day with a refreshing yoga session",
-      imageUrl: "", // default placeholder
-    },
-  ]);
+  const [featuresList, setFeaturesList] = useState([]);
 
-  // Add or Edit Banner
-  const handleSubmit = (data) => {
-    if (selectedItem && editOpen) {
-      setBannersList(
-        bannersList.map((item) =>
-          item.id === selectedItem.id ? { ...item, ...data } : item
-        )
-      );
-    } else {
-      const newId = bannersList.length ? bannersList[bannersList.length - 1].id + 1 : 1;
-      setBannersList([...bannersList, { id: newId, ...data }]);
+  /* =========================
+     FETCH FEATURE LIST
+     ========================= */
+  const fetchFeatures = async () => {
+    try {
+      const res = await getFeatures();
+      setFeaturesList(res.data || []);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to fetch features", "error");
     }
   };
 
+  useEffect(() => {
+    fetchFeatures();
+  }, []);
+
+  /* =========================
+     VIEW FEATURE
+     ========================= */
+  const handleView = async (featureId) => {
+    try {
+      const res = await getFeatureById(featureId);
+      setSelectedItem(res.data);
+      setViewOpen(true);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to fetch feature details", "error");
+    }
+  };
+
+  /* =========================
+     EDIT FEATURE
+     ========================= */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this banner?")) return;
-    setBannersList(bannersList.filter((b) => b.id !== id));
+  /* =========================
+     DELETE FEATURE
+     ========================= */
+  const handleDelete = async (featureId) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This feature will be deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#35a542",
+      cancelButtonColor: "#ff7a00",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await deleteFeature(featureId);
+      Swal.fire({
+        title: "Deleted!",
+        text: "Feature deleted successfully",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 6000,
+        timerProgressBar: true,
+        background: "#ff7a00",
+        color: "#ffffff",
+      });
+      fetchFeatures();
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Delete failed", "error");
+    }
   };
 
+  /* =========================
+     ADD / UPDATE FEATURE
+     ========================= */
+  const handleSubmit = async (formData) => {
+    try {
+      if (selectedItem && editOpen) {
+        formData.append("featureId", selectedItem.featureId);
+        await updateFeature(formData);
+        Swal.fire({
+          title: "Updated!",
+          text: "Feature updated successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 6000,
+          timerProgressBar: true,
+          background: "#28a745",
+          color: "#ffffff",
+        });
+      } else {
+        await addFeature(formData);
+        Swal.fire({
+          title: "Added!",
+          text: "Feature added successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 6000,
+          timerProgressBar: true,
+          background: "#28a745",
+          color: "#ffffff",
+        });
+      }
+      fetchFeatures();
+      setOpen(false);
+      setEditOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Operation failed", "error");
+    }
+  };
+
+  /* =========================
+     TABLE CONFIG
+     ========================= */
   const columns = [
-    { header: "Title", accessor: "title" },
-    { header: "Description", accessor: "description" },
-    { header: "Image", accessor: "image" },
+    { header: "User Type", accessor: "usertype" },
+    { header: "Feature Image", accessor: "feature_image" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = bannersList.map((item) => ({
-    ...item,
-    image: item.imageUrl ? (
-      <img src={item.imageUrl} alt={item.title} width="100" />
-    ) : (
-      "No Image"
-    ),
-    actions: (
-      <div className="actions">
-        <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>Delete</button>
-      </div>
-    ),
-  }));
+  const tableData = Array.isArray(featuresList)
+    ? featuresList.map((item) => ({
+        ...item,
+        feature_image: item.feature_image ? (
+          <img
+            src={process.env.REACT_APP_API_BASE_URL + "/" + item.feature_image}
+            alt={item.usertype}
+            width="60"
+            height="60"
+          />
+        ) : (
+          "No Image"
+        ),
+        actions: (
+          <div className="actions">
+            <button className="view" onClick={() => handleView(item.featureId)}>
+              View
+            </button>
+            <button className="edit" onClick={() => handleEdit(item)}>
+              Edit
+            </button>
+            <button className="delete" onClick={() => handleDelete(item.featureId)}>
+              Delete
+            </button>
+          </div>
+        ),
+      }))
+    : [];
 
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
         <h2>Feature Banners</h2>
-        <Button text="+ Add Banner" color="orange" onClick={() => setOpen(true)} />
+        <Button text="+ Add Feature" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
       {/* ADD MODAL */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Banner" size="lg">
-        <BannerForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Feature" size="lg">
+        <FeatureForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
       {/* EDIT MODAL */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Banner" size="lg">
-        <BannerForm
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Feature" size="lg">
+        <FeatureForm
           onClose={() => setEditOpen(false)}
           initialData={selectedItem}
           isEdit
           onSubmit={handleSubmit}
         />
       </Modal>
+
+      {/* VIEW MODAL */}
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Feature" size="md">
+        {selectedItem && (
+          <div style={{ padding: "10px" }}>
+            <p><b>User Type:</b> {selectedItem.usertype}</p>
+            <p>
+              <b>Feature Image:</b>{" "}
+              {selectedItem.feature_image ? (
+                <img
+                  src={process.env.REACT_APP_API_BASE_URL + "/" + selectedItem.feature_image}
+                  alt={selectedItem.usertype}
+                  width="200"
+                />
+              ) : (
+                "No Image"
+              )}
+            </p>
+            <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>
+              Close
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
 
-// Reusable Banner Form
-function BannerForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [description, setDescription] = useState(initialData?.description || "");
+/* =========================
+   FEATURE FORM
+========================= */
+function FeatureForm({ onClose, initialData, isEdit, onSubmit }) {
+  const [usertype, setUsertype] = useState("");
   const [imageFile, setImageFile] = useState(null);
-  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // If image file is selected, use the preview URL
-    const finalImageUrl = imageFile ? URL.createObjectURL(imageFile) : imageUrl;
-    if (onSubmit) onSubmit({ title, description, imageUrl: finalImageUrl });
+    const formData = new FormData();
+
+    // ✅ usertype ONLY for ADD
+    if (!isEdit) {
+      formData.append("usertype", usertype);
+    }
+
+    if (imageFile) {
+      formData.append("feature_image", imageFile);
+    }
+
+    if (onSubmit) onSubmit(formData);
     onClose();
   };
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label className="form-label">Title</label>
-        <input
-          type="text"
-          className="form-control"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter banner title"
-          required
-        />
-      </div>
+      {/* ✅ SHOW ONLY FOR ADD */}
+      {!isEdit && (
+        <div className="mb-3">
+          <label className="form-label">User Type</label>
+          <select
+            className="form-control"
+            value={usertype}
+            onChange={(e) => setUsertype(e.target.value)}
+            required
+          >
+            <option value="">Select User Type</option>
+            <option value="client">Client</option>
+            <option value="trainer">Trainer</option>
+          </select>
+        </div>
+      )}
 
       <div className="mb-3">
-        <label className="form-label">Description</label>
-        <textarea
-          className="form-control"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows="3"
-          placeholder="Enter description"
-          required
-        />
-      </div>
-
-      <div className="mb-3">
-        <label className="form-label">Upload Image</label>
+        <label className="form-label">Feature Image</label>
         <input
           type="file"
           className="form-control"
           accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            if (file) {
-              setImageFile(file);
-              setImageUrl(URL.createObjectURL(file));
-            }
-          }}
+          onChange={(e) => setImageFile(e.target.files[0])}
         />
-        {imageUrl && (
-          <div className="mt-2">
-            <img src={imageUrl} alt="Preview" style={{ width: "150px", height: "auto" }} />
-          </div>
-        )}
       </div>
 
       <div className="text-end mt-3">

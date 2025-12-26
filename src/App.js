@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./Layout/Layout";
-import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 import Yoga from "./pages/Yoga";
 import User from "./pages/User";
 import Client from "./pages/Client";
@@ -18,17 +20,21 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FeatureBanners from "./pages/FeatureBanners";
 import Languages from "./pages/Languages";
 import Transactions from "./pages/Transactions";
+import AdminForgotPassword from "./pages/AdminForgotPassword";
+import Home from "./pages/Home";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Login page */}
-        <Route path="/" element={<Login />} />
+        {/* ✅ Public route */}
+        <Route path="/" element={<Home />} />
+        <Route path="/admin" element={<Login />} />
+        <Route path="/admin-forgot-password" element={<AdminForgotPassword />}/>
 
-        {/* All pages that use Sidebar + Navbar */}
-        <Route element={<Layout />}>
+        {/* ✅ Protected routes */}
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/yoga" element={<Yoga />} />
           <Route path="/user" element={<User />} />
@@ -47,6 +53,7 @@ function App() {
           <Route path="/languages" element={<Languages />} />
           <Route path="/transactions" element={<Transactions />} />
         </Route>
+
       </Routes>
     </BrowserRouter>
   );

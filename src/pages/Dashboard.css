@@ -1,6 +1,6 @@
-.dashboard-wrapper {
-  background: #f8f9fc;
-  min-height: 100vh;
+/* ================= PAGE WRAPPER ================= */
+.page-wrapper {
+  padding: 20px;
 }
 
 .dashboard-title {
@@ -8,31 +8,90 @@
   color: #333;
 }
 
-.stat-card {
+/* ================= PAGE HEADER ================= */
+.page-header h2 {
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* ================= MAIN WHITE CARD ================= */
+.content-card {
   background: #fff;
   border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ================= STAT BOX ================= */
+.stat-box {
+  border-radius: 12px;
+  padding: 25px 20px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-box p {
+  font-size: 14px;
+  margin-bottom: 5px;
+  opacity: 0.85;
+}
+
+.stat-box h3 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 10px 0;
+}
+
+/* ================= GRADIENT COLORS ================= */
+.stat-box.green {
+  background: linear-gradient(135deg, #16a951, #34d399); /* Green gradient */
+}
+
+.stat-box.yellow {
+  background: linear-gradient(135deg, #feb131, #fcd34d); /* Yellow gradient */
+}
+
+.stat-box.blue {
+  background: linear-gradient(135deg, #2dc9d8, #22d3ee); /* Blue gradient */
+}
+
+.stat-box.purple {
+  background: linear-gradient(135deg, #8b2291, #c084fc); /* Purple gradient */
+}
+
+/* ================= STAT BOX HOVER EFFECT ================= */
+.stat-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* ================= CHART BOX ================= */
+.chart-box {
+  background: #f9fafb;
   padding: 20px;
-  transition: 0.2s;
-  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-top: 20px;
 }
 
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-}
-
-.stat-value {
-  font-size: 26px;
+.chart-box h5 {
   font-weight: 600;
-  color: #222;
+  margin-bottom: 15px;
 }
 
-.progress {
-  height: 6px;
-  background: #f0f0f0;
-  border-radius: 5px;
+.chart-box canvas {
+  max-height: 260px;
 }
 
-.bg-pink {
-  background-color: #ff6fa8 !important;
+/* ================= RESPONSIVE GRID ================= */
+.row.g-4 {
+  margin-left: -12px;
+  margin-right: -12px;
+}
+
+.row.g-4 > .col-md-3 {
+  padding-left: 12px;
+  padding-right: 12px;
+  margin-bottom: 20px;
 }

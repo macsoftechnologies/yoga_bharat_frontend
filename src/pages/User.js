@@ -77,7 +77,7 @@ function User() {
       </div>
 
       {/* Same Table Component */}
-      <Table columns={columns} data={data} />
+      <Table columns={columns} data={data} rowsPerPage={10} />
     </div>
   );
 }

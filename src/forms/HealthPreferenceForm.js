@@ -1,136 +1,102 @@
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
+import { addHealthPreference, updateHealthPreference } from "../services/authService";
 import "./form.css";
 
-function HealthPreferenceForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [name, setName] = useState(""); // Name of the client or participant
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
-  const [injuries, setInjuries] = useState("");
-  const [allergies, setAllergies] = useState("");
-  const [healthConditions, setHealthConditions] = useState("");
-  const [goals, setGoals] = useState("");
+function HealthPreferenceForm({ onClose, isEdit, initialData, onSubmit }) {
+  const [preferenceName, setPreferenceName] = useState("");
+  const [preferenceIcon, setPreferenceIcon] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Prefill in edit mode
-  useEffect(() => {
+  // Pre-fill form when editing
+    useEffect(() => {
     if (isEdit && initialData) {
-      setName(initialData.name || "");
-      setAge(initialData.age || "");
-      setGender(initialData.gender || "");
-      setInjuries(initialData.injuries || "");
-      setAllergies(initialData.allergies || "");
-      setHealthConditions(initialData.healthConditions || "");
-      setGoals(initialData.goals || "");
+      setPreferenceName(initialData.name || "");
+      setPreferenceIcon(null); // optional
     }
-  }, [initialData, isEdit]);
+  }, [isEdit, initialData]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { name, age, gender, injuries, allergies, healthConditions, goals };
-    if (onSubmit) onSubmit(payload);
-    onClose();
+
+    if (!preferenceName) {
+      Swal.fire("Validation Error", "Preference name is required", "warning");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("preference_name", preferenceName);
+    if (preferenceIcon) formData.append("preference_icon", preferenceIcon);
+
+    try {
+      setLoading(true);
+
+      // Use correct key: prefId
+      let response;
+      if (isEdit && initialData?.prefId) {
+        formData.append("prefId", initialData.prefId);
+        response = await updateHealthPreference(formData);
+      } else {
+        response = await addHealthPreference(formData);
+      }
+
+      Swal.fire({
+        title: isEdit ? "Updated!" : "Added!",
+        text: response.message || (isEdit ? "Updated successfully" : "Added successfully"),
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 6000,          // 8 seconds
+        timerProgressBar: true,
+        color: "#ffffff", 
+        background: "#35a542",
+      });
+
+
+      onSubmit(); // Refresh table
+      onClose();
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Operation failed",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-      <div className="row">
-        {/* Name */}
-        <div className="col-md-6 mb-3">
-          <label className="form-label">Name</label>
-          <input
-            type="text"
-            className="form-control"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter Name"
-            required
-          />
-        </div>
-
-        {/* Age */}
-        <div className="col-md-6 mb-3">
-          <label className="form-label">Age</label>
-          <input
-            type="number"
-            className="form-control"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="Enter Age"
-            min="1"
-          />
-        </div>
-      </div>
-
-      <div className="row">
-        {/* Gender */}
-        <div className="col-md-6 mb-3">
-          <label className="form-label">Gender</label>
-          <select
-            className="form-select"
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            required
-          >
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        {/* Goals */}
-        <div className="col-md-6 mb-3">
-          <label className="form-label">Yoga Goals</label>
-          <input
-            type="text"
-            className="form-control"
-            value={goals}
-            onChange={(e) => setGoals(e.target.value)}
-            placeholder="E.g., Flexibility, Stress Relief"
-          />
-        </div>
-      </div>
-
-      {/* Injuries, Allergies, Health Conditions */}
       <div className="mb-3">
-        <label className="form-label">Injuries</label>
-        <textarea
+        <label>Preference Name</label>
+        <input
+          type="text"
           className="form-control"
-          value={injuries}
-          onChange={(e) => setInjuries(e.target.value)}
-          rows="2"
-          placeholder="Specify any injuries"
+          value={preferenceName}
+          onChange={(e) => setPreferenceName(e.target.value)}
+          placeholder="Enter Preference Name"
+          required
         />
       </div>
 
       <div className="mb-3">
-        <label className="form-label">Allergies</label>
-        <textarea
+        <label>Preference Icon</label>
+        <input
+          type="file"
           className="form-control"
-          value={allergies}
-          onChange={(e) => setAllergies(e.target.value)}
-          rows="2"
-          placeholder="Specify any allergies"
+          onChange={(e) => setPreferenceIcon(e.target.files[0])}
+          required={!isEdit}
         />
       </div>
 
-      <div className="mb-3">
-        <label className="form-label">Health Conditions</label>
-        <textarea
-          className="form-control"
-          value={healthConditions}
-          onChange={(e) => setHealthConditions(e.target.value)}
-          rows="2"
-          placeholder="Specify any health conditions"
-        />
-      </div>
-
-      {/* Buttons */}
-      <div className="text-end mt-3">
+      <div className="text-end">
         <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-success">
-          {isEdit ? "Update Health Preference" : "Save Health Preference"}
+        <button type="submit" className="btn btn-success" disabled={loading}>
+          {loading ? "Saving..." : isEdit ? "Update" : "Save"}
         </button>
       </div>
     </form>

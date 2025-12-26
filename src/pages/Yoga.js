@@ -1,76 +1,183 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
+import Swal from "sweetalert2";
 import YogaForm from "../forms/YogaForm";
-
+import { getYogaList, yogaById, deleteYoga } from "../services/authService";
 
 function Yoga() {
-  const [open, setOpen] = useState(false);        // Add Modal
+  const [open, setOpen] = useState(false);       // Add Modal
   const [editOpen, setEditOpen] = useState(false); // Edit Modal
-  const [viewOpen, setViewOpen] = useState(false); // ⭐ NEW View Modal
-
+  const [viewOpen, setViewOpen] = useState(false); // View Modal
   const [selectedYoga, setSelectedYoga] = useState(null);
   const [yogaList, setYogaList] = useState([]);
 
-  // Fetch sample data
-  const fetchYogaList = async () => {
-    const res = await axios.get("https://jsonplaceholder.typicode.com/users");
-    const formatted = res.data.map((user) => ({
-      id: user.id,
-      name: user.name,
-      category: "Hatha",
-      duration: "30 min",
-      difficulty: "Beginner",
-    }));
-
-    setYogaList(formatted);
+  // Fetch Yoga list
+  const fetchData = async () => {
+    try {
+      const data = await getYogaList();
+      setYogaList(
+        data.map((item) => ({
+          yogaId: item.yogaId,
+          yoga_name: item.yoga_name,
+          client_price: item.client_price,
+          trainer_price: item.trainer_price,
+          yoga_desc: item.yoga_desc,
+          yoga_image: item.yoga_image,
+          yoga_icon: item.yoga_icon,
+          duration:item.duration,
+        }))
+      );
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to fetch Yoga list",
+        "error"
+      );
+    }
   };
 
   useEffect(() => {
-    fetchYogaList();
+    fetchData();
   }, []);
 
-  // VIEW → open modal
-  const handleView = (item) => {
-    setSelectedYoga(item);
-    setViewOpen(true);
+  // VIEW
+  const handleView = async (yogaId) => {
+    try {
+      const res = await yogaById(yogaId);
+      const yoga = res.data;
+
+      setSelectedYoga({
+        yogaId: yoga.yogaId,
+        yoga_name: yoga.yoga_name,
+        client_price: yoga.client_price,
+        trainer_price: yoga.trainer_price,
+        yoga_desc: yoga.yoga_desc,
+        yoga_image: yoga.yoga_image,
+        yoga_icon: yoga.yoga_icon,
+        duration:yoga.duration,
+      });
+      setViewOpen(true);
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to fetch Yoga details",
+        "error"
+      );
+    }
   };
 
-  // EDIT → open modal
-  const handleEdit = (item) => {
-    setSelectedYoga(item);
-    setEditOpen(true);
+  // EDIT
+  const handleEdit = async (yogaId) => {
+    try {
+      const res = await yogaById(yogaId);
+      const yoga = res.data;
+
+      setSelectedYoga({
+        yogaId: yoga.yogaId,
+        yoga_name: yoga.yoga_name,
+        client_price: yoga.client_price,
+        trainer_price: yoga.trainer_price,
+        yoga_desc: yoga.yoga_desc,
+        yoga_image: yoga.yoga_image,
+        yoga_icon: yoga.yoga_icon,
+        duration:yoga.duration,
+      });
+      setEditOpen(true);
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to fetch Yoga details",
+        "error"
+      );
+    }
   };
 
   // DELETE
-  const handleDelete = (id) => {
-    if (!window.confirm("Are you sure?")) return;
-    setYogaList(yogaList.filter((y) => y.id !== id));
+  const handleDelete = async (yogaId) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This record will be deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#35a542",
+      cancelButtonColor: "#ff7a00",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await deleteYoga(yogaId);
+      Swal.fire({
+        title: "Deleted!",
+        text: res.message || "Yoga deleted successfully",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 6000,
+        timerProgressBar: true,
+        color: "#ffffff",
+        background: "#ff7a00",
+      });
+      fetchData(); // refresh list
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Delete failed",
+        "error"
+      );
+    }
   };
 
+  // After add/update
+  const handleSubmit = () => {
+    fetchData();
+    setSelectedYoga(null);
+    setOpen(false);
+    setEditOpen(false);
+  };
+
+  // Table columns
   const columns = [
-    { header: "Name", accessor: "name" },
-    { header: "Category", accessor: "category" },
+    { header: "Yoga Name", accessor: "yoga_name" },
+    { header: "Client Price", accessor: "client_price" },
+    { header: "Trainer Price", accessor: "trainer_price" },
+    { header: "Description", accessor: "yoga_desc" },
+    { header: "Image", accessor: "yoga_image" },
+    { header: "Icon", accessor: "yoga_icon" },
     { header: "Duration", accessor: "duration" },
-    { header: "Difficulty", accessor: "difficulty" },
     { header: "Actions", accessor: "actions" },
   ];
 
+  // Table data
   const tableData = yogaList.map((item) => ({
     ...item,
+    yoga_image: item.yoga_image ? (
+      <img
+        src={`${process.env.REACT_APP_API_BASE_URL}/${item.yoga_image}`}
+        alt="Yoga"
+        width="60"
+        height="60"
+      />
+    ) : "N/A",
+    yoga_icon: item.yoga_icon ? (
+      <img
+        src={`${process.env.REACT_APP_API_BASE_URL}/${item.yoga_icon}`}
+        alt="Icon"
+        width="40"
+        height="40"
+        style={{ objectFit: "cover", borderRadius: "15px" }}
+      />
+    ) : "N/A",
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item)}>
-          View
-        </button>
-        <button className="edit" onClick={() => handleEdit(item)}>
-          Edit
-        </button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>
-          Delete
-        </button>
+        <button className="view" onClick={() => handleView(item.yogaId)}>View</button>
+        <button className="edit" onClick={() => handleEdit(item.yogaId)}>Edit</button>
+        <button className="delete" onClick={() => handleDelete(item.yogaId)}>Delete</button>
       </div>
     ),
   }));
@@ -84,32 +191,83 @@ function Yoga() {
       </div>
 
       {/* Table */}
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
       {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Yoga" size="lg">
-        <YogaForm onClose={() => setOpen(false)} />
+        <YogaForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
       {/* EDIT MODAL */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Yoga" size="lg">
-        <YogaForm onClose={() => setEditOpen(false)} initialData={selectedYoga} isEdit={true}/>
+        <YogaForm
+          onClose={() => setEditOpen(false)}
+          initialData={selectedYoga}
+          isEdit
+          onSubmit={handleSubmit}
+        />
       </Modal>
 
-      {/* VIEW MODAL*/}
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Yoga Details" size="md">
+      {/* VIEW MODAL */}
+     <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Yoga Details" size="lg">
+      {selectedYoga && (
+        <div className="container" style={{ padding: "10px" }}>
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <p><b>Yoga Name:</b> {selectedYoga.yoga_name}</p>
+            </div>
+            <div className="col-md-6">
+              <p><b>Client Price:</b> {selectedYoga.client_price}</p>
+            </div>
+          </div>
 
-        {selectedYoga && (
-          <div style={{ padding: "10px" }}>
-            <p><b>Name:</b> {selectedYoga.name}</p>
-            <p><b>Category:</b> {selectedYoga.category}</p>
-            <p><b>Duration:</b> {selectedYoga.duration}</p>
-            <p><b>Difficulty:</b> {selectedYoga.difficulty}</p>
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <p><b>Trainer Price:</b> {selectedYoga.trainer_price}</p>
+            </div>
+            <div className="col-md-6">
+              <p><b>Duration:</b> {selectedYoga.duration}</p>
+            </div>
+          </div>
+
+          <div className="row mb-3">
+            <div className="col-md-12">
+              <p><b>Description:</b> {selectedYoga.yoga_desc}</p>
+            </div>
+          </div>
+
+
+          <div className="row">
+            <div className="col-md-6 text-center mb-3">
+              <b>Image:</b><br />
+              {selectedYoga.yoga_image ? (
+                <img
+                  src={`${process.env.REACT_APP_API_BASE_URL}/${selectedYoga.yoga_image}`}
+                  alt="Yoga"
+                  className="img-fluid"
+                />
+              ) : "N/A"}
+            </div>
+
+            <div className="col-md-6 text-center mb-3">
+              <b>Icon:</b><br />
+              {selectedYoga.yoga_icon ? (
+                <img
+                  src={`${process.env.REACT_APP_API_BASE_URL}/${selectedYoga.yoga_icon}`}
+                  alt="Icon"
+                  className="img-fluid"
+                />
+              ) : "N/A"}
+            </div>
+          </div>
+
+          <div className="text-end">
             <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>Close</button>
           </div>
-        )}
+        </div>
+      )}
+    </Modal>
 
-      </Modal>
 
     </div>
   );

@@ -76,7 +76,7 @@ function ProfessionDetails() {
         <Button text="+ Add Profession" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
       {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Profession" size="lg">

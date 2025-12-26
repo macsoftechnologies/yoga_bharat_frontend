@@ -76,7 +76,7 @@ function Notifications() {
         <Button text="+ Add Notification" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
       {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Notification" size="lg">

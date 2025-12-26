@@ -68,7 +68,7 @@ function Orders() {
       </div>
 
       {/* Table */}
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
       {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Order" size="lg">

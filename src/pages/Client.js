@@ -1,63 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
-import Button from "../components/Button";
 import Modal from "../components/Modal";
-import ClientForm from "../forms/ClientForm";
+import { getClients } from "../services/authService";
 
 function Client() {
-  const [open, setOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+  const [clients, setClients] = useState([]);
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
 
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      name: "Ramesh Kumar",
-      mobileNumber: "9876543210",
-      email: "ramesh@gmail.com",
-      gender: "Male",
-      age: 32,
-      healthPreferences: "Back pain",
-    },
-  ]);
+  // Fetch clients from API
+  const fetchClients = async () => {
+    const data = await getClients();
+    setClients(data);
+  };
 
-  const handleView = (item) => {
-    setSelectedClient(item);
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const handleView = (client) => {
+    setSelectedClient(client);
     setViewOpen(true);
   };
 
-  const handleEdit = (item) => {
-    setSelectedClient(item);
-    setEditOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm("Delete client?")) {
-      setClients(clients.filter((c) => c.id !== id));
-    }
-  };
-
+  // Table columns
   const columns = [
     { header: "Name", accessor: "name" },
+    { header: "Email", accessor: "email" },
     { header: "Mobile", accessor: "mobileNumber" },
     { header: "Gender", accessor: "gender" },
     { header: "Age", accessor: "age" },
+    { header: "Role", accessor: "role" },
+    { header: "Pref Name", accessor: "healthPrefNames" },
+    { header: "Pref Icon", accessor: "healthPrefIcons" },
     { header: "Actions", accessor: "actions" },
   ];
 
+  // Table data
   const data = clients.map((item) => ({
     ...item,
+    healthPrefNames:
+      item.health_preference && item.health_preference.length > 0
+        ? item.health_preference.map((pref) => pref.preference_name).join(", ")
+        : "N/A",
+    healthPrefIcons:
+      item.health_preference && item.health_preference.length > 0
+        ? item.health_preference.map((pref) => (
+            <img
+              key={pref._id}
+              src={`${process.env.REACT_APP_API_BASE_URL}/${pref.preference_icon}`}
+              alt={pref.preference_name}
+              width="60"
+              className="me-1"
+            />
+          ))
+        : "N/A",
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item)}>
+        <button className="view btn btn-primary btn-sm" onClick={() => handleView(item)}>
           View
-        </button>
-        <button className="edit" onClick={() => handleEdit(item)}>
-          Edit
-        </button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>
-          Delete
         </button>
       </div>
     ),
@@ -65,40 +66,62 @@ function Client() {
 
   return (
     <div>
-      {/* Header */}
       <div className="d-flex justify-content-between mb-3">
         <h2>CLIENT LIST</h2>
-        <Button text="+ Add Client" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      {/* Table */}
-      <Table columns={columns} data={data} />
-
-      {/* ADD MODAL */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Client" size="lg">
-        <ClientForm onClose={() => setOpen(false)} />
-      </Modal>
-
-      {/* EDIT MODAL */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Client" size="lg">
-        <ClientForm
-          onClose={() => setEditOpen(false)}
-          initialData={selectedClient}
-          isEdit
-        />
-      </Modal>
+      <Table columns={columns} data={data} rowsPerPage={10} />
 
       {/* VIEW MODAL */}
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Client Details">
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Client Details" size="lg">
         {selectedClient && (
-          <>
-            <p><b>Name:</b> {selectedClient.name}</p>
-            <p><b>Mobile:</b> {selectedClient.mobileNumber}</p>
-            <p><b>Email:</b> {selectedClient.email}</p>
-            <p><b>Gender:</b> {selectedClient.gender}</p>
-            <p><b>Age:</b> {selectedClient.age}</p>
-            <p><b>Health Preferences:</b> {selectedClient.healthPreferences}</p>
-          </>
+          <div className="container">
+            <div className="row mb-2">
+              <div className="col-md-6"><b>Name:</b> {selectedClient.name}</div>
+              <div className="col-md-6"><b>Email:</b> {selectedClient.email}</div>
+            </div>
+            <div className="row mb-2">
+              <div className="col-md-6"><b>Mobile:</b> {selectedClient.mobileNumber}</div>
+              <div className="col-md-6"><b>Gender:</b> {selectedClient.gender}</div>
+            </div>
+            <div className="row mb-2">
+              <div className="col-md-6"><b>Age:</b> {selectedClient.age}</div>
+              <div className="col-md-6"><b>Role:</b> {selectedClient.role}</div>
+            </div>
+
+            <div className="row mb-2">
+              <div className="col-md-6">
+                <b>Health Preference Names:</b>
+                <div>
+                  {selectedClient.health_preference && selectedClient.health_preference.length > 0
+                    ? selectedClient.health_preference.map((pref) => (
+                        <div key={pref._id}>{pref.preference_name}</div>
+                      ))
+                    : "N/A"}
+                </div>
+              </div>
+              <div className="col-md-6">
+                <b>Health Preference Icons:</b>
+                <div className="d-flex flex-wrap">
+                  {selectedClient.health_preference && selectedClient.health_preference.length > 0
+                    ? selectedClient.health_preference.map((pref) => (
+                        <img
+                          key={pref._id}
+                          src={`${process.env.REACT_APP_API_BASE_URL}/${pref.preference_icon}`}
+                          alt={pref.preference_name}
+                          width="150"
+                          className="me-2 mb-2"
+                        />
+                      ))
+                    : "N/A"}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-end mt-3">
+              <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>Close</button>
+            </div>
+          </div>
         )}
       </Modal>
     </div>

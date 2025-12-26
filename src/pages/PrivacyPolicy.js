@@ -1,55 +1,169 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
+import Swal from "sweetalert2";
+import {
+  addPrivacy,
+  getPrivacyList,
+  getPrivacyById,
+  updatePrivacy,
+  deletePrivacy,
+} from "../services/authService";
 import "../forms/form.css";
 
 function PrivacyPolicy() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [policyList, setPolicyList] = useState([
-    {
-      id: 1,
-      title: "User Data Protection",
-      description: "All client data will be stored securely and not shared with third parties.",
-    },
-  ]);
+  const [policyList, setPolicyList] = useState([]);
 
-  const handleSubmit = (data) => {
-    if (selectedItem && editOpen) {
-      setPolicyList(policyList.map((item) => (item.id === selectedItem.id ? { ...item, ...data } : item)));
-    } else {
-      const newId = policyList.length ? policyList[policyList.length - 1].id + 1 : 1;
-      setPolicyList([...policyList, { id: newId, ...data }]);
+  /* ======================
+     FETCH LIST
+  ====================== */
+  const fetchPrivacy = async () => {
+    try {
+      const res = await getPrivacyList();
+      setPolicyList(res.data || []);
+    } catch (err) {
+      Swal.fire("Error", "Failed to fetch privacy policies", "error");
     }
   };
 
+  useEffect(() => {
+    fetchPrivacy();
+  }, []);
+
+  /* ======================
+     ADD / UPDATE
+  ====================== */
+  const handleSubmit = async (data) => {
+    try {
+      if (selectedItem && editOpen) {
+        await updatePrivacy({
+          privacyId: selectedItem.privacyId,
+          ...data,
+        });
+        Swal.fire({
+          title: "Updated!",
+          text: "Privacy policy updated successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 6000,
+          background: "#35a542",
+          color: "#ffffff", 
+        });
+      } else {
+        await addPrivacy(data);
+        Swal.fire({
+          title: "Added!",
+          text: "Privacy policy added successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 6000,
+          background: "#35a542",
+          color: "#ffffff", 
+        });
+      }
+      fetchPrivacy();
+      setOpen(false);
+      setEditOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      Swal.fire("Error", err.response?.data?.message || "Operation failed", "error");
+    }
+  };
+
+  /* ======================
+     VIEW
+  ====================== */
+  const handleView = async (privacyId) => {
+    try {
+      const res = await getPrivacyById(privacyId);
+      setSelectedItem(res.data);
+      setViewOpen(true);
+    } catch (err) {
+      Swal.fire("Error", "Failed to fetch privacy policy", "error");
+    }
+  };
+
+  /* ======================
+     EDIT
+  ====================== */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this policy?")) return;
-    setPolicyList(policyList.filter((p) => p.id !== id));
+  /* ======================
+     DELETE
+  ====================== */
+  const handleDelete = async (privacyId) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This privacy policy will be deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#35a542", 
+      cancelButtonColor: "#ff7a00",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await deletePrivacy(privacyId);
+      Swal.fire({
+        title: "Deleted!",
+        text: "Privacy policy deleted successfully",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 6000,
+        timerProgressBar: true,
+        background: "#ff7a00",
+        color: "#ffffff",
+      });
+      fetchPrivacy();
+    } catch (err) {
+      Swal.fire("Error", "Delete failed", "error");
+    }
   };
 
+  /* ======================
+     TABLE
+  ====================== */
   const columns = [
-    { header: "Title", accessor: "title" },
-    { header: "Description", accessor: "description" },
+    { header: "User Type", accessor: "usertype" },
+    { header: "Text", accessor: "text" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = policyList.map((item) => ({
-    ...item,
-    actions: (
-      <div className="actions">
-        <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>Delete</button>
-      </div>
-    ),
-  }));
+  const tableData = Array.isArray(policyList)
+    ? policyList.map((item) => ({
+        ...item,
+        actions: (
+          <div className="actions">
+            <button className="view" onClick={() => handleView(item.privacyId)}>
+              View
+            </button>
+            <button className="edit" onClick={() => handleEdit(item)}>
+              Edit
+            </button>
+            <button className="delete" onClick={() => handleDelete(item.privacyId)}>
+              Delete
+            </button>
+          </div>
+        ),
+      }))
+    : [];
 
   return (
     <div>
@@ -58,14 +172,14 @@ function PrivacyPolicy() {
         <Button text="+ Add Policy" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
-      {/* ADD MODAL */}
+      {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Policy" size="lg">
         <PolicyForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT MODAL */}
+      {/* EDIT */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Policy" size="lg">
         <PolicyForm
           onClose={() => setEditOpen(false)}
@@ -74,45 +188,63 @@ function PrivacyPolicy() {
           onSubmit={handleSubmit}
         />
       </Modal>
+
+      {/* VIEW */}
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Policy" size="md">
+        {selectedItem && (
+          <div style={{ padding: "10px" }}>
+            <p><b>User Type:</b> {selectedItem.usertype}</p>
+            <p><b>Text:</b> {selectedItem.text}</p>
+            <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>
+              Close
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
 
-// Reusable form inside same file
+/* ======================
+   FORM
+====================== */
 function PolicyForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [description, setDescription] = useState(initialData?.description || "");
+  const [text, setText] = useState(initialData?.text || "");
+  const [usertype, setUsertype] = useState(initialData?.usertype || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (onSubmit) onSubmit({ title, description });
+    onSubmit({ text, usertype });
     onClose();
   };
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label className="form-label">Title</label>
-        <input
-          type="text"
+        <label className="form-label">User Type</label>
+        <select
           className="form-control"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter title"
+          value={usertype}
+          onChange={(e) => setUsertype(e.target.value)}
           required
-        />
+        >
+          <option value="">Select User Type</option>
+          <option value="client">Client</option>
+          <option value="trainer">Trainer</option>
+        </select>
       </div>
+
       <div className="mb-3">
-        <label className="form-label">Description</label>
+        <label className="form-label">Policy Text</label>
         <textarea
           className="form-control"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows="4"
-          placeholder="Enter description"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows="5"
           required
         />
       </div>
+
       <div className="text-end mt-3">
         <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
           Cancel

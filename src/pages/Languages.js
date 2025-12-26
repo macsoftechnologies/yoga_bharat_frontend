@@ -1,52 +1,177 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
+import Swal from "sweetalert2";
+import { getLanguages, addLanguage, updateLanguage, deleteLanguage, getLanguageById } from "../services/authService";
 import "../forms/form.css";
 
 function Languages() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false); // <-- ADD THIS
   const [selectedItem, setSelectedItem] = useState(null);
-  const [languagesList, setLanguagesList] = useState([
-    { id: 1, language: "English", description: "Yoga instructions in English" },
-    { id: 2, language: "Hindi", description: "Yoga instructions in Hindi" },
-  ]);
+  const [languagesList, setLanguagesList] = useState([]);
 
-  const handleSubmit = (data) => {
-    if (selectedItem && editOpen) {
-      setLanguagesList(languagesList.map((item) => (item.id === selectedItem.id ? { ...item, ...data } : item)));
-    } else {
-      const newId = languagesList.length ? languagesList[languagesList.length - 1].id + 1 : 1;
-      setLanguagesList([...languagesList, { id: newId, ...data }]);
+  
+
+  // =========================
+  // FETCH LANGUAGES
+  // =========================
+  const fetchLanguages = async () => {
+  try {
+    const res = await getLanguages();
+    // If res.data is the array
+    const list = Array.isArray(res.data) ? res.data : [];
+    setLanguagesList(list);
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", "Failed to fetch languages", "error");
+  }
+};
+
+  useEffect(() => {
+    fetchLanguages();
+  }, []);
+
+  // =========================
+  // ADD / UPDATE
+  // =========================
+  const handleSubmit = async (data) => {
+    try {
+      if (selectedItem && editOpen) {
+        // Update
+        const payload = {
+          languageId: selectedItem.languageId,
+          language_name: data.language_name,
+          special_character: data.special_character,
+        };
+        const response = await updateLanguage(payload);
+        Swal.fire({
+          title: "Updated!",
+          text: response.message || "Language updated successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 6000,
+          timerProgressBar: true,
+          color: "#ffffff", 
+          background: "#35a542",
+        });
+      } else {
+        // Add
+        const response = await addLanguage(data);
+        Swal.fire({
+          title: "Added!",
+          text: response.message || "Language added successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 6000,
+          timerProgressBar: true,
+          color: "#ffffff", 
+          background: "#35a542",
+        });
+      }
+      fetchLanguages();
+      setOpen(false);
+      setEditOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", err.response?.data?.message || "Operation failed", "error");
     }
   };
 
+  // =========================
+  // EDIT
+  // =========================
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this language?")) return;
-    setLanguagesList(languagesList.filter((l) => l.id !== id));
+  const handleView = async (languageId) => {
+    try {
+      const res = await getLanguageById(languageId); // API function
+      // Extract actual data object
+      const languageData = res.data; // or res.data.data depending on API function
+      setSelectedItem(languageData);
+      setViewOpen(true);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to fetch language details", "error");
+    }
   };
 
+  // =========================
+  // DELETE
+  // =========================
+  const handleDelete = async (languageId) => {
+  const confirm = await Swal.fire({
+    title: "Are you sure?",
+    text: "This language will be deleted!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#35a542", 
+    cancelButtonColor: "#ff7a00",
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  try {
+    // Pass languageId directly
+    const res = await deleteLanguage(languageId);
+
+    Swal.fire({
+      title: "Deleted!",
+      text: res.message || "Language deleted successfully",
+      icon: "success",
+      position: "top-end",
+      toast: true,
+      showConfirmButton: false,
+      timer: 6000,   // your preferred time
+      timerProgressBar: true,
+      background: "#ff7a00",
+      color: "#ffffff",
+    });
+
+    fetchLanguages(); // refresh list
+  } catch (err) {
+    console.error(err);
+    Swal.fire(
+      "Error",
+      err.response?.data?.message || "Delete failed",
+      "error"
+    );
+  }
+  };
+
+
+  // =========================
+  // TABLE CONFIG
+  // =========================
   const columns = [
-    { header: "Language", accessor: "language" },
-    { header: "Description", accessor: "description" },
+    { header: "Language Name", accessor: "language_name" },
+    { header: "Special Character", accessor: "special_character" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = languagesList.map((item) => ({
-    ...item,
-    actions: (
-      <div className="actions">
-        <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>Delete</button>
-      </div>
-    ),
-  }));
+  const tableData = Array.isArray(languagesList) ? languagesList.map((item) => ({
+  ...item,
+  actions: (
+    <div className="actions">
+      <button className="view" onClick={() => handleView(item.languageId)}>View</button>
+      <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
+      <button className="delete" onClick={() => handleDelete(item.languageId)}>Delete</button>
+    </div>
+  ),
+  })) : [];
+
 
   return (
     <div>
@@ -55,7 +180,7 @@ function Languages() {
         <Button text="+ Add Language" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
       {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Language" size="lg">
@@ -71,42 +196,68 @@ function Languages() {
           onSubmit={handleSubmit}
         />
       </Modal>
+
+      {/* VIEW MODAL */}
+      <Modal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        title="Language Details"
+        size="md"
+      >
+        {selectedItem && (
+            <div style={{ padding: "10px" }}>
+              <p><b>Language:</b> {selectedItem.language_name}</p>
+              <p><b>Special Character:</b> {selectedItem.special_character}</p>
+
+              <button
+                className="btn btn-secondary mt-2"
+                onClick={() => setViewOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          )}
+
+      </Modal>
+
     </div>
   );
 }
 
-// Reusable form inside same file
+// =========================
+// LANGUAGE FORM
+// =========================
 function LanguageForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [language, setLanguage] = useState(initialData?.language || "");
-  const [description, setDescription] = useState(initialData?.description || "");
+  const [languageName, setLanguageName] = useState(initialData?.language_name || "");
+  const [specialChar, setSpecialChar] = useState(initialData?.special_character || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (onSubmit) onSubmit({ language, description });
+    if (onSubmit) onSubmit({ language_name: languageName, special_character: specialChar });
     onClose();
   };
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label className="form-label">Language</label>
+        <label className="form-label">Language Name</label>
         <input
           type="text"
           className="form-control"
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
+          value={languageName}
+          onChange={(e) => setLanguageName(e.target.value)}
           placeholder="Enter language"
           required
         />
       </div>
       <div className="mb-3">
-        <label className="form-label">Description</label>
-        <textarea
+        <label className="form-label">Special Character</label>
+        <input
+          type="text"
           className="form-control"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows="3"
-          placeholder="Enter description"
+          value={specialChar}
+          onChange={(e) => setSpecialChar(e.target.value)}
+          placeholder="Enter special character"
           required
         />
       </div>

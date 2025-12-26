@@ -2,132 +2,256 @@ import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
-import SplashScreenForm from "../forms/SplashScreenForm";
+import Swal from "sweetalert2";
+import "../forms/form.css";
+import {
+  addSplashScreen,
+  getSplashScreens,
+  getSplashScreenById,
+  updateSplashScreen,
+  deleteSplashScreen,
+} from "../services/authService";
 
-function SplashScreen() {
-  const [open, setOpen] = useState(false);        // Add Modal
-  const [editOpen, setEditOpen] = useState(false); // Edit Modal
-  const [viewOpen, setViewOpen] = useState(false); // View Modal
+/* =========================
+   MAIN PAGE
+========================= */
+function SplashScreenPage() {
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [splashList, setSplashList] = useState([]);
 
-  const [selectedScreen, setSelectedScreen] = useState(null);
-  const [screensList, setScreensList] = useState([]);
-
-  // Sample Data
-  useEffect(() => {
-    const sampleData = [
-      { id: 1, title: "Welcome", subtitle: "Start your journey", imagePreview: null },
-      { id: 2, title: "Get Fit", subtitle: "Join our Yoga classes", imagePreview: null },
-    ];
-    setScreensList(sampleData);
-  }, []);
-
-  // VIEW
-  const handleView = (item) => {
-    setSelectedScreen(item);
-    setViewOpen(true);
-  };
-
-  // EDIT
-  const handleEdit = (item) => {
-    setSelectedScreen(item);
-    setEditOpen(true);
-  };
-
-  // DELETE
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this splash screen?")) return;
-    setScreensList(screensList.filter((s) => s.id !== id));
-  };
-
-  // ADD / UPDATE
-  const handleSubmit = (data) => {
-    if (selectedScreen && editOpen) {
-      // Update existing
-      setScreensList(
-        screensList.map((s) => (s.id === selectedScreen.id ? { ...s, ...data } : s))
-      );
-    } else {
-      // Add new
-      const newId = screensList.length ? screensList[screensList.length - 1].id + 1 : 1;
-      setScreensList([...screensList, { id: newId, ...data }]);
+  /* FETCH LIST */
+  const fetchSplashScreens = async () => {
+    try {
+      const res = await getSplashScreens();
+      setSplashList(res.data || []);
+    } catch {
+      Swal.fire("Error", "Failed to fetch splash screens", "error");
     }
   };
 
+  useEffect(() => {
+    fetchSplashScreens();
+  }, []);
+
+  /* VIEW ITEM */
+// const handleView = async (splashscreenId) => {
+//   try {
+//     const res = await getSplashScreenById(splashscreenId);
+//     setSelectedItem(res.data.data); // <-- important: use res.data.data
+//     setViewOpen(true);
+//   } catch {
+//     Swal.fire("Error", "Failed to fetch details", "error");
+//   }
+// };
+  const handleView = async (splashscreenId) => {
+    try {
+      const res = await getSplashScreenById(splashscreenId);
+      setSelectedItem(res.data);
+      setViewOpen(true);
+    } catch {
+      Swal.fire("Error", "Failed to fetch details", "error");
+    }
+  };
+
+
+  /* EDIT ITEM */
+  const handleEdit = (item) => {
+    setSelectedItem(item);
+    setEditOpen(true);
+  };
+
+  /* DELETE ITEM */
+  const handleDelete = async (splashscreenId) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This splash screen will be deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#ff7a00",
+      cancelButtonColor: "#28a745",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await deleteSplashScreen(splashscreenId);
+      Swal.fire({
+        title: "Deleted!",
+        text: res.message || "Splash screen deleted successfully",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        background: "#ff7a00",
+        color: "#ffffff",
+      });
+      fetchSplashScreens();
+    } catch {
+      Swal.fire("Error", "Failed to delete splash screen", "error");
+    }
+  };
+
+  /* ADD / UPDATE ITEM */
+  const handleSubmit = async (data) => {
+    try {
+      let res;
+      if (selectedItem && editOpen) {
+        res = await updateSplashScreen({ splashscreenId: selectedItem.splashscreenId, ...data });
+        Swal.fire({
+          title: "Updated!",
+          text: res.message || "Splash screen updated successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 4000,
+          timerProgressBar: true,
+          background: "#35a542",
+          color: "#ffffff",
+        });
+      } else {
+        res = await addSplashScreen(data);
+        Swal.fire({
+          title: "Added!",
+          text: res.message || "Splash screen added successfully",
+          icon: "success",
+          position: "top-end",
+          toast: true,
+          showConfirmButton: false,
+          timer: 4000,
+          timerProgressBar: true,
+          background: "#35a542",
+          color: "#ffffff",
+        });
+      }
+    } catch {
+      Swal.fire("Error", "Failed to save splash screen", "error");
+    } finally {
+      setOpen(false);
+      setEditOpen(false);
+      setSelectedItem(null);
+      fetchSplashScreens();
+    }
+  };
+
+  /* TABLE COLUMNS */
   const columns = [
-    { header: "Title", accessor: "title" },
-    { header: "Subtitle", accessor: "subtitle" },
-    { header: "Image", accessor: "imagePreview" },
+    { header: "Text", accessor: "text" },
+    { header: "Screen Type", accessor: "screen_type" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = screensList.map((item) => ({
+  const tableData = splashList.map((item) => ({
     ...item,
-    imagePreview: item.imagePreview ? (
-      <img
-        src={item.imagePreview}
-        alt="Splash"
-        style={{ width: "100px", borderRadius: "5px" }}
-      />
-    ) : (
-      "No Image"
-    ),
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item)}>View</button>
+        <button className="view" onClick={() => handleView(item.splashscreenId)}>View</button>
         <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>Delete</button>
+        <button className="delete" onClick={() => handleDelete(item.splashscreenId)}>Delete</button>
       </div>
     ),
   }));
 
   return (
     <div>
-      {/* Header */}
       <div className="d-flex justify-content-between mb-3">
-        <h2>SPLASH SCREEN LIST</h2>
+        <h2>Splash Screens</h2>
         <Button text="+ Add Splash Screen" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      {/* Table */}
-      <Table columns={columns} data={tableData} rowsPerPage={5} />
+      <Table columns={columns} data={tableData} rowsPerPage={10} />
 
-      {/* ADD MODAL */}
+      {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Splash Screen" size="lg">
         <SplashScreenForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT MODAL */}
+      {/* EDIT */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Splash Screen" size="lg">
-        <SplashScreenForm
-          onClose={() => setEditOpen(false)}
-          initialData={selectedScreen}
-          isEdit
-          onSubmit={handleSubmit}
-        />
+        <SplashScreenForm onClose={() => setEditOpen(false)} initialData={selectedItem} isEdit onSubmit={handleSubmit} />
       </Modal>
 
-      {/* VIEW MODAL */}
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Splash Screen Details" size="md">
-        {selectedScreen && (
-          <div style={{ padding: "10px" }}>
-            <p><b>Title:</b> {selectedScreen.title}</p>
-            <p><b>Subtitle:</b> {selectedScreen.subtitle}</p>
-            <p>
-              <b>Image:</b><br />
-              {selectedScreen.imagePreview ? (
-                <img
-                  src={selectedScreen.imagePreview}
-                  alt="Splash"
-                  style={{ width: "200px", borderRadius: "5px" }}
-                />
-              ) : "No Image"}
-            </p>
-            <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>Close</button>
+      {/* VIEW */}
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Splash Screen" size="md">
+        {selectedItem && (
+          <div style={{ padding: 10 }}>
+            <p><b>Text:</b> {selectedItem.text}</p>
+            <p><b>Screen Type:</b> {selectedItem.screen_type}</p>
+            <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>Close</button>
           </div>
         )}
       </Modal>
+
+      
     </div>
   );
 }
 
-export default SplashScreen;
+/* =========================
+   FORM COMPONENT
+========================= */
+function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
+  const [text, setText] = useState(initialData?.text || "");
+  const [screenType, setScreenType] = useState(initialData?.screen_type || "");
+
+  useEffect(() => {
+    if (isEdit && initialData) {
+      setText(initialData.text || "");
+      setScreenType(initialData.screen_type || "");
+    }
+  }, [initialData, isEdit]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit({ text, screen_type: screenType });
+    onClose();
+  };
+
+  return (
+    <form className="custom-form" onSubmit={handleSubmit}>
+      <div className="mb-3">
+        <label className="form-label">Text</label>
+        <input
+          type="text"
+          className="form-control"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Enter text"
+          required
+        />
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label">Screen Type</label>
+        <select
+          className="form-control"
+          value={screenType}
+          onChange={(e) => setScreenType(e.target.value)}
+          required
+        >
+          <option value="">Select Screen Type</option>
+          <option value="client">Client</option>
+          <option value="trainer">Trainer</option>
+        </select>
+      </div>
+
+      <div className="text-end">
+        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-success">
+          {isEdit ? "Update" : "Save"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export default SplashScreenPage;

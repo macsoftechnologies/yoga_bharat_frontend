@@ -10,7 +10,6 @@ import {
   FaUser,
   FaFileAlt,
   FaHeartbeat,
-  FaBriefcase,
   FaBell,
   FaBookOpen,
   FaPhone,
@@ -41,7 +40,13 @@ const Sidebar = ({ sidebarOpen }) => {
   return (
     <div className={`sidebar ${sidebarOpen ? "open" : "closed"}`}>
       <div className="sidebar-header">
-        <div className="logo-box">Yoga Bharat</div>
+        <div className="yoga-brand">
+          <img
+            src="/Yoga-icon-01.png"
+            alt="Yoga Bharat"
+            className="logo"
+          />
+        </div>
       </div>
 
       <ul className="sidebar-menu">
@@ -119,12 +124,12 @@ const Sidebar = ({ sidebarOpen }) => {
         </li>
 
         {/* Profession Details */}
-        <li className="menu-item">
+        {/* <li className="menu-item">
           <NavLink to="/profession-details" className={({ isActive }) => isActive ? "active" : ""}>
             <FaBriefcase className="menu-icon" />
             Profession Details
           </NavLink>
-        </li>
+        </li> */}
 
         {/* Notifications */}
         <li className="menu-item">

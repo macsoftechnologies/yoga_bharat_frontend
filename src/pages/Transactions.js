@@ -17,7 +17,7 @@ function Transactions() {
       transactionId: "TXN001",
       clientName: "Ramesh Kumar",
       yogaSession: "Hatha Yoga",
-      amount: "$50",
+      amount: "₹50",
       date: "2025-12-15",
       status: "Pending",
     },
@@ -26,7 +26,7 @@ function Transactions() {
       transactionId: "TXN002",
       clientName: "Priya Sharma",
       yogaSession: "Vinyasa Yoga",
-      amount: "$75",
+      amount: "₹75",
       date: "2025-12-14",
       status: "Completed",
     },
@@ -79,7 +79,7 @@ function Transactions() {
         <Button text="+ Add Transaction" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={data} />
+      <Table columns={columns} data={data} rowsPerPage={10} />
 
       {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Transaction" size="lg">
