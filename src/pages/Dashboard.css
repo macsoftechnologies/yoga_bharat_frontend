@@ -46,19 +46,19 @@
 
 /* ================= GRADIENT COLORS ================= */
 .stat-box.green {
-  background: linear-gradient(135deg, #16a951, #34d399); /* Green gradient */
+  background: linear-gradient(135deg, #000000, #34d399); /* Green gradient */
 }
 
 .stat-box.yellow {
-  background: linear-gradient(135deg, #feb131, #fcd34d); /* Yellow gradient */
+  background: linear-gradient(135deg, #000000, #fcd34d); /* Yellow gradient */
 }
 
 .stat-box.blue {
-  background: linear-gradient(135deg, #2dc9d8, #22d3ee); /* Blue gradient */
+  background: linear-gradient(135deg, #000000, #22d3ee); /* Blue gradient */
 }
 
 .stat-box.purple {
-  background: linear-gradient(135deg, #8b2291, #c084fc); /* Purple gradient */
+  background: linear-gradient(135deg, #000000, #c084fc); /* Purple gradient */
 }
 
 /* ================= STAT BOX HOVER EFFECT ================= */

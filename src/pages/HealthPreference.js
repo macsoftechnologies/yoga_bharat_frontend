@@ -5,6 +5,7 @@ import Modal from "../components/Modal";
 import HealthPreferenceForm from "../forms/HealthPreferenceForm";
 import Swal from "sweetalert2";
 import { HealthPreferenceById, getHealthPreferences, deleteHealthPreference } from "../services/authService";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function HealthPreference() {
   const [open, setOpen] = useState(false);
@@ -138,9 +139,29 @@ function HealthPreference() {
     ) : "N/A",
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item.prefId)}>View</button>
-        <button className="edit" onClick={() => handleEdit(item.prefId)}>Edit</button>
-        <button className="delete" onClick={() => deleteItem(item.prefId)}>Delete</button>
+        <button
+          className="icon-btn view"
+          title="View"
+          onClick={() => handleView(item.prefId)}
+        >
+          <FaEye />
+        </button>
+
+        <button
+          className="icon-btn edit"
+          title="Edit"
+          onClick={() => handleEdit(item.prefId)}
+        >
+          <FaEdit />
+        </button>
+
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => deleteItem(item.prefId)}
+        >
+          <FaTrash />
+        </button>
       </div>
     ),
   }));

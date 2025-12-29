@@ -3,6 +3,7 @@ import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import NotificationsForm from "../forms/NotificationsForm";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function Notifications() {
   const [open, setOpen] = useState(false);
@@ -62,9 +63,29 @@ function Notifications() {
     ...item,
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item)}>View</button>
-        <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.id)}>Delete</button>
+        <button
+          className="icon-btn view"
+          title="View"
+          onClick={() => handleView(item)}
+        >
+          <FaEye />
+        </button>
+
+        <button
+          className="icon-btn edit"
+          title="Edit"
+          onClick={() => handleEdit(item)}
+        >
+          <FaEdit />
+        </button>
+
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => handleDelete(item.id)}
+        >
+          <FaTrash />
+        </button>
       </div>
     ),
   }));

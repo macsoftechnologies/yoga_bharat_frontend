@@ -5,6 +5,7 @@ import Modal from "../components/Modal";
 import Swal from "sweetalert2";
 import { getLanguages, addLanguage, updateLanguage, deleteLanguage, getLanguageById } from "../services/authService";
 import "../forms/form.css";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function Languages() {
   const [open, setOpen] = useState(false);
@@ -165,10 +166,30 @@ function Languages() {
   ...item,
   actions: (
     <div className="actions">
-      <button className="view" onClick={() => handleView(item.languageId)}>View</button>
-      <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-      <button className="delete" onClick={() => handleDelete(item.languageId)}>Delete</button>
-    </div>
+        <button
+          className="icon-btn view"
+          title="View"
+          onClick={() => handleView(item.languageId)}
+        >
+          <FaEye />
+        </button>
+
+        <button
+          className="icon-btn edit"
+          title="Edit"
+          onClick={() => handleEdit(item)}
+        >
+          <FaEdit />
+        </button>
+
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => handleDelete(item.languageId)}
+        >
+          <FaTrash />
+        </button>
+      </div>
   ),
   })) : [];
 

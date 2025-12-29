@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
 import { getClients } from "../services/authService";
+import { FaEye } from "react-icons/fa";
 
 function Client() {
   const [clients, setClients] = useState([]);
@@ -56,11 +57,15 @@ function Client() {
           ))
         : "N/A",
     actions: (
-      <div className="actions">
-        <button className="view btn btn-primary btn-sm" onClick={() => handleView(item)}>
-          View
-        </button>
-      </div>
+        <div className="actions">
+          <button
+            className="icon-btn view"
+            title="View"
+            onClick={() => handleView(item)}
+          >
+            <FaEye />
+          </button>
+        </div>
     ),
   }));
 

@@ -11,6 +11,7 @@ import {
   deleteAppTutorial,
 } from "../services/authService";
 import "../forms/form.css";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function AppTutorial() {
   const [open, setOpen] = useState(false);
@@ -175,10 +176,30 @@ function AppTutorial() {
     ),
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item.appId)}>View</button>
-        <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.appId)}>Delete</button>
-      </div>
+          <button
+            className="icon-btn view"
+            title="View"
+            onClick={() => handleView(item)}
+          >
+            <FaEye />
+          </button>
+
+          <button
+            className="icon-btn edit"
+            title="Edit"
+            onClick={() => handleEdit(item)}
+          >
+            <FaEdit />
+          </button>
+
+          <button
+            className="icon-btn delete"
+            title="Delete"
+            onClick={() => handleDelete(item.id)}
+          >
+            <FaTrash />
+          </button>
+        </div>
     ),
   }));
 

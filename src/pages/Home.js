@@ -10,15 +10,22 @@ const Home = () => {
   const links = document.querySelectorAll(".nav-link");
 
   // ===== CLICK LOGIC (existing) =====
-  links.forEach(link => {
-    link.addEventListener("click", () => {
-      links.forEach(l => l.classList.remove("active"));
-      link.classList.add("active");
+ links.forEach(link => {
+  link.addEventListener("click", () => {
+    links.forEach(l => l.classList.remove("active"));
+    link.classList.add("active");
 
-      slider.style.width = `${link.offsetWidth - 30}px`;
-      slider.style.left = `${link.offsetLeft + 15}px`;
-    });
+    slider.style.width = `${link.offsetWidth - 30}px`;
+    slider.style.left = `${link.offsetLeft + 15}px`;
+    
+    // ===== ADD THIS LINE =====
+    const navbarCollapse = document.getElementById("navbarNav");
+    if (navbarCollapse.classList.contains("show")) {
+      navbarCollapse.classList.remove("show");
+    }
   });
+});
+
 
   // ===== SCROLL LOGIC =====
   const sections = document.querySelectorAll("section[id]");

@@ -365,8 +365,11 @@ body {
   margin-top: 0px !important;
   margin-bottom: 0px !important;
 }
-@media screen and (min-width: 360px) and (max-width: 600px) {
+@media screen and (min-width: 320px) and (max-width: 600px) {
 .mobile {
     margin-bottom: 4rem !important;
+}
+.nav-slider {
+  display: none;
 }
 }

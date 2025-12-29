@@ -4,7 +4,7 @@ import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Swal from "sweetalert2";
 import { getTrainers, approveTrainer } from "../services/authService";
-
+import { FaEye } from "react-icons/fa";
 function Trainer() {
   const [trainers, setTrainers] = useState([]);
   const [viewOpen, setViewOpen] = useState(false);
@@ -78,17 +78,18 @@ function Trainer() {
     ),
 
     actions: (
-      <button
-        className="btn btn-primary btn-sm"
-        disabled={item.ekyc_status === "pending"}
-        onClick={() => item.ekyc_status === "approved" && openModal(item)}
-        style={{
-          opacity: item.ekyc_status === "pending" ? 0.5 : 1,
-          cursor: item.ekyc_status === "pending" ? "not-allowed" : "pointer",
-        }}
-      >
-        View
-      </button>
+        <button
+          className="icon-btn view"
+          disabled={item.ekyc_status === "pending"}
+          onClick={() => item.ekyc_status === "approved" && openModal(item)}
+          style={{
+            opacity: item.ekyc_status === "pending" ? 0.5 : 1,
+            cursor: item.ekyc_status === "pending" ? "not-allowed" : "pointer",
+          }}
+          title="View"
+        >
+          <FaEye />
+        </button>
     ),
   }));
 

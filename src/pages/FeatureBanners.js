@@ -11,6 +11,7 @@ import {
   deleteFeature,
 } from "../services/authService";
 import "../forms/form.css";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function FeatureBanners() {
   const [open, setOpen] = useState(false);
@@ -165,16 +166,31 @@ function FeatureBanners() {
         ),
         actions: (
           <div className="actions">
-            <button className="view" onClick={() => handleView(item.featureId)}>
-              View
+            <button
+              className="icon-btn view"
+              title="View"
+              onClick={() => handleView(item.featureId)}
+            >
+              <FaEye />
             </button>
-            <button className="edit" onClick={() => handleEdit(item)}>
-              Edit
+
+            <button
+              className="icon-btn edit"
+              title="Edit"
+              onClick={() => handleEdit(item)}
+            >
+              <FaEdit />
             </button>
-            <button className="delete" onClick={() => handleDelete(item.featureId)}>
-              Delete
+
+            <button
+              className="icon-btn delete"
+              title="Delete"
+              onClick={() => handleDelete(item.featureId)}
+            >
+              <FaTrash />
             </button>
           </div>
+
         ),
       }))
     : [];

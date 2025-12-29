@@ -11,6 +11,7 @@ import {
   updateSplashScreen,
   deleteSplashScreen,
 } from "../services/authService";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 /* =========================
    MAIN PAGE
@@ -152,10 +153,30 @@ function SplashScreenPage() {
     ...item,
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item.splashscreenId)}>View</button>
-        <button className="edit" onClick={() => handleEdit(item)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.splashscreenId)}>Delete</button>
-      </div>
+          <button
+            className="icon-btn view"
+            title="View"
+            onClick={() => handleView(item.splashscreenId)}
+          >
+            <FaEye />
+          </button>
+
+          <button
+            className="icon-btn edit"
+            title="Edit"
+            onClick={() => handleEdit(item)}
+          >
+            <FaEdit />
+          </button>
+
+          <button
+            className="icon-btn delete"
+            title="Delete"
+            onClick={() => handleDelete(item.splashscreenId)}
+          >
+            <FaTrash />
+          </button>
+        </div>
     ),
   }));
 

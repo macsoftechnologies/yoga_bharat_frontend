@@ -5,6 +5,7 @@ import Modal from "../components/Modal";
 import Swal from "sweetalert2";
 import YogaForm from "../forms/YogaForm";
 import { getYogaList, yogaById, deleteYoga } from "../services/authService";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function Yoga() {
   const [open, setOpen] = useState(false);       // Add Modal
@@ -175,9 +176,29 @@ function Yoga() {
     ) : "N/A",
     actions: (
       <div className="actions">
-        <button className="view" onClick={() => handleView(item.yogaId)}>View</button>
-        <button className="edit" onClick={() => handleEdit(item.yogaId)}>Edit</button>
-        <button className="delete" onClick={() => handleDelete(item.yogaId)}>Delete</button>
+        <button
+          className="icon-btn view"
+          title="View"
+          onClick={() => handleView(item.yogaId)}
+        >
+          <FaEye />
+        </button>
+
+        <button
+          className="icon-btn edit"
+          title="Edit"
+          onClick={() => handleEdit(item.yogaId)}
+        >
+          <FaEdit />
+        </button>
+
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => handleDelete(item.yogaId)}
+        >
+          <FaTrash />
+        </button>
       </div>
     ),
   }));

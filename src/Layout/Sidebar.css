@@ -28,7 +28,7 @@
 }
 .menu-item a.active {
   background: rgba(255, 255, 255, 0.25);
-  border-left: 4px solid #22c8d8;
+  border-left: 6px solid #22c8d8;
 }
 
 

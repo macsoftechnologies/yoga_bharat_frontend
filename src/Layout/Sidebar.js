@@ -41,11 +41,13 @@ const Sidebar = ({ sidebarOpen }) => {
     <div className={`sidebar ${sidebarOpen ? "open" : "closed"}`}>
       <div className="sidebar-header">
         <div className="yoga-brand">
-          <img
-            src="/Yoga-icon-01.png"
-            alt="Yoga Bharat"
-            className="logo"
-          />
+          <NavLink to="/dashboard">
+            <img
+              src="/Yoga-icon-01.png"
+              alt="Yoga Bharat"
+              className="logo"
+            />
+          </NavLink>
         </div>
       </div>
 

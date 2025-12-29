@@ -11,6 +11,7 @@ import {
   deletePrivacy,
 } from "../services/authService";
 import "../forms/form.css";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function PrivacyPolicy() {
   const [open, setOpen] = useState(false);
@@ -151,14 +152,28 @@ function PrivacyPolicy() {
         ...item,
         actions: (
           <div className="actions">
-            <button className="view" onClick={() => handleView(item.privacyId)}>
-              View
+            <button
+              className="icon-btn view"
+              title="View"
+              onClick={() => handleView(item.privacyId)}
+            >
+              <FaEye />
             </button>
-            <button className="edit" onClick={() => handleEdit(item)}>
-              Edit
+
+            <button
+              className="icon-btn edit"
+              title="Edit"
+              onClick={() => handleEdit(item)}
+            >
+              <FaEdit />
             </button>
-            <button className="delete" onClick={() => handleDelete(item.privacyId)}>
-              Delete
+
+            <button
+              className="icon-btn delete"
+              title="Delete"
+              onClick={() => handleDelete(item.privacyId)}
+            >
+              <FaTrash />
             </button>
           </div>
         ),

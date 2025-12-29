@@ -393,3 +393,18 @@ export const approveTrainer = async (userId) => {
     throw err;
   }
 };
+
+// ---------------- Users APIs Booking----------------
+
+export const getBookings = async () => {
+  try {
+    const res = await api.post(
+      "/booking/filterlist",
+      { headers: { "Content-Type": "application/json" } }
+    );
+    return res.data.data || [];
+  } catch (err) {
+    console.error("Get Bookings API Error:", err);
+    return [];
+  }
+};
