@@ -93,7 +93,7 @@ export default function Dashboard() {
           <div className="col-md-3">
             <div className="stat-box yellow">
               <p>Total Bookings</p>
-              <h3>1,130</h3>
+              <h3>130</h3>
               <p>This Month</p>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function Dashboard() {
           <div className="col-md-3">
             <div className="stat-box blue">
               <p>Active Users</p>
-              <h3>620</h3>
+              <h3>20</h3>
               <p>Current</p>
             </div>
           </div>
