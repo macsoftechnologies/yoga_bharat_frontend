@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { adminForgotPassword } from "../services/authService";
-import "./Login.css"; // reuse login styles
+import "./Login.css";
 
 const AdminForgotPassword = () => {
   const navigate = useNavigate();
@@ -26,6 +26,7 @@ const AdminForgotPassword = () => {
 
     try {
       const payload = {
+        mobileNumber: email,
         emailId: email,
         password: password,
       };
@@ -47,7 +48,7 @@ const AdminForgotPassword = () => {
         text: "Please login with your new password",
       });
 
-      navigate("/", { replace: true });
+      navigate("/admin", { replace: true });
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -64,7 +65,6 @@ const AdminForgotPassword = () => {
       <div className="row justify-content-center align-items-center vh-100">
           <div className="login-card p-4">
             
-            {/* Centered Logo */}
             <div className="card-logo">
               <img src="/Yoga-icon-01.png" alt="Yoga Bharat" className="logo" />
             </div>
@@ -74,9 +74,9 @@ const AdminForgotPassword = () => {
             </h4>
 
             <form onSubmit={handleForgotPassword}>
-              <label>Email</label>
+              <label>Email/Mobile Number</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

@@ -8,23 +8,42 @@ function Client() {
   const [clients, setClients] = useState([]);
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
-
-  // Fetch clients from API
-  const fetchClients = async () => {
-    const data = await getClients();
-    setClients(data);
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    fetchClients(currentPage);
+  }, [currentPage]);
+
+  const fetchClients = async (page) => {
+    try {
+      const res = await getClients(page, 10);
+      console.log("getClients response:", res);
+
+      if (Array.isArray(res)) {
+        setClients(res);
+        setTotalPages(1);
+      } else if (res && Array.isArray(res.data)) {
+        setClients(res.data);
+        setTotalPages(res.totalPages || 1);
+      } else {
+        setClients([]);
+        setTotalPages(1);
+      }
+    } catch (err) {
+      console.error("Failed to fetch clients:", err);
+      setClients([]);
+      setTotalPages(1);
+    }
+  };
+
+
 
   const handleView = (client) => {
     setSelectedClient(client);
     setViewOpen(true);
   };
 
-  // Table columns
   const columns = [
     { header: "Name", accessor: "name" },
     { header: "Email", accessor: "email" },
@@ -38,7 +57,7 @@ function Client() {
   ];
 
   // Table data
-  const data = clients.map((item) => ({
+  const tableData = clients.map((item) => ({
     ...item,
     healthPrefNames:
       item.health_preference && item.health_preference.length > 0
@@ -75,7 +94,13 @@ function Client() {
         <h2>CLIENT LIST</h2>
       </div>
 
-      <Table columns={columns} data={data} rowsPerPage={10} />
+         <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       {/* VIEW MODAL */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Client Details" size="lg">

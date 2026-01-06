@@ -6,32 +6,37 @@ import { FaEye } from "react-icons/fa";
 
 function Orders() {
   const [ordersList, setOrdersList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  /* ================= FETCH BOOKINGS ================= */
+  /* FETCH */
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(currentPage);
+  }, [currentPage]);
 
-  const fetchOrders = async () => {
-    const data = await getBookings({
-      status: "",
-      clientId: "",
-      accepted_trainerId: "",
-      yogaId: "",
-      bookingId: "",
-    });
-    setOrdersList(data);
+  const fetchOrders = async (page) => {
+  const res = await getBookings(page, 10);
+
+  if (res && Array.isArray(res.data)) {
+    setOrdersList(res.data);         
+    setTotalPages(res.totalPages);  
+  } else {
+    setOrdersList([]);
+    setTotalPages(1);
+  }
   };
 
-  /* ================= VIEW ================= */
+
+  /* VIEW */
   const handleView = (item) => {
     setSelectedOrder(item);
     setViewOpen(true);
   };
 
-  /* ================= TABLE COLUMNS ================= */
+  /* TABLE*/
   const columns = [
     { header: "Booking Type", accessor: "bookingType" },
     { header: "Client Name", accessor: "clientName" },
@@ -46,7 +51,7 @@ function Orders() {
     { header: "Actions", accessor: "actions" },
   ];
 
-  /* ================= TABLE DATA MAP ================= */
+  /* TABLE*/
   const tableData = ordersList.map((item) => ({
     bookingType: item.bookingType,
     clientName: item.clientId?.[0]?.name || "-",
@@ -71,22 +76,27 @@ function Orders() {
 
   return (
     <div>
-      {/* HEADER */}
       <div className="d-flex justify-content-between mb-3">
         <h2>BOOKINGS LIST</h2>
-        {/* <Button text="Refresh" color="green" onClick={fetchOrders} /> */}
       </div>
 
-      {/* TABLE */}
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
-      {/* VIEW MODAL */}
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Booking Details" size="lg">
+      <Modal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        title="Booking Details"
+        size="lg"
+      >
         {selectedOrder && (
           <div className="container-fluid">
             <div className="row">
-              
-              {/* LEFT COLUMN */}
               <div className="col-md-6">
                 <p><b>Booking Type:</b> {selectedOrder.bookingType}</p>
                 <p><b>Status:</b> {selectedOrder.status}</p>
@@ -95,7 +105,6 @@ function Orders() {
                 <p><b>Client:</b> {selectedOrder.clientId?.[0]?.name}</p>
               </div>
 
-              {/* RIGHT COLUMN */}
               <div className="col-md-6">
                 <p><b>Trainer:</b> {selectedOrder.accepted_trainerId?.[0]?.name}</p>
                 <p><b>Yoga:</b> {selectedOrder.yogaId?.[0]?.yoga_name}</p>
@@ -103,21 +112,16 @@ function Orders() {
                 <p><b>Client Price:</b> ₹{selectedOrder.yogaId?.[0]?.client_price}</p>
                 <p><b>Trainer Price:</b> ₹{selectedOrder.yogaId?.[0]?.trainer_price}</p>
               </div>
-
             </div>
 
             <div className="text-end mt-3">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setViewOpen(false)}
-              >
+              <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
                 Close
               </button>
             </div>
           </div>
         )}
       </Modal>
-
     </div>
   );
 }

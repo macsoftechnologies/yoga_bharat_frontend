@@ -19,26 +19,41 @@ function TermsConditions() {
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [termsList, setTermsList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  /* =========================
-     FETCH TERMS LIST
-     ========================= */
-  const fetchTerms = async () => {
+  /* FETCH TERMS LIST */
+  const fetchTerms = async (page) => {
     try {
-      const res = await getTerms();
-      setTermsList(res.data || []);
+      const res = await getTerms(page, 10);
+      console.log("Terms response:", res);
+
+      let data = [];
+      let pages = 1;
+      if (res && Array.isArray(res.data)) {
+        data = res.data;
+        pages = res.totalPages || 1;
+      }
+      else if (Array.isArray(res)) {
+        data = res;
+      }
+
+      setTermsList(data);
+      setTotalPages(pages);
     } catch (err) {
+      console.error(err);
+      setTermsList([]);
+      setTotalPages(1);
       Swal.fire("Error", "Failed to fetch terms", "error");
     }
   };
 
-  useEffect(() => {
-    fetchTerms();
-  }, []);
 
-  /* =========================
-     VIEW TERMS
-     ========================= */
+  useEffect(() => {
+    fetchTerms(currentPage);
+  }, [currentPage]);
+
+  /* VIEW TERMS */
   const handleView = async (termsId) => {
     try {
       const res = await getTermsById(termsId);
@@ -49,17 +64,13 @@ function TermsConditions() {
     }
   };
 
-  /* =========================
-     EDIT TERMS
-     ========================= */
+  /* EDIT TERMS  */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* =========================
-     DELETE TERMS
-     ========================= */
+  /* DELETE TERMS  */
   const handleDelete = async (termsId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -92,9 +103,7 @@ function TermsConditions() {
     fetchTerms();
   };
 
-  /* =========================
-     ADD / UPDATE
-     ========================= */
+  /* ADD / UPDATE */
   const handleSubmit = async (data) => {
     let res;
 
@@ -141,9 +150,7 @@ function TermsConditions() {
     fetchTerms();
   };
 
-  /* =========================
-     TABLE
-     ========================= */
+  /* TABLE */
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Text", accessor: "text" },
@@ -188,7 +195,13 @@ function TermsConditions() {
         <Button text="+ Add Terms" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Terms" size="lg">
@@ -221,9 +234,7 @@ function TermsConditions() {
   );
 }
 
-/* =========================
-   FORM
-   ========================= */
+/* FORM */
 function TermsForm({ onClose, initialData, isEdit, onSubmit }) {
   const [text, setText] = useState(initialData?.text || "");
   const [usertype, setUsertype] = useState(initialData?.usertype || "");

@@ -7,12 +7,10 @@ import Swal from "sweetalert2";
 export default function Login() {
   const navigate = useNavigate();
 
-  // State for form inputs
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Redirect to dashboard if already logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -22,42 +20,44 @@ export default function Login() {
 
   // Handle login submit
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const logindata = {
-        emailId: email,
-        password: pwd,
-      };
+  try {
+    const logindata = {
+      mobileNumber: email,
+      emailId: email,
+      password: pwd,
+    };
 
-      const res = await loginAdmin(logindata);
+    const res = await loginAdmin(logindata);
 
-      if (res.statusCode !== 200) {
-        Swal.fire({
-          icon: "error",
-          title: "Login Failed",
-          text: res.message || "Email or Password is incorrect",
-        });
-        return;
-      }
-
-      // Save token and admin data
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("admin", JSON.stringify(res.data));
-
-      // Navigate to dashboard
-      navigate("/dashboard", { replace: true });
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Server Error",
-        text: error.response?.data?.message || "Something went wrong. Try again!",
-      });
-    } finally {
-      setLoading(false);
+    if (res.statusCode !== 200) {
+      Swal.fire("Error", res.message, "error");
+      return;
     }
+
+    // Save adminId for OTP verification
+    localStorage.setItem("adminId", res.data.adminId);
+
+    Swal.fire({
+      icon: "success",
+      title: "OTP Sent",
+      text: "Please verify OTP",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    // Go to OTP page
+    navigate("/admin-otp");
+
+  } catch (error) {
+    Swal.fire("Error", "Login failed", "error");
+  } finally {
+    setLoading(false);
+  }
   };
+
 
   return (
     <div className="login-page">
@@ -69,10 +69,10 @@ export default function Login() {
 
           <h4 className="login-title">Login to Dashboard</h4>
 
-          <label>Email</label>
+          <label>Email/Mobile Number</label>
           <input
-            type="email"
-            placeholder="example@email.com"
+            type="text"
+            placeholder="Email/Mobile Number"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

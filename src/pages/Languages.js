@@ -10,38 +10,51 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 function Languages() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false); // <-- ADD THIS
+  const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [languagesList, setLanguagesList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   
 
-  // =========================
   // FETCH LANGUAGES
-  // =========================
-  const fetchLanguages = async () => {
-  try {
-    const res = await getLanguages();
-    // If res.data is the array
-    const list = Array.isArray(res.data) ? res.data : [];
-    setLanguagesList(list);
-  } catch (err) {
-    console.error(err);
-    Swal.fire("Error", "Failed to fetch languages", "error");
-  }
-};
+
+  const fetchLanguages = async (page) => {
+    try {
+      const res = await getLanguages(page, 10);
+      console.log("Languages response:", res);
+
+      let data = [];
+      let pages = 1;
+
+      if (res && Array.isArray(res.data)) {
+        data = res.data;
+        pages = res.totalPages || 1;
+      }
+      else if (Array.isArray(res)) {
+        data = res;
+      }
+
+      setLanguagesList(data);
+      setTotalPages(pages);
+    } catch (err) {
+      console.error(err);
+      setLanguagesList([]);
+      setTotalPages(1);
+      Swal.fire("Error", "Failed to fetch languages", "error");
+    }
+  };
+
 
   useEffect(() => {
-    fetchLanguages();
-  }, []);
+    fetchLanguages(currentPage);
+  }, [currentPage]);
 
-  // =========================
   // ADD / UPDATE
-  // =========================
   const handleSubmit = async (data) => {
     try {
       if (selectedItem && editOpen) {
-        // Update
         const payload = {
           languageId: selectedItem.languageId,
           language_name: data.language_name,
@@ -86,9 +99,7 @@ function Languages() {
     }
   };
 
-  // =========================
-  // EDIT
-  // =========================
+  // EDIT 
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
@@ -96,9 +107,8 @@ function Languages() {
 
   const handleView = async (languageId) => {
     try {
-      const res = await getLanguageById(languageId); // API function
-      // Extract actual data object
-      const languageData = res.data; // or res.data.data depending on API function
+      const res = await getLanguageById(languageId);
+      const languageData = res.data; 
       setSelectedItem(languageData);
       setViewOpen(true);
     } catch (err) {
@@ -107,9 +117,7 @@ function Languages() {
     }
   };
 
-  // =========================
   // DELETE
-  // =========================
   const handleDelete = async (languageId) => {
   const confirm = await Swal.fire({
     title: "Are you sure?",
@@ -125,7 +133,6 @@ function Languages() {
   if (!confirm.isConfirmed) return;
 
   try {
-    // Pass languageId directly
     const res = await deleteLanguage(languageId);
 
     Swal.fire({
@@ -135,13 +142,13 @@ function Languages() {
       position: "top-end",
       toast: true,
       showConfirmButton: false,
-      timer: 6000,   // your preferred time
+      timer: 6000,
       timerProgressBar: true,
       background: "#ff7a00",
       color: "#ffffff",
     });
 
-    fetchLanguages(); // refresh list
+    fetchLanguages();
   } catch (err) {
     console.error(err);
     Swal.fire(
@@ -152,10 +159,7 @@ function Languages() {
   }
   };
 
-
-  // =========================
   // TABLE CONFIG
-  // =========================
   const columns = [
     { header: "Language Name", accessor: "language_name" },
     { header: "Special Character", accessor: "special_character" },
@@ -201,14 +205,18 @@ function Languages() {
         <Button text="+ Add Language" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
-      {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Language" size="lg">
         <LanguageForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT MODAL */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Language" size="lg">
         <LanguageForm
           onClose={() => setEditOpen(false)}
@@ -217,8 +225,6 @@ function Languages() {
           onSubmit={handleSubmit}
         />
       </Modal>
-
-      {/* VIEW MODAL */}
       <Modal
         open={viewOpen}
         onClose={() => setViewOpen(false)}
@@ -244,10 +250,7 @@ function Languages() {
     </div>
   );
 }
-
-// =========================
-// LANGUAGE FORM
-// =========================
+//  FORM
 function LanguageForm({ onClose, initialData, isEdit, onSubmit }) {
   const [languageName, setLanguageName] = useState(initialData?.language_name || "");
   const [specialChar, setSpecialChar] = useState(initialData?.special_character || "");

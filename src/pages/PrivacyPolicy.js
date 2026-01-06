@@ -20,25 +20,41 @@ function PrivacyPolicy() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [policyList, setPolicyList] = useState([]);
 
-  /* ======================
-     FETCH LIST
-  ====================== */
-  const fetchPrivacy = async () => {
-    try {
-      const res = await getPrivacyList();
-      setPolicyList(res.data || []);
-    } catch (err) {
-      Swal.fire("Error", "Failed to fetch privacy policies", "error");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  /* FETCH LIST */
+  const fetchPrivacy = async (page) => {
+  try {
+    const res = await getPrivacyList(page, 10);
+    console.log("Privacy response:", res);
+
+    let data = [];
+    let pages = 1;
+    if (res && Array.isArray(res.data)) {
+      data = res.data;
+      pages = res.totalPages || 1;
     }
+    else if (Array.isArray(res)) {
+      data = res;
+    }
+
+    setPolicyList(data);
+    setTotalPages(pages);
+  } catch (err) {
+    console.error(err);
+    setPolicyList([]);
+    setTotalPages(1);
+    Swal.fire("Error", "Failed to fetch privacy policies", "error");
+  }
   };
 
-  useEffect(() => {
-    fetchPrivacy();
-  }, []);
 
-  /* ======================
-     ADD / UPDATE
-  ====================== */
+  useEffect(() => {
+    fetchPrivacy(currentPage);
+  }, [currentPage]);
+
+  /* ADD / UPDATE */
   const handleSubmit = async (data) => {
     try {
       if (selectedItem && editOpen) {
@@ -80,9 +96,7 @@ function PrivacyPolicy() {
     }
   };
 
-  /* ======================
-     VIEW
-  ====================== */
+  /* VIEW */
   const handleView = async (privacyId) => {
     try {
       const res = await getPrivacyById(privacyId);
@@ -93,17 +107,13 @@ function PrivacyPolicy() {
     }
   };
 
-  /* ======================
-     EDIT
-  ====================== */
+  /* EDIT */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* ======================
-     DELETE
-  ====================== */
+  /* DELETE */
   const handleDelete = async (privacyId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -138,9 +148,7 @@ function PrivacyPolicy() {
     }
   };
 
-  /* ======================
-     TABLE
-  ====================== */
+  /*TABLE  */
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Text", accessor: "text" },
@@ -187,14 +195,18 @@ function PrivacyPolicy() {
         <Button text="+ Add Policy" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
-      {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Policy" size="lg">
         <PolicyForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Policy" size="lg">
         <PolicyForm
           onClose={() => setEditOpen(false)}
@@ -204,7 +216,6 @@ function PrivacyPolicy() {
         />
       </Modal>
 
-      {/* VIEW */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Policy" size="md">
         {selectedItem && (
           <div style={{ padding: "10px" }}>
@@ -220,9 +231,7 @@ function PrivacyPolicy() {
   );
 }
 
-/* ======================
-   FORM
-====================== */
+/* FORM*/
 function PolicyForm({ onClose, initialData, isEdit, onSubmit }) {
   const [text, setText] = useState(initialData?.text || "");
   const [usertype, setUsertype] = useState(initialData?.usertype || "");

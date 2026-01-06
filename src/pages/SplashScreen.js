@@ -13,40 +13,39 @@ import {
 } from "../services/authService";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
-/* =========================
-   MAIN PAGE
-========================= */
+/* MAIN PAGE */
 function SplashScreenPage() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [splashList, setSplashList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   /* FETCH LIST */
-  const fetchSplashScreens = async () => {
-    try {
-      const res = await getSplashScreens();
-      setSplashList(res.data || []);
-    } catch {
-      Swal.fire("Error", "Failed to fetch splash screens", "error");
+  const fetchSplashScreens = async (page) => {
+  try {
+    const res = await getSplashScreens(page, 10);
+
+    if (res && Array.isArray(res.data)) {
+      setSplashList(res.data);
+      setTotalPages(res.totalPages);
+    } else {
+      setSplashList([]);
+      setTotalPages(1);
     }
+  } catch (err) {
+    Swal.fire("Error", "Failed to fetch splash screens", "error");
+    setSplashList([]);
+    setTotalPages(1);
+  }
   };
 
   useEffect(() => {
-    fetchSplashScreens();
-  }, []);
+    fetchSplashScreens(currentPage);
+  }, [currentPage]);
 
-  /* VIEW ITEM */
-// const handleView = async (splashscreenId) => {
-//   try {
-//     const res = await getSplashScreenById(splashscreenId);
-//     setSelectedItem(res.data.data); // <-- important: use res.data.data
-//     setViewOpen(true);
-//   } catch {
-//     Swal.fire("Error", "Failed to fetch details", "error");
-//   }
-// };
   const handleView = async (splashscreenId) => {
     try {
       const res = await getSplashScreenById(splashscreenId);
@@ -58,13 +57,13 @@ function SplashScreenPage() {
   };
 
 
-  /* EDIT ITEM */
+  /* EDIT  */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* DELETE ITEM */
+  /* DELETE  */
   const handleDelete = async (splashscreenId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -99,7 +98,7 @@ function SplashScreenPage() {
     }
   };
 
-  /* ADD / UPDATE ITEM */
+  /* ADD / UPDATE */
   const handleSubmit = async (data) => {
     try {
       let res;
@@ -187,19 +186,22 @@ function SplashScreenPage() {
         <Button text="+ Add Splash Screen" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
-      {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Splash Screen" size="lg">
         <SplashScreenForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Splash Screen" size="lg">
         <SplashScreenForm onClose={() => setEditOpen(false)} initialData={selectedItem} isEdit onSubmit={handleSubmit} />
       </Modal>
 
-      {/* VIEW */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Splash Screen" size="md">
         {selectedItem && (
           <div style={{ padding: 10 }}>
@@ -215,9 +217,7 @@ function SplashScreenPage() {
   );
 }
 
-/* =========================
-   FORM COMPONENT
-========================= */
+/* FORM  */
 function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
   const [text, setText] = useState(initialData?.text || "");
   const [screenType, setScreenType] = useState(initialData?.screen_type || "");

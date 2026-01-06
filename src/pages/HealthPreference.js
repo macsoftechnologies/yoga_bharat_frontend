@@ -13,27 +13,47 @@ function HealthPreference() {
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [list, setList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch data
-  const fetchData = async () => {
-    try {
-      const data = await getHealthPreferences();
-      const transformed = data.map((item) => ({
-        prefId: item.prefId,
-        name: item.preference_name,
-        icon: item.preference_icon,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-      }));
-      setList(transformed);
-    } catch (error) {
-      console.error("Fetch error:", error);
-    }
-  };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(currentPage);
+  }, [currentPage]);
+
+  // Fetch data
+  const fetchData = async (page) => {
+  try {
+    const res = await getHealthPreferences(page, 10);
+    console.log("HealthPreferences response:", res);
+
+    let listData = [];
+    let pages = 1;
+    if (res && Array.isArray(res.data)) {
+      listData = res.data;
+      pages = res.totalPages || 1;
+    }
+    else if (Array.isArray(res)) {
+      listData = res;
+    }
+
+    const transformed = listData.map((item) => ({
+      prefId: item.prefId,
+      name: item.preference_name,
+      icon: item.preference_icon,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }));
+
+    setList(transformed);
+    setTotalPages(pages);
+
+  } catch (error) {
+    console.error("Fetch error:", error);
+    setList([]);
+    setTotalPages(1);
+  }
+  };
 
   // View
   const handleView = async (prefId) => {
@@ -173,14 +193,17 @@ function HealthPreference() {
         <Button text="+ Add Health Preference" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
-
-      {/* ADD MODAL */}
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
       <Modal open={open} onClose={() => setOpen(false)} title="Add Health Preference" size="lg">
         <HealthPreferenceForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT MODAL */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Health Preference" size="lg">
         <HealthPreferenceForm
           onClose={() => setEditOpen(false)}
@@ -189,8 +212,6 @@ function HealthPreference() {
           onSubmit={handleSubmit}
         />
       </Modal>
-
-      {/* VIEW MODAL */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Health Preference Details" size="md">
         {selectedItem && (
           <div style={{ padding: "10px" }}>

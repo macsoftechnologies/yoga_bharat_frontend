@@ -73,14 +73,10 @@ export default function Dashboard() {
 
   return (
     <div className="page-wrapper">
-      {/* PAGE TITLE */}
       <div className="page-header">
         <h3 className="dashboard-title mb-4">Yoga Dashboard</h3>
       </div>
-
-      {/* MAIN WHITE CARD (LIKE ORDERS LIST) */}
       <div className="content-card">
-        {/* STATS */}
         <div className="row g-4 mb-4">
           <div className="col-md-3">
             <div className="stat-box green">
@@ -114,8 +110,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
-        {/* CHARTS */}
         <div className="row g-4">
           <div className="col-md-6">
             <div className="chart-box">

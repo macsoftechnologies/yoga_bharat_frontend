@@ -22,6 +22,8 @@ import Languages from "./pages/Languages";
 import Transactions from "./pages/Transactions";
 import AdminForgotPassword from "./pages/AdminForgotPassword";
 import Home from "./pages/Home";
+import AdminOtp from "./pages/AdminOtp";
+import TrainerProfile from "./pages/TrainerProfile";
 
 function App() {
   return (
@@ -31,6 +33,7 @@ function App() {
         {/* ✅ Public route */}
         <Route path="/" element={<Home />} />
         <Route path="/admin" element={<Login />} />
+        <Route path="/admin-otp" element={<AdminOtp />} />
         <Route path="/admin-forgot-password" element={<AdminForgotPassword />}/>
 
         {/* ✅ Protected routes */}
@@ -52,8 +55,8 @@ function App() {
           <Route path="/feature-banners" element={<FeatureBanners />} />
           <Route path="/languages" element={<Languages />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/trainer/:id" element={<TrainerProfile />} />
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

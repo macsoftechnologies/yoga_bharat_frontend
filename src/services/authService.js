@@ -7,6 +7,11 @@ export const loginAdmin = async (loginData) => {
   return response.data;
 };
 
+export const verifyAdmin = async (payload) => {
+  const response = await api.post("/admin/verifyadmin", payload);
+  return response.data;
+};
+
 export const adminForgotPassword = async (Forgotload) => {
   const response = await api.post("/admin/adminforgotpassword", Forgotload);
   return response.data;
@@ -22,18 +27,17 @@ export const addHealthPreference = async (formData) => {
   return response.data;
 };
 
-export const getHealthPreferences = async () => {
+export const getHealthPreferences = async (page = 1, limit = 10) => {
   try {
-    const response = await api.get("/users/healthpreferences", {
+    const response = await api.get(`/users/healthpreferences?page=${page}&limit=${limit}`, {
       headers: {
-        "Content-Type": "multipart/form-data", // explicitly set
+        "Content-Type": "multipart/form-data",
       },
     });
-    // return only the data array
     return response.data.data;
   } catch (err) {
     console.error("API Error:", err);
-    return []; // fallback empty array to prevent blank page
+    return []; 
   }
 };
 
@@ -49,7 +53,7 @@ export const updateHealthPreference = async (formData) => {
 };
 
 export const HealthPreferenceById = async (prefId) => {
-  const response = await api.post("/users/healthpreferencebyid",{ prefId }, // payload
+  const response = await api.post("/users/healthpreferencebyid",{ prefId },
     {
       headers: {
         "Content-Type": "application/json",
@@ -61,7 +65,7 @@ export const HealthPreferenceById = async (prefId) => {
 };
 
 export const deleteHealthPreference = async (prefId) => {
-  const response = await api.post("/users/deletehealthpreference",{ prefId }, // payload
+  const response = await api.post("/users/deletehealthpreference",{ prefId },
     {
       headers: {
         "Content-Type": "application/json",
@@ -80,15 +84,15 @@ export const addLanguage = async (data) => {
   return res.data;
 };
 
-export const getLanguages = async () => {
-  const res = await api.get("/language/list");
-  return res.data; // array of languages
+export const getLanguages = async (page = 1, limit = 10) => {
+  const res = await api.get(`/language/list?page=${page}&limit=${limit}`);
+  return res.data; 
 };
 
 export const getLanguageById = async (languageId) => {
   const response = await api.post(
     "/language/languagebyid",
-    { languageId }, // payload
+    { languageId },
     { headers: { "Content-Type": "application/json" } }
   );
   return response.data;
@@ -97,7 +101,7 @@ export const getLanguageById = async (languageId) => {
 export const updateLanguage = async (data) => {
   const response = await api.post(
     "/language/update",
-    data, // send data directly
+    data, 
     {
       headers: {
         "Content-Type": "application/json",
@@ -125,8 +129,8 @@ export const addFeature = async (formData) => {
   return res.data;
 };
 
-export const getFeatures = async () => {
-  const res = await api.get("/feature/list");
+export const getFeatures = async (page = 1, limit = 10) => {
+  const res = await api.get(`/feature/list?page=${page}&limit=${limit}`);
   return res.data;
 };
 
@@ -162,8 +166,8 @@ export const addPrivacy = async (data) => {
   return res.data;
 };
 
-export const getPrivacyList = async () => {
-  const res = await api.get("/privacy/list");
+export const getPrivacyList = async (page = 1, limit = 10) => {
+  const res = await api.get(`/privacy/list?page=${page}&limit=${limit}`);
   return res.data;
 };
 
@@ -203,8 +207,8 @@ export const addTerms = async (data) => {
   return res.data;
 };
 
-export const getTerms = async () => {
-  const res = await api.get("/terms/list");
+export const getTerms = async (page = 1, limit = 10) => {
+  const res = await api.get(`/terms/list?page=${page}&limit=${limit}`);
   return res.data;
 };
 
@@ -244,14 +248,14 @@ export const addSplashScreen = async (data) => {
   return res.data;
 };
 
-export const getSplashScreens = async () => {
-  const res = await api.get("/splashscreen/list");
+export const getSplashScreens = async (page = 1, limit = 10) => {
+  const res = await api.get(`/splashscreen/list?page=${page}&limit=${limit}`);
   return res.data;
 };
 
 export const getSplashScreenById = async (splashscreenId) => {
   const res = await api.post("/splashscreen/screentextbyid", { splashscreenId });
-  return res.data; // return only the inner object
+  return res.data; 
 };
 
 export const updateSplashScreen = async (data) => {
@@ -277,8 +281,8 @@ export const addAppTutorial = async (formData) => {
   return res.data;
 };
 
-export const getAppTutorials = async () => {
-  const res = await api.get("/apptutorial/list");
+export const getAppTutorials = async (page = 1, limit = 10) => {
+  const res = await api.get(`/apptutorial/list?page=${page}&limit=${limit}`);
   return res.data;
 };
 
@@ -316,9 +320,9 @@ export const addYoga = async (formData) => {
     throw err;
   }
 };
-export const getYogaList = async () => {
+export const getYogaList = async (page = 1, limit = 10) => {
   try {
-    const res = await api.get("/yoga/list", {
+    const res = await api.get(`/yoga/list?page=${page}&limit=${limit}`, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data.data || [];
@@ -356,9 +360,9 @@ export const deleteYoga = async (yogaId) => {
 
 // ---------------- Users APIs  Clients----------------
 
-export const getClients = async () => {
+export const getClients = async (page = 1, limit = 10) => {
   try {
-    const res = await api.get("/users/clients", {
+    const res = await api.get(`/users/clients?page=${page}&limit=${limit}`, {
       headers: { "Content-Type": "application/json" },
     });
     return res.data.data || [];
@@ -368,9 +372,9 @@ export const getClients = async () => {
   }
 };
 
-export const getTrainers = async () => {
+export const getTrainers = async (page = 1, limit = 10) => {
   try {
-    const res = await api.get("/users/trainers", {
+    const res = await api.get(`/users/trainers?page=${page}&limit=${limit}`, {
       headers: { "Content-Type": "application/json" },
     });
     return res.data.data || [];
@@ -394,17 +398,32 @@ export const approveTrainer = async (userId) => {
   }
 };
 
+export const getCertificatesByUser = async (userId) => {
+  const res = await api.post(
+    "/users/certificatebyuser",
+    { userId },
+    {
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+  return res.data;
+};
+
+
+
 // ---------------- Users APIs Booking----------------
 
-export const getBookings = async () => {
+export const getBookings = async (page = 1, limit = 10) => {
   try {
     const res = await api.post(
-      "/booking/filterlist",
+      `/booking/filterlist?page=${page}&limit=${limit}`,
+      {},
       { headers: { "Content-Type": "application/json" } }
     );
-    return res.data.data || [];
+    return res.data;
   } catch (err) {
     console.error("Get Bookings API Error:", err);
-    return [];
+    return null;
   }
 };
+

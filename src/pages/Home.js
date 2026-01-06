@@ -4,34 +4,29 @@ import WebBack from '../assets/web-back.png';
 
 const Home = () => {
 
-  /* ===== NAVBAR ACTIVE UNDERLINE LOGIC (ADDED ONLY) ===== */
   useEffect(() => {
   const slider = document.querySelector(".nav-slider");
   const links = document.querySelectorAll(".nav-link");
 
-  // ===== CLICK LOGIC (existing) =====
- links.forEach(link => {
-  link.addEventListener("click", () => {
-    links.forEach(l => l.classList.remove("active"));
-    link.classList.add("active");
+  links.forEach(link => {
+    link.addEventListener("click", () => {
+      links.forEach(l => l.classList.remove("active"));
+      link.classList.add("active");
 
-    slider.style.width = `${link.offsetWidth - 30}px`;
-    slider.style.left = `${link.offsetLeft + 15}px`;
-    
-    // ===== ADD THIS LINE =====
-    const navbarCollapse = document.getElementById("navbarNav");
-    if (navbarCollapse.classList.contains("show")) {
-      navbarCollapse.classList.remove("show");
-    }
+      slider.style.width = `${link.offsetWidth - 30}px`;
+      slider.style.left = `${link.offsetLeft + 15}px`;
+            const navbarCollapse = document.getElementById("navbarNav");
+      if (navbarCollapse.classList.contains("show")) {
+        navbarCollapse.classList.remove("show");
+      }
+    });
   });
-});
 
 
-  // ===== SCROLL LOGIC =====
   const sections = document.querySelectorAll("section[id]");
 
   const onScroll = () => {
-    const scrollPos = window.scrollY + 180; // adjust offset if needed
+    const scrollPos = window.scrollY + 180;
 
     sections.forEach(section => {
       if (
@@ -43,8 +38,6 @@ const Home = () => {
           link.classList.remove("active");
           if (link.getAttribute("href") === `#${id}`) {
             link.classList.add("active");
-
-            // Update slider
             slider.style.width = `${link.offsetWidth - 30}px`;
             slider.style.left = `${link.offsetLeft + 15}px`;
           }
@@ -55,7 +48,6 @@ const Home = () => {
 
   window.addEventListener("scroll", onScroll);
 
-  // Initial slider position
   const activeLink = document.querySelector(".nav-link.active");
   if (slider && activeLink) {
     slider.style.width = `${activeLink.offsetWidth - 30}px`;
@@ -72,7 +64,6 @@ const Home = () => {
     <>
 
     <div className="Home-background">
-      {/* ================= NAVBAR ================= */}
       <nav className="navbar navbar-expand-lg fixed-top custom-navbar">
         <div className="container">
 
@@ -93,8 +84,6 @@ const Home = () => {
 
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav ms-auto align-items-center position-relative">
-
-              {/* SLIDING UNDERLINE */}
               <span className="nav-slider"></span>
 
               <li className="nav-item">
@@ -118,7 +107,7 @@ const Home = () => {
         </div>
       </nav>
 
-      {/* ================= HERO ================= */}
+      {/* === HERO === */}
       <section
         id="home"
         className="hero-section"
@@ -138,7 +127,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= FEATURES ================= */}
+      {/* === FEATURES === */}
       <section className="features-section features-overlap">
         <div className="container">
           <div className="row text-center">
@@ -175,7 +164,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= ABOUT ================= */}
+      {/* === ABOUT === */}
       <section id="about" className="about-section">
         <div className="container">
           <div className="row align-items-center">
@@ -213,7 +202,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= CLASSES ================= */}
+      {/* === CLASSES === */}
       <section id="classes" className="classes-section">
         <div className="container text-center">
           <h2 className="animated-underline">Our Classes</h2>
@@ -251,7 +240,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= GALLERY ================= */}
+      {/* === GALLERY === */}
       <section id="gallery" className="gallery-section">
         <div className="container text-center">
           <h2 className="animated-underline">Our Gallery</h2>
@@ -281,7 +270,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= BLOG ================= */}
+      {/* === BLOG === */}
       <section id="blog" className="blog-section">
         <div className="container text-center">
           <h2 className="animated-underline">Latest Blogs</h2>
@@ -323,7 +312,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= FOOTER ================= */}
+      {/* === FOOTER === */}
       <footer className="footer">
         <div className="container text-center reserved">
           <p className="rights">© 2025 Yoga Bharat. All rights reserved.</p>

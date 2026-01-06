@@ -1,16 +1,29 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import "./ProfileDropdown.css";
 
 const ProfileDropdown = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // ✅ Clear session
-    localStorage.clear();
-
-    // ✅ Redirect to login (remove history)
-    navigate("/admin", { replace: true });
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Do you really want to logout?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#0d6831",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, logout!",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // ✅ Clear session
+        localStorage.clear();
+        // ✅ Redirect to admin login page
+        navigate("/admin", { replace: true });
+      }
+    });
   };
 
   return (
@@ -37,12 +50,6 @@ const ProfileDropdown = () => {
         </li>
 
         <li><a className="dropdown-item" href="#">Profile</a></li>
-        {/* <li><a className="dropdown-item" href="#">Stats</a></li>
-        <li><a className="dropdown-item" href="#">Messages</a></li>
-        <li><a className="dropdown-item" href="#">Settings</a></li>
-        <li><a className="dropdown-item" href="#">Help</a></li> */}
-
-        {/* ✅ LOGOUT */}
         <li>
           <button
             className="dropdown-item"

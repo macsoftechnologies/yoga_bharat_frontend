@@ -19,34 +19,51 @@ function AppTutorial() {
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [tutorialsList, setTutorialsList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  /* =========================
-     FETCH TUTORIAL LIST
-  ========================= */
-  const fetchTutorials = async () => {
+    useEffect(() => {
+    fetchTutorials(currentPage);
+  }, [currentPage]);
+
+  /* 1.TUTORIAL LIST */
+
+  const fetchTutorials = async (page) => {
     try {
-      const res = await getAppTutorials();
+      const res = await getAppTutorials(page, 10);
+      console.log("Tutorials response:", res);
+
+      let data = [];
+      let pages = 1;
+
+      // Case 1: paginated response
+      if (res && Array.isArray(res.data)) {
+        data = res.data;
+        pages = res.totalPages || 1;
+      }
+      // Case 2: array response
+      else if (Array.isArray(res)) {
+        data = res;
+      }
 
       // 🔑 map backend user_type → frontend usertype
-      const mappedData = (res.data || []).map(item => ({
+      const mappedData = data.map((item) => ({
         ...item,
         usertype: item.usertype || item.user_type || "",
       }));
 
       setTutorialsList(mappedData);
+      setTotalPages(pages);
     } catch (err) {
       console.error(err);
+      setTutorialsList([]);
+      setTotalPages(1);
       Swal.fire("Error", "Failed to fetch tutorials", "error");
     }
   };
 
-  useEffect(() => {
-    fetchTutorials();
-  }, []);
+  /*2. VIEW */
 
-  /* =========================
-     VIEW TUTORIAL
-  ========================= */
   const handleView = async (appId) => {
     try {
       const res = await getAppTutorialById(appId);
@@ -61,17 +78,14 @@ function AppTutorial() {
     }
   };
 
-  /* =========================
-     EDIT TUTORIAL
-  ========================= */
+  /* EDIT */
+
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* =========================
-     DELETE TUTORIAL
-  ========================= */
+  /* DELETE */
   const handleDelete = async (appId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -107,9 +121,7 @@ function AppTutorial() {
     }
   };
 
-  /* =========================
-     ADD / UPDATE
-  ========================= */
+  /* ADD / UPDATE */
   const handleSubmit = async (formData) => {
     try {
       if (selectedItem && editOpen) {
@@ -152,10 +164,8 @@ function AppTutorial() {
       Swal.fire("Error", err.response?.data?.message || "Operation failed", "error");
     }
   };
-
-  /* =========================
-     TABLE CONFIG
-  ========================= */
+  /* TABLE */
+  
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Tutorial Image", accessor: "app_image" },
@@ -210,7 +220,13 @@ function AppTutorial() {
         <Button text="+ Add Tutorial" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Tutorial" size="lg">
@@ -252,10 +268,8 @@ function AppTutorial() {
   );
 }
 
-/* =========================
-   FORM
-   usertype → ADD ONLY
-========================= */
+/* FORM */
+
 function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
   const [usertype, setUsertype] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -263,13 +277,9 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData();
-
-    // ✅ usertype ONLY FOR ADD
     if (!isEdit) {
       formData.append("usertype", usertype);
     }
-
-    // image logic unchanged
     if (imageFile) {
       formData.append("app_image", imageFile);
     } else if (initialData?.app_image && isEdit) {

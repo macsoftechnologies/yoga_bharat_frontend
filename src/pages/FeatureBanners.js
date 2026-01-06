@@ -19,27 +19,42 @@ function FeatureBanners() {
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [featuresList, setFeaturesList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  /* =========================
-     FETCH FEATURE LIST
-     ========================= */
-  const fetchFeatures = async () => {
-    try {
-      const res = await getFeatures();
-      setFeaturesList(res.data || []);
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to fetch features", "error");
+    useEffect(() => {
+    fetchFeatures(currentPage);
+  }, [currentPage]);
+
+  /* FEATURE LIST */
+
+  const fetchFeatures = async (page) => {
+  try {
+    const res = await getFeatures(page, 10);
+    console.log("Features response:", res);
+
+    let data = [];
+    let pages = 1;
+    if (res && Array.isArray(res.data)) {
+      data = res.data;
+      pages = res.totalPages || 1;
     }
+    else if (Array.isArray(res)) {
+      data = res;
+    }
+
+    setFeaturesList(data);
+    setTotalPages(pages);
+  } catch (err) {
+    console.error(err);
+    setFeaturesList([]);
+    setTotalPages(1);
+    Swal.fire("Error", "Failed to fetch features", "error");
+  }
   };
 
-  useEffect(() => {
-    fetchFeatures();
-  }, []);
+  /* VIEW */
 
-  /* =========================
-     VIEW FEATURE
-     ========================= */
   const handleView = async (featureId) => {
     try {
       const res = await getFeatureById(featureId);
@@ -51,17 +66,15 @@ function FeatureBanners() {
     }
   };
 
-  /* =========================
-     EDIT FEATURE
-     ========================= */
+  /* EDIT */
+
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* =========================
-     DELETE FEATURE
-     ========================= */
+  /* DELETE */
+
   const handleDelete = async (featureId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -97,9 +110,8 @@ function FeatureBanners() {
     }
   };
 
-  /* =========================
-     ADD / UPDATE FEATURE
-     ========================= */
+  /* ADD / UPDATE */
+
   const handleSubmit = async (formData) => {
     try {
       if (selectedItem && editOpen) {
@@ -142,9 +154,8 @@ function FeatureBanners() {
     }
   };
 
-  /* =========================
-     TABLE CONFIG
-     ========================= */
+  /* TABLE */
+
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Feature Image", accessor: "feature_image" },
@@ -202,7 +213,13 @@ function FeatureBanners() {
         <Button text="+ Add Feature" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Feature" size="lg">
@@ -246,9 +263,8 @@ function FeatureBanners() {
   );
 }
 
-/* =========================
-   FEATURE FORM
-========================= */
+/* FORM */
+
 function FeatureForm({ onClose, initialData, isEdit, onSubmit }) {
   const [usertype, setUsertype] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -272,7 +288,7 @@ function FeatureForm({ onClose, initialData, isEdit, onSubmit }) {
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-      {/* ✅ SHOW ONLY FOR ADD */}
+      {/* SHOW ONLY FOR ADD */}
       {!isEdit && (
         <div className="mb-3">
           <label className="form-label">User Type</label>

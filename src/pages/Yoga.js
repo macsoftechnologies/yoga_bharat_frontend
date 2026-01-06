@@ -8,40 +8,53 @@ import { getYogaList, yogaById, deleteYoga } from "../services/authService";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function Yoga() {
-  const [open, setOpen] = useState(false);       // Add Modal
-  const [editOpen, setEditOpen] = useState(false); // Edit Modal
-  const [viewOpen, setViewOpen] = useState(false); // View Modal
+  const [open, setOpen] = useState(false);  
+  const [editOpen, setEditOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [selectedYoga, setSelectedYoga] = useState(null);
   const [yogaList, setYogaList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch Yoga list
-  const fetchData = async () => {
-    try {
-      const data = await getYogaList();
-      setYogaList(
-        data.map((item) => ({
-          yogaId: item.yogaId,
-          yoga_name: item.yoga_name,
-          client_price: item.client_price,
-          trainer_price: item.trainer_price,
-          yoga_desc: item.yoga_desc,
-          yoga_image: item.yoga_image,
-          yoga_icon: item.yoga_icon,
-          duration:item.duration,
-        }))
-      );
-    } catch (err) {
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Failed to fetch Yoga list",
-        "error"
-      );
-    }
-  };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(currentPage);
+  }, [currentPage]);
+
+    // Fetch Yoga list
+  const fetchData = async (page) => {
+  try {
+    const res = await getYogaList(page, 10);
+
+    // If res has data and totalPages
+    const yogaData = Array.isArray(res.data) ? res.data : res; 
+    const total = res.totalPages || 1;
+
+    setYogaList(
+      yogaData.map((item) => ({
+        yogaId: item.yogaId,
+        yoga_name: item.yoga_name,
+        client_price: item.client_price,
+        trainer_price: item.trainer_price,
+        yoga_desc: item.yoga_desc,
+        yoga_image: item.yoga_image,
+        yoga_icon: item.yoga_icon,
+        duration: item.duration,
+      }))
+    );
+
+    setTotalPages(total);
+
+  } catch (err) {
+    Swal.fire(
+      "Error",
+      err.response?.data?.message || "Failed to fetch Yoga list",
+      "error"
+    );
+    setYogaList([]);
+    setTotalPages(1);
+  }
+};
 
   // VIEW
   const handleView = async (yogaId) => {
@@ -212,7 +225,13 @@ function Yoga() {
       </div>
 
       {/* Table */}
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+       <Table
+              columns={columns}
+              data={tableData}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+        />
 
       {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Yoga" size="lg">

@@ -1,4 +1,3 @@
-/* ================= PAGE WRAPPER ================= */
 .page-wrapper {
   padding: 20px;
 }
@@ -8,21 +7,16 @@
   color: #333;
 }
 
-/* ================= PAGE HEADER ================= */
 .page-header h2 {
   font-weight: 600;
   margin-bottom: 20px;
 }
-
-/* ================= MAIN WHITE CARD ================= */
 .content-card {
   background: #fff;
   border-radius: 10px;
   padding: 25px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-
-/* ================= STAT BOX ================= */
 .stat-box {
   border-radius: 12px;
   padding: 25px 20px;
@@ -43,31 +37,28 @@
   font-weight: 700;
   margin: 10px 0;
 }
-
-/* ================= GRADIENT COLORS ================= */
 .stat-box.green {
-  background: linear-gradient(135deg, #000000, #34d399); /* Green gradient */
+  background: linear-gradient(135deg, #000000, #34d399);
 }
 
 .stat-box.yellow {
-  background: linear-gradient(135deg, #000000, #fcd34d); /* Yellow gradient */
+  background: linear-gradient(135deg, #000000, #fcd34d);
 }
 
 .stat-box.blue {
-  background: linear-gradient(135deg, #000000, #22d3ee); /* Blue gradient */
+  background: linear-gradient(135deg, #000000, #22d3ee);
 }
 
 .stat-box.purple {
-  background: linear-gradient(135deg, #000000, #c084fc); /* Purple gradient */
+  background: linear-gradient(135deg, #000000, #c084fc);
 }
 
-/* ================= STAT BOX HOVER EFFECT ================= */
+
 .stat-box:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
-/* ================= CHART BOX ================= */
 .chart-box {
   background: #f9fafb;
   padding: 20px;
@@ -84,7 +75,6 @@
   max-height: 260px;
 }
 
-/* ================= RESPONSIVE GRID ================= */
 .row.g-4 {
   margin-left: -12px;
   margin-right: -12px;

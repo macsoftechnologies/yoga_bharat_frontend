@@ -3,7 +3,7 @@ import Table from "../components/Table";
 import Button from "../components/Button";
 
 function User() {
-  // Define columns for the table
+  // Define columns
   const columns = [
     { header: "Name", accessor: "name" },
     { header: "Email", accessor: "email" },
@@ -57,7 +57,6 @@ function User() {
 
   return (
     <div>
-      {/* Header same as Yoga page */}
       <div
         style={{
           display: "flex",
@@ -75,8 +74,6 @@ function User() {
           onClick={() => alert("Add User clicked")}
         />
       </div>
-
-      {/* Same Table Component */}
       <Table columns={columns} data={data} rowsPerPage={10} />
     </div>
   );

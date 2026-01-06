@@ -88,14 +88,13 @@ const Sidebar = ({ sidebarOpen }) => {
             <li className="menu-item subitem">
               <NavLink to="/client" className={({ isActive }) => isActive ? "active" : ""}>
                 <MdRadioButtonUnchecked className="menu-icon" />
-                Client
+                Yoga Learner
               </NavLink>
             </li>
 
             <li className="menu-item subitem">
               <NavLink to="/trainer" className={({ isActive }) => isActive ? "active" : ""}>
-                <MdRadioButtonUnchecked className="menu-icon" />
-                Trainer
+                <MdRadioButtonUnchecked className="menu-icon" />Yoga Teacher/ Trainer
               </NavLink>
             </li>
           </>
