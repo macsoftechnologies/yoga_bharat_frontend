@@ -37,8 +37,6 @@ function Client() {
     }
   };
 
-
-
   const handleView = (client) => {
     setSelectedClient(client);
     setViewOpen(true);
@@ -102,7 +100,6 @@ function Client() {
         onPageChange={setCurrentPage}
       />
 
-      {/* VIEW MODAL */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Client Details" size="lg">
         {selectedClient && (
           <div className="container">
@@ -154,6 +151,7 @@ function Client() {
           </div>
         )}
       </Modal>
+      
     </div>
   );
 }

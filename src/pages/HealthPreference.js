@@ -21,7 +21,6 @@ function HealthPreference() {
     fetchData(currentPage);
   }, [currentPage]);
 
-  // Fetch data
   const fetchData = async (page) => {
   try {
     const res = await getHealthPreferences(page, 10);
@@ -55,7 +54,6 @@ function HealthPreference() {
   }
   };
 
-  // View
   const handleView = async (prefId) => {
     try {
       const res = await HealthPreferenceById(prefId);
@@ -73,7 +71,6 @@ function HealthPreference() {
     }
   };
 
-  // Edit
   const handleEdit = async (prefId) => {
     try {
       const res = await HealthPreferenceById(prefId);
@@ -92,7 +89,6 @@ function HealthPreference() {
     }
   };
 
-  // Delete
   const deleteItem = async (prefId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -131,7 +127,6 @@ function HealthPreference() {
     }
   };
 
-  // After Add/Update
   const handleSubmit = async () => {
     await fetchData();
     setSelectedItem(null);
@@ -139,7 +134,6 @@ function HealthPreference() {
     setEditOpen(false);
   };
 
-  // Table columns
   const columns = [
     { header: "Name", accessor: "name" },
     { header: "Icon", accessor: "icon" },

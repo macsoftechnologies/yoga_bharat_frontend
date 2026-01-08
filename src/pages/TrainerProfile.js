@@ -4,9 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 function TrainerProfile() {
    const navigate = useNavigate();
-  // 🔹 Static Trainer Data
-//   const { id } = useParams();
-
   const trainer = {
     name: "Shankar",
     email: "shankar@gmail.com",
@@ -136,8 +133,6 @@ function TrainerProfile() {
       </div>
       
       <hr />
-
-      {/* CERTIFICATES */}
       <h5>Certificates</h5>
       <div className="row">
         {certificates.map((item) => (

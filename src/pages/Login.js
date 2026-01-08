@@ -18,7 +18,6 @@ export default function Login() {
     }
   }, [navigate]);
 
-  // Handle login submit
   const handleLogin = async (e) => {
   e.preventDefault();
   setLoading(true);
@@ -47,8 +46,6 @@ export default function Login() {
       timer: 1500,
       showConfirmButton: false,
     });
-
-    // Go to OTP page
     navigate("/admin-otp");
 
   } catch (error) {

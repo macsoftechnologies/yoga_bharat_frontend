@@ -49,7 +49,7 @@ const ProfileDropdown = () => {
           </small>
         </li>
 
-        <li><a className="dropdown-item" href="#">Profile</a></li>
+        {/* <li><a className="dropdown-item" href="#">Profile</a></li> */}
         <li>
           <button
             className="dropdown-item"

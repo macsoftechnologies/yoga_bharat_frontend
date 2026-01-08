@@ -26,8 +26,6 @@ function FeatureBanners() {
     fetchFeatures(currentPage);
   }, [currentPage]);
 
-  /* FEATURE LIST */
-
   const fetchFeatures = async (page) => {
   try {
     const res = await getFeatures(page, 10);
@@ -53,8 +51,6 @@ function FeatureBanners() {
   }
   };
 
-  /* VIEW */
-
   const handleView = async (featureId) => {
     try {
       const res = await getFeatureById(featureId);
@@ -66,14 +62,10 @@ function FeatureBanners() {
     }
   };
 
-  /* EDIT */
-
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
-
-  /* DELETE */
 
   const handleDelete = async (featureId) => {
     const confirm = await Swal.fire({
@@ -109,8 +101,6 @@ function FeatureBanners() {
       Swal.fire("Error", "Delete failed", "error");
     }
   };
-
-  /* ADD / UPDATE */
 
   const handleSubmit = async (formData) => {
     try {
@@ -153,9 +143,6 @@ function FeatureBanners() {
       Swal.fire("Error", "Operation failed", "error");
     }
   };
-
-  /* TABLE */
-
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Feature Image", accessor: "feature_image" },
@@ -221,12 +208,10 @@ function FeatureBanners() {
         onPageChange={setCurrentPage}
       />
 
-      {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Feature" size="lg">
         <FeatureForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT MODAL */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Feature" size="lg">
         <FeatureForm
           onClose={() => setEditOpen(false)}
@@ -236,7 +221,6 @@ function FeatureBanners() {
         />
       </Modal>
 
-      {/* VIEW MODAL */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Feature" size="md">
         {selectedItem && (
           <div style={{ padding: "10px" }}>

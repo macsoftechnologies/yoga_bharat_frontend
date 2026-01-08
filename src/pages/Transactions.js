@@ -33,19 +33,16 @@ function Transactions() {
     },
   ]);
 
-  // VIEW
   const handleView = (item) => {
     setSelectedTransaction(item);
     setViewOpen(true);
   };
 
-  // EDIT
   const handleEdit = (item) => {
     setSelectedTransaction(item);
     setEditOpen(true);
   };
 
-  // DELETE
   const handleDelete = (id) => {
     if (window.confirm("Delete this transaction?")) {
       setTransactions(transactions.filter((t) => t.id !== id));
@@ -102,12 +99,10 @@ function Transactions() {
 
       <Table columns={columns} data={data} rowsPerPage={10} />
 
-      {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Transaction" size="lg">
         <TransactionForm onClose={() => setOpen(false)} onSubmit={(payload) => setTransactions([...transactions, { id: transactions.length + 1, ...payload }])} />
       </Modal>
 
-      {/* EDIT MODAL */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Transaction" size="lg">
         <TransactionForm
           onClose={() => setEditOpen(false)}
@@ -117,7 +112,6 @@ function Transactions() {
         />
       </Modal>
 
-      {/* VIEW MODAL */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Transaction Details">
         {selectedTransaction && (
           <div>

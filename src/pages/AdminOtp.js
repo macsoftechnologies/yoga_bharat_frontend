@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { verifyAdmin } from "../services/authService";
-import "./Login.css"; // reuse same CSS
+import "./Login.css";
 
 const AdminOtp = () => {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const AdminOtp = () => {
         return;
       }
 
-      // ✅ Save token after OTP success
+      // token after OTP success
       localStorage.setItem("token", res.token);
       localStorage.setItem("admin", JSON.stringify(res.data));
 
@@ -60,8 +60,8 @@ const AdminOtp = () => {
 
           <label>Enter OTP</label>
           <input
-            type="text"
-            placeholder="Enter OTP"
+            type="password"
+            placeholder="******"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
             required

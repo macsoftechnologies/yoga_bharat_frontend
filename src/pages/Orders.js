@@ -12,7 +12,6 @@ function Orders() {
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  /* FETCH */
   useEffect(() => {
     fetchOrders(currentPage);
   }, [currentPage]);
@@ -29,14 +28,11 @@ function Orders() {
   }
   };
 
-
-  /* VIEW */
   const handleView = (item) => {
     setSelectedOrder(item);
     setViewOpen(true);
   };
 
-  /* TABLE*/
   const columns = [
     { header: "Booking Type", accessor: "bookingType" },
     { header: "Client Name", accessor: "clientName" },
@@ -51,7 +47,6 @@ function Orders() {
     { header: "Actions", accessor: "actions" },
   ];
 
-  /* TABLE*/
   const tableData = ordersList.map((item) => ({
     bookingType: item.bookingType,
     clientName: item.clientId?.[0]?.name || "-",

@@ -23,7 +23,6 @@ function PrivacyPolicy() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  /* FETCH LIST */
   const fetchPrivacy = async (page) => {
   try {
     const res = await getPrivacyList(page, 10);
@@ -49,12 +48,10 @@ function PrivacyPolicy() {
   }
   };
 
-
   useEffect(() => {
     fetchPrivacy(currentPage);
   }, [currentPage]);
 
-  /* ADD / UPDATE */
   const handleSubmit = async (data) => {
     try {
       if (selectedItem && editOpen) {
@@ -96,7 +93,6 @@ function PrivacyPolicy() {
     }
   };
 
-  /* VIEW */
   const handleView = async (privacyId) => {
     try {
       const res = await getPrivacyById(privacyId);
@@ -107,13 +103,11 @@ function PrivacyPolicy() {
     }
   };
 
-  /* EDIT */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* DELETE */
   const handleDelete = async (privacyId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -148,7 +142,6 @@ function PrivacyPolicy() {
     }
   };
 
-  /*TABLE  */
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Text", accessor: "text" },

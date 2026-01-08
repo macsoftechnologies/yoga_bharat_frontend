@@ -16,9 +16,6 @@ function Languages() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  
-
-  // FETCH LANGUAGES
 
   const fetchLanguages = async (page) => {
     try {
@@ -46,12 +43,10 @@ function Languages() {
     }
   };
 
-
   useEffect(() => {
     fetchLanguages(currentPage);
   }, [currentPage]);
 
-  // ADD / UPDATE
   const handleSubmit = async (data) => {
     try {
       if (selectedItem && editOpen) {
@@ -75,7 +70,7 @@ function Languages() {
         });
       } else {
         // Add
-        const response = await addLanguage(data);
+       const response = await addLanguage(data);
         Swal.fire({
           title: "Added!",
           text: response.message || "Language added successfully",
@@ -99,7 +94,6 @@ function Languages() {
     }
   };
 
-  // EDIT 
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
@@ -117,7 +111,6 @@ function Languages() {
     }
   };
 
-  // DELETE
   const handleDelete = async (languageId) => {
   const confirm = await Swal.fire({
     title: "Are you sure?",
@@ -159,7 +152,8 @@ function Languages() {
   }
   };
 
-  // TABLE CONFIG
+  // TABLE
+  
   const columns = [
     { header: "Language Name", accessor: "language_name" },
     { header: "Special Character", accessor: "special_character" },
@@ -250,7 +244,7 @@ function Languages() {
     </div>
   );
 }
-//  FORM
+
 function LanguageForm({ onClose, initialData, isEdit, onSubmit }) {
   const [languageName, setLanguageName] = useState(initialData?.language_name || "");
   const [specialChar, setSpecialChar] = useState(initialData?.special_character || "");

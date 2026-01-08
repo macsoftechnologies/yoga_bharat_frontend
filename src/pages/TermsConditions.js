@@ -22,7 +22,10 @@ function TermsConditions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  /* FETCH TERMS LIST */
+    useEffect(() => {
+    fetchTerms(currentPage);
+  }, [currentPage]);
+
   const fetchTerms = async (page) => {
     try {
       const res = await getTerms(page, 10);
@@ -48,12 +51,6 @@ function TermsConditions() {
     }
   };
 
-
-  useEffect(() => {
-    fetchTerms(currentPage);
-  }, [currentPage]);
-
-  /* VIEW TERMS */
   const handleView = async (termsId) => {
     try {
       const res = await getTermsById(termsId);
@@ -64,13 +61,11 @@ function TermsConditions() {
     }
   };
 
-  /* EDIT TERMS  */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* DELETE TERMS  */
   const handleDelete = async (termsId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -103,7 +98,6 @@ function TermsConditions() {
     fetchTerms();
   };
 
-  /* ADD / UPDATE */
   const handleSubmit = async (data) => {
     let res;
 
@@ -150,7 +144,6 @@ function TermsConditions() {
     fetchTerms();
   };
 
-  /* TABLE */
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Text", accessor: "text" },
@@ -203,12 +196,10 @@ function TermsConditions() {
         onPageChange={setCurrentPage}
       />
 
-      {/* ADD */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Terms" size="lg">
         <TermsForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Terms" size="lg">
         <TermsForm
           onClose={() => setEditOpen(false)}
@@ -217,8 +208,7 @@ function TermsConditions() {
           onSubmit={handleSubmit}
         />
       </Modal>
-
-      {/* VIEW */}
+      
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Terms"  size="md">
         {selectedItem && (
           <div style={{ padding: 10 }}>

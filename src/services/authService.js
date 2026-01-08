@@ -301,11 +301,16 @@ export const updateAppTutorial = async (formData) => {
 };
 
 export const deleteAppTutorial = async (appId) => {
-  const res = await api.post("/apptutorial/delete", { appId }, {
-    headers: { "Content-Type": "application/json" },
-  });
+  const res = await api.post(
+    "/apptutorial/delete",
+    { appId },
+    {
+      headers: { "Content-Type": "application/json" },
+    }
+  );
   return res.data;
 };
+
 
 // ---------------- Yogs APIs ----------------
 

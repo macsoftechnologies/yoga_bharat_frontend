@@ -22,11 +22,9 @@ function AppTutorial() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-    useEffect(() => {
+  useEffect(() => {
     fetchTutorials(currentPage);
   }, [currentPage]);
-
-  /* 1.TUTORIAL LIST */
 
   const fetchTutorials = async (page) => {
     try {
@@ -62,11 +60,10 @@ function AppTutorial() {
     }
   };
 
-  /*2. VIEW */
-
   const handleView = async (appId) => {
     try {
-      const res = await getAppTutorialById(appId);
+      console.log("....apptutorial", appId);
+      const res = await getAppTutorialById(appId.appId);
       setSelectedItem({
         ...res.data,
         usertype: res.data.usertype || res.data.user_type || "",
@@ -78,50 +75,56 @@ function AppTutorial() {
     }
   };
 
-  /* EDIT */
-
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* DELETE */
   const handleDelete = async (appId) => {
-    const confirm = await Swal.fire({
-      title: "Are you sure?",
-      text: "This tutorial will be deleted!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#35a542",
-      cancelButtonColor: "#ff7a00",
+  const confirm = await Swal.fire({
+    title: "Are you sure?",
+    text: "This tutorial will be deleted!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#35a542",
+    cancelButtonColor: "#ff7a00",
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  try {
+    await deleteAppTutorial(appId);
+
+    setTutorialsList((prev) =>
+      prev.filter((item) => item.appId !== appId)
+    );
+
+    Swal.fire({
+      title: "Deleted!",
+      text: "Tutorial deleted successfully",
+      icon: "success",
+      position: "top-end",
+      toast: true,
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      background: "#ff7a00",
+      color: "#ffffff",
     });
+  } catch (err) {
+    console.error(err);
+    Swal.fire(
+      "Error",
+      err.response?.data?.message || "Delete failed",
+      "error"
+    );
+  }
+};
 
-    if (!confirm.isConfirmed) return;
 
-    try {
-      await deleteAppTutorial(appId);
-      Swal.fire({
-        title: "Deleted!",
-        text: "Tutorial deleted successfully",
-        icon: "success",
-        position: "top-end",
-        toast: true,
-        showConfirmButton: false,
-        timer: 6000,
-        timerProgressBar: true,
-        background: "#ff7a00",
-        color: "#ffffff",
-      });
-      fetchTutorials();
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
-    }
-  };
 
-  /* ADD / UPDATE */
   const handleSubmit = async (formData) => {
     try {
       if (selectedItem && editOpen) {
@@ -161,11 +164,14 @@ function AppTutorial() {
       setSelectedItem(null);
     } catch (err) {
       console.error(err);
-      Swal.fire("Error", err.response?.data?.message || "Operation failed", "error");
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Operation failed",
+        "error"
+      );
     }
   };
-  /* TABLE */
-  
+
   const columns = [
     { header: "User Type", accessor: "usertype" },
     { header: "Tutorial Image", accessor: "app_image" },
@@ -175,41 +181,52 @@ function AppTutorial() {
   const tableData = tutorialsList.map((item) => ({
     ...item,
     app_image: item.app_image ? (
-      <img
-        src={process.env.REACT_APP_API_BASE_URL + "/" + item.app_image}
-        alt={item.usertype}
-        width="60"
-        height="60"
-      />
+      <video
+        src={`${process.env.REACT_APP_API_BASE_URL}/${item.app_image}`}
+        width="200"
+        height="150"
+        controls
+        playsInline
+        style={{ borderRadius: "8px", marginTop: "10px" }}
+      >
+        Your browser does not support the video tag.
+      </video>
     ) : (
+      // <video
+      //   src={process.env.REACT_APP_API_BASE_URL + "/" + item.app_image}
+      //   alt={item.usertype}
+      //   width="60"
+      //   height="60"
+
+      // />
       "No Image"
     ),
     actions: (
       <div className="actions">
-          <button
-            className="icon-btn view"
-            title="View"
-            onClick={() => handleView(item)}
-          >
-            <FaEye />
-          </button>
+        <button
+          className="icon-btn view"
+          title="View"
+          onClick={() => handleView(item)}
+        >
+          <FaEye />
+        </button>
 
-          <button
-            className="icon-btn edit"
-            title="Edit"
-            onClick={() => handleEdit(item)}
-          >
-            <FaEdit />
-          </button>
+        <button
+          className="icon-btn edit"
+          title="Edit"
+          onClick={() => handleEdit(item)}
+        >
+          <FaEdit />
+        </button>
 
-          <button
-            className="icon-btn delete"
-            title="Delete"
-            onClick={() => handleDelete(item.id)}
-          >
-            <FaTrash />
-          </button>
-        </div>
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => handleDelete(item.appId)}
+        >
+          <FaTrash />
+        </button>
+      </div>
     ),
   }));
 
@@ -217,7 +234,11 @@ function AppTutorial() {
     <div>
       <div className="d-flex justify-content-between mb-3">
         <h2>APP TUTORIALS</h2>
-        <Button text="+ Add Tutorial" color="orange" onClick={() => setOpen(true)} />
+        <Button
+          text="+ Add Tutorial"
+          color="orange"
+          onClick={() => setOpen(true)}
+        />
       </div>
 
       <Table
@@ -227,14 +248,24 @@ function AppTutorial() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
-
-      {/* ADD MODAL */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Tutorial" size="lg">
-        <AppTutorialForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Add Tutorial"
+        size="lg"
+      >
+        <AppTutorialForm
+          onClose={() => setOpen(false)}
+          onSubmit={handleSubmit}
+        />
       </Modal>
 
-      {/* EDIT MODAL */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Tutorial" size="lg">
+      <Modal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit Tutorial"
+        size="lg"
+      >
         <AppTutorialForm
           onClose={() => setEditOpen(false)}
           initialData={selectedItem}
@@ -243,25 +274,58 @@ function AppTutorial() {
         />
       </Modal>
 
-      {/* VIEW MODAL */}
-        <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Tutorial" size="md">
+      <Modal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        title="View Tutorial"
+        size="lg"
+      >
         {selectedItem && (
-          <div style={{ padding: "10px" }}>
-            <p><b>User Type:</b> {selectedItem.usertype}</p>
-            <p>
-              <b>Tutorial Image:</b>{" "}
-              {selectedItem.app_image ? (
-                <img
-                  src={process.env.REACT_APP_API_BASE_URL + "/" + selectedItem.app_image}
-                  alt={selectedItem.usertype}
-                  width="200"
-                />
-              ) : (
-                "No Image"
-              )}
-            </p>
-            <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>Close</button>
-          </div>
+        <div className="container-fluid p-2">
+  <div className="row align-items-start">
+    
+    {/* LEFT SIDE – TEXT (col-md-6) */}
+    <div className="col-md-4">
+      <p>
+        <b>User Type:</b> {selectedItem.usertype}
+      </p>
+    </div>
+
+    {/* RIGHT SIDE – VIDEO (col-md-6) */}
+    <div className="col-md-8">
+      <p>
+        <b>Tutorial Image:</b>
+      </p>
+
+      {selectedItem.app_image ? (
+        <video
+          src={`${process.env.REACT_APP_API_BASE_URL}/${selectedItem.app_image}`}
+          width="100%"
+          height="300"
+          controls
+          playsInline
+          style={{ borderRadius: "8px", marginTop: "5px" }}
+        >
+          Your browser does not support the video tag.
+        </video>
+      ) : (
+        <p>No Image</p>
+      )}
+    </div>
+
+  </div>
+
+  {/* CLOSE BUTTON */}
+  <div className="text-end mt-3">
+    <button
+      className="btn btn-secondary"
+      onClick={() => setViewOpen(false)}
+    >
+      Close
+    </button>
+  </div>
+</div>
+
         )}
       </Modal>
     </div>
@@ -291,7 +355,6 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-      
       {/* ADD ONLY */}
       {!isEdit && (
         <div className="mb-3">
@@ -314,13 +377,17 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
         <input
           type="file"
           className="form-control"
-          accept="image/*"
+          accept="*"
           onChange={(e) => setImageFile(e.target.files[0])}
         />
       </div>
 
       <div className="text-end">
-        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
+        <button
+          type="button"
+          className="btn btn-secondary me-2"
+          onClick={onClose}
+        >
           Cancel
         </button>
         <button type="submit" className="btn btn-success">
