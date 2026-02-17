@@ -315,7 +315,7 @@ const Home = () => {
       {/* === FOOTER === */}
       <footer className="footer">
         <div className="container text-center reserved">
-          <p className="rights">© 2025 Yoga Bharat. All rights reserved.</p>
+          <p className="rights">© 2025 Yoga Bharat. All rights reserved.| Design & Developed by<a href="https://macsof.com/">macsof technologies.</a></p>
         </div>
       </footer>
       </div>

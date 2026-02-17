@@ -1,125 +1,144 @@
 import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
-import Button from "../components/Button";
 import Modal from "../components/Modal";
-import CallbackRequestForm from "../forms/CallbackRequestForm";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import Swal from "sweetalert2";
+import { getCallBackRequests, completeCallBackRequest } from "../services/authService";
+import "../forms/form.css";
 
 function CallbackRequest() {
-  const [open, setOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
-
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestList, setRequestList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Sample data
+  const fetchRequests = async (page = 1) => {
+    try {
+      const data = await getCallBackRequests(page, 10);
+      setRequestList(data);
+      setTotalPages(data.totalPages || 1); // in case your API includes totalPages in data
+    } catch (err) {
+      Swal.fire("Error", "Failed to fetch callback requests", "error");
+      setRequestList([]);
+      setTotalPages(1);
+    }
+  };
+
   useEffect(() => {
-    const sampleData = [
-      { id: 1, clientName: "Ramesh Kumar", mobileNumber: "9876543210", preferredTime: "10:00", yogaType: "Hatha", notes: "Beginner level" },
-      { id: 2, clientName: "Priya Sharma", mobileNumber: "9123456780", preferredTime: "15:30", yogaType: "Vinyasa", notes: "Advanced level" },
-    ];
-    setRequestList(sampleData);
-  }, []);
+    fetchRequests(currentPage);
+  }, [currentPage]);
 
-  const handleView = (item) => {
-    setSelectedRequest(item);
-    setViewOpen(true);
+  const handleOpenPending = (item) => {
+    if (item.status === "pending") {
+      setSelectedRequest(item);
+      setViewOpen(true);
+    }
   };
 
-  const handleEdit = (item) => {
-    setSelectedRequest(item);
-    setEditOpen(true);
-  };
+  const handleComplete = async (request) => {
+    try {
+      const res = await completeCallBackRequest({
+        callRequestId: request.callRequestId,
+        adminId: "a906c953-d3be-42a8-9ac0-a3f893de89a0",
+      });
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this request?")) return;
-    setRequestList(requestList.filter((r) => r.id !== id));
-  };
+      Swal.fire({
+        title: "Success",
+        text: res.message || "Request completed",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000,
+        background: "#35a542",
+        color: "#ffffff",
+      });
 
-  const handleSubmit = (data) => {
-    if (selectedRequest && editOpen) {
-      setRequestList(requestList.map((r) => (r.id === selectedRequest.id ? { ...r, ...data } : r)));
-    } else {
-      const newId = requestList.length ? requestList[requestList.length - 1].id + 1 : 1;
-      setRequestList([...requestList, { id: newId, ...data }]);
+      // update the status in the table
+      setRequestList((prev) =>
+        prev.map((item) =>
+          item.callRequestId === request.callRequestId
+            ? { ...item, status: "completed" }
+            : item
+        )
+      );
+
+      setViewOpen(false);
+    } catch (err) {
+      Swal.fire("Error", "Failed to complete request", "error");
+      console.error(err);
     }
   };
 
   const columns = [
-    { header: "Client Name", accessor: "clientName" },
+    { header: "S.No", accessor: "srNo" },
+    { header: "Name", accessor: "name" },
+    { header: "Role", accessor: "role" },
     { header: "Mobile Number", accessor: "mobileNumber" },
-    { header: "Preferred Time", accessor: "preferredTime" },
-    { header: "Yoga Type", accessor: "yogaType" },
-    { header: "Actions", accessor: "actions" },
+    { header: "Date", accessor: "date" },
+    { header: "Status", accessor: "status" },
   ];
 
-  const tableData = requestList.map((item) => ({
-    ...item,
-    actions: (
-      <div className="actions">
-        <button
-          className="icon-btn view"
-          title="View"
-          onClick={() => handleView(item)}
-        >
-          <FaEye />
-        </button>
-
-        <button
-          className="icon-btn edit"
-          title="Edit"
-          onClick={() => handleEdit(item)}
-        >
-          <FaEdit />
-        </button>
-
-        <button
-          className="icon-btn delete"
-          title="Delete"
-          onClick={() => handleDelete(item.id)}
-        >
-          <FaTrash />
-        </button>
-      </div>
+  const tableData = requestList.map((item, index) => ({
+    srNo: (currentPage - 1) * 10 + index + 1,
+    name: item.userId?.name || "",
+    role: item.userId?.role || "",
+    mobileNumber: item.mobileNumber,
+    status: (
+ <span
+  style={{
+    color: item.status === "pending" ? "red" : "green",
+    backgroundColor: item.status === "pending" ? "#ffe5e5" : "#e5ffe5",
+    fontWeight: 600,
+    cursor: item.status === "pending" ? "pointer" : "default",
+    padding: "4px 8px",
+    borderRadius: "4px",
+  }}
+  onClick={() => handleOpenPending(item)}
+>
+  {item.status}
+</span>
 
     ),
+    date: item.date,
   }));
 
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>CALLBACK REQUESTS</h2>
-        <Button text="+ Add Request" color="orange" onClick={() => setOpen(true)} />
+        <h2>Callback Requests</h2>
       </div>
 
-      <Table columns={columns} data={tableData} rowsPerPage={10} />
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        rowsPerPage={10}
+      />
 
-      {/* ADD */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Callback Request" size="lg">
-        <CallbackRequestForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
-      </Modal>
-
-      {/* EDIT */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Callback Request" size="lg">
-        <CallbackRequestForm
-          onClose={() => setEditOpen(false)}
-          initialData={selectedRequest}
-          isEdit
-          onSubmit={handleSubmit}
-        />
-      </Modal>
-
-      {/* VIEW */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Request Details" size="md">
         {selectedRequest && (
-          <div style={{ padding: "10px" }}>
-            <p><b>Client Name:</b> {selectedRequest.clientName}</p>
+          <div style={{ padding: 10 }}>
             <p><b>Mobile Number:</b> {selectedRequest.mobileNumber}</p>
-            <p><b>Preferred Time:</b> {selectedRequest.preferredTime}</p>
-            <p><b>Yoga Type:</b> {selectedRequest.yogaType}</p>
-            <p><b>Notes:</b> {selectedRequest.notes}</p>
-            <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>Close</button>
+            <p><b>Name:</b> {selectedRequest.userId?.name}</p>
+            <p><b>Role:</b> {selectedRequest.userId?.role}</p>
+            <p>
+              <b>Status:</b>{" "}
+              <span style={{ color: selectedRequest.status === "pending" ? "red" : "green", fontWeight: 600 }}>
+                {selectedRequest.status}
+              </span>
+            </p>
+            <p><b>Date:</b> {selectedRequest.date}</p>
+            {selectedRequest.status === "pending" && (
+              <button className="btn btn-success mt-2" onClick={() => handleComplete(selectedRequest)}>
+                Mark as Complete
+              </button>
+            )}
+            <button className="btn btn-secondary mt-2 ms-2" onClick={() => setViewOpen(false)}>
+              Close
+            </button>
           </div>
         )}
       </Modal>

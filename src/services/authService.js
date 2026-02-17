@@ -418,13 +418,14 @@ export const getCertificatesByUser = async (userId) => {
 
 // ---------------- Users APIs Booking----------------
 
-export const getBookings = async (page = 1, limit = 10) => {
+export const getBookings = async (page = 1, limit = 10, filters = {}) => {
   try {
     const res = await api.post(
       `/booking/filterlist?page=${page}&limit=${limit}`,
-      {},
+      filters,
       { headers: { "Content-Type": "application/json" } }
     );
+
     return res.data;
   } catch (err) {
     console.error("Get Bookings API Error:", err);
@@ -432,3 +433,69 @@ export const getBookings = async (page = 1, limit = 10) => {
   }
 };
 
+// ---------------- Users APIs Call Requests----------------
+export const getCallBackRequests = async (page = 1, limit = 10) => {
+  try {
+    const res = await api.get(`/callback?page=${page}&limit=${limit}`, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data.data || [];
+  } catch (err) {
+    console.error("Get Trainers API Error:", err);
+    return [];
+  }
+};
+
+export const completeCallBackRequest = async (payload) => {
+  try {
+    const res = await api.post("/callback/completeRequest", payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Complete Callback Request API Error:", err);
+    throw err;
+  }
+};
+
+export const getTrainerEarning = async (trainerId) => {
+  const res = await api.post(
+    "/booking/gettrainerearning",
+    { trainerId },
+    {
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+  return res.data;
+};
+
+export const getDashboardStats = async (fromDate, toDate) => {
+  const res = await api.get("/booking/dashboard-stats", {
+    params: { fromDate, toDate },
+  });
+
+  return res.data;
+};
+
+export const dashboardMonthlyEarnings = async (year) => {
+  const res = await api.get("/booking/monthly-myearning-stats", {
+    params: { year },
+  });
+
+  return res.data;
+};
+
+export const dashboardBookingStats = async (year) => {
+  const res = await api.get("/booking/monthly-stats", {
+    params: { year },
+  });
+
+  return res.data;
+};
+
+export const dashboardTypeDistribution = async () => {
+  const res = await api.get("/booking/yoga-distribution", {
+  });
+
+  return res.data;
+};

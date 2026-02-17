@@ -135,12 +135,14 @@ function HealthPreference() {
   };
 
   const columns = [
+    { header: "S.No", accessor: "srNo" },
     { header: "Name", accessor: "name" },
     { header: "Icon", accessor: "icon" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = list.map((item) => ({
+  const tableData = list.map((item, index) => ({
+    srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
     icon: item.icon ? (
       <img
@@ -194,11 +196,11 @@ function HealthPreference() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Health Preference" size="lg">
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Health Preference" size="md">
         <HealthPreferenceForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Health Preference" size="lg">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Health Preference" size="md">
         <HealthPreferenceForm
           onClose={() => setEditOpen(false)}
           initialData={selectedItem}

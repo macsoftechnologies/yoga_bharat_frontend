@@ -22,33 +22,28 @@ function FeatureBanners() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-    useEffect(() => {
+  useEffect(() => {
     fetchFeatures(currentPage);
   }, [currentPage]);
 
   const fetchFeatures = async (page) => {
-  try {
-    const res = await getFeatures(page, 10);
-    console.log("Features response:", res);
-
-    let data = [];
-    let pages = 1;
-    if (res && Array.isArray(res.data)) {
-      data = res.data;
-      pages = res.totalPages || 1;
+    try {
+      const res = await getFeatures(page, 10);
+      let data = [];
+      let pages = 1;
+      if (res && Array.isArray(res.data)) {
+        data = res.data;
+        pages = res.totalPages || 1;
+      } else if (Array.isArray(res)) {
+        data = res;
+      }
+      setFeaturesList(data);
+      setTotalPages(pages);
+    } catch (err) {
+      setFeaturesList([]);
+      setTotalPages(1);
+      Swal.fire("Error", "Failed to fetch features", "error");
     }
-    else if (Array.isArray(res)) {
-      data = res;
-    }
-
-    setFeaturesList(data);
-    setTotalPages(pages);
-  } catch (err) {
-    console.error(err);
-    setFeaturesList([]);
-    setTotalPages(1);
-    Swal.fire("Error", "Failed to fetch features", "error");
-  }
   };
 
   const handleView = async (featureId) => {
@@ -57,7 +52,6 @@ function FeatureBanners() {
       setSelectedItem(res.data);
       setViewOpen(true);
     } catch (err) {
-      console.error(err);
       Swal.fire("Error", "Failed to fetch feature details", "error");
     }
   };
@@ -78,9 +72,7 @@ function FeatureBanners() {
       confirmButtonColor: "#35a542",
       cancelButtonColor: "#ff7a00",
     });
-
     if (!confirm.isConfirmed) return;
-
     try {
       await deleteFeature(featureId);
       Swal.fire({
@@ -97,7 +89,6 @@ function FeatureBanners() {
       });
       fetchFeatures();
     } catch (err) {
-      console.error(err);
       Swal.fire("Error", "Delete failed", "error");
     }
   };
@@ -139,18 +130,21 @@ function FeatureBanners() {
       setEditOpen(false);
       setSelectedItem(null);
     } catch (err) {
-      console.error(err);
       Swal.fire("Error", "Operation failed", "error");
     }
   };
+
   const columns = [
+    { header: "S.No", accessor: "srNo" },
     { header: "User Type", accessor: "usertype" },
     { header: "Feature Image", accessor: "feature_image" },
+    { header: "Link", accessor: "link" },
     { header: "Actions", accessor: "actions" },
   ];
 
   const tableData = Array.isArray(featuresList)
-    ? featuresList.map((item) => ({
+    ? featuresList.map((item, index) => ({
+        srNo: (currentPage - 1) * 10 + index + 1,
         ...item,
         feature_image: item.feature_image ? (
           <img
@@ -162,33 +156,25 @@ function FeatureBanners() {
         ) : (
           "No Image"
         ),
+        link: item.link ? (
+          <a href={item.link} target="_blank" rel="noopener noreferrer">
+            View More
+          </a>
+        ) : (
+          "No Link"
+        ),
         actions: (
           <div className="actions">
-            <button
-              className="icon-btn view"
-              title="View"
-              onClick={() => handleView(item.featureId)}
-            >
+            <button className="icon-btn view" title="View" onClick={() => handleView(item.featureId)}>
               <FaEye />
             </button>
-
-            <button
-              className="icon-btn edit"
-              title="Edit"
-              onClick={() => handleEdit(item)}
-            >
+            <button className="icon-btn edit" title="Edit" onClick={() => handleEdit(item)}>
               <FaEdit />
             </button>
-
-            <button
-              className="icon-btn delete"
-              title="Delete"
-              onClick={() => handleDelete(item.featureId)}
-            >
+            <button className="icon-btn delete" title="Delete" onClick={() => handleDelete(item.featureId)}>
               <FaTrash />
             </button>
           </div>
-
         ),
       }))
     : [];
@@ -196,7 +182,7 @@ function FeatureBanners() {
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>Feature Banners</h2>
+        <h2>Banners</h2>
         <Button text="+ Add Feature" color="orange" onClick={() => setOpen(true)} />
       </div>
 
@@ -208,11 +194,11 @@ function FeatureBanners() {
         onPageChange={setCurrentPage}
       />
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Feature" size="lg">
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Feature" size="md">
         <FeatureForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Feature" size="lg">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Feature" size="md">
         <FeatureForm
           onClose={() => setEditOpen(false)}
           initialData={selectedItem}
@@ -237,6 +223,16 @@ function FeatureBanners() {
                 "No Image"
               )}
             </p>
+            <p>
+              <b>Link:</b>{" "}
+              {selectedItem.link ? (
+                <a href={selectedItem.link} target="_blank" rel="noopener noreferrer">
+                  Open Link
+                </a>
+              ) : (
+                "No Link"
+              )}
+            </p>
             <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>
               Close
             </button>
@@ -247,37 +243,34 @@ function FeatureBanners() {
   );
 }
 
-/* FORM */
-
 function FeatureForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [usertype, setUsertype] = useState("");
+  const [usertype, setUsertype] = useState(initialData?.usertype || "");
   const [imageFile, setImageFile] = useState(null);
+  const [link, setLink] = useState(initialData?.link || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData();
-
-    // ✅ usertype ONLY for ADD
     if (!isEdit) {
       formData.append("usertype", usertype);
     }
-
     if (imageFile) {
       formData.append("feature_image", imageFile);
     }
-
+    if (link) {
+      formData.append("link", link);
+    }
     if (onSubmit) onSubmit(formData);
     onClose();
   };
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-      {/* SHOW ONLY FOR ADD */}
       {!isEdit && (
         <div className="mb-3">
           <label className="form-label">User Type</label>
           <select
-            className="form-control"
+            className="form-select"
             value={usertype}
             onChange={(e) => setUsertype(e.target.value)}
             required
@@ -296,6 +289,17 @@ function FeatureForm({ onClose, initialData, isEdit, onSubmit }) {
           className="form-control"
           accept="image/*"
           onChange={(e) => setImageFile(e.target.files[0])}
+        />
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label">Link</label>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Enter URL or video link"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
         />
       </div>
 

@@ -11,3 +11,6 @@
 .modal {
   z-index: 1060;
 }
+.modal-custom-md {
+  max-width: 600px;
+}

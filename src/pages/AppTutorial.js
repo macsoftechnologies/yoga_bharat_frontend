@@ -34,17 +34,13 @@ function AppTutorial() {
       let data = [];
       let pages = 1;
 
-      // Case 1: paginated response
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
-      }
-      // Case 2: array response
-      else if (Array.isArray(res)) {
+      } else if (Array.isArray(res)) {
         data = res;
       }
 
-      // 🔑 map backend user_type → frontend usertype
       const mappedData = data.map((item) => ({
         ...item,
         usertype: item.usertype || item.user_type || "",
@@ -81,49 +77,45 @@ function AppTutorial() {
   };
 
   const handleDelete = async (appId) => {
-  const confirm = await Swal.fire({
-    title: "Are you sure?",
-    text: "This tutorial will be deleted!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, delete",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#35a542",
-    cancelButtonColor: "#ff7a00",
-  });
-
-  if (!confirm.isConfirmed) return;
-
-  try {
-    await deleteAppTutorial(appId);
-
-    setTutorialsList((prev) =>
-      prev.filter((item) => item.appId !== appId)
-    );
-
-    Swal.fire({
-      title: "Deleted!",
-      text: "Tutorial deleted successfully",
-      icon: "success",
-      position: "top-end",
-      toast: true,
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-      background: "#ff7a00",
-      color: "#ffffff",
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This tutorial will be deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#35a542",
+      cancelButtonColor: "#ff7a00",
     });
-  } catch (err) {
-    console.error(err);
-    Swal.fire(
-      "Error",
-      err.response?.data?.message || "Delete failed",
-      "error"
-    );
-  }
-};
 
+    if (!confirm.isConfirmed) return;
 
+    try {
+      await deleteAppTutorial(appId);
+
+      setTutorialsList((prev) => prev.filter((item) => item.appId !== appId));
+
+      Swal.fire({
+        title: "Deleted!",
+        text: "Tutorial deleted successfully",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: "#ff7a00",
+        color: "#ffffff",
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Delete failed",
+        "error"
+      );
+    }
+  };
 
   const handleSubmit = async (formData) => {
     try {
@@ -172,14 +164,20 @@ function AppTutorial() {
     }
   };
 
+  // 🔹 UPDATED COLUMNS with Description
   const columns = [
+    { header: "S.No", accessor: "srNo" },
     { header: "User Type", accessor: "usertype" },
+    { header: "Description", accessor: "description" }, // 🔹 new
     { header: "Tutorial Image", accessor: "app_image" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = tutorialsList.map((item) => ({
+  // 🔹 UPDATED tableData with description
+  const tableData = tutorialsList.map((item, index) => ({
+    srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
+    description: item.description || "-", // 🔹 show description
     app_image: item.app_image ? (
       <video
         src={`${process.env.REACT_APP_API_BASE_URL}/${item.app_image}`}
@@ -192,38 +190,17 @@ function AppTutorial() {
         Your browser does not support the video tag.
       </video>
     ) : (
-      // <video
-      //   src={process.env.REACT_APP_API_BASE_URL + "/" + item.app_image}
-      //   alt={item.usertype}
-      //   width="60"
-      //   height="60"
-
-      // />
       "No Image"
     ),
     actions: (
       <div className="actions">
-        <button
-          className="icon-btn view"
-          title="View"
-          onClick={() => handleView(item)}
-        >
+        <button className="icon-btn view" title="View" onClick={() => handleView(item)}>
           <FaEye />
         </button>
-
-        <button
-          className="icon-btn edit"
-          title="Edit"
-          onClick={() => handleEdit(item)}
-        >
+        <button className="icon-btn edit" title="Edit" onClick={() => handleEdit(item)}>
           <FaEdit />
         </button>
-
-        <button
-          className="icon-btn delete"
-          title="Delete"
-          onClick={() => handleDelete(item.appId)}
-        >
+        <button className="icon-btn delete" title="Delete" onClick={() => handleDelete(item.appId)}>
           <FaTrash />
         </button>
       </div>
@@ -234,11 +211,7 @@ function AppTutorial() {
     <div>
       <div className="d-flex justify-content-between mb-3">
         <h2>APP TUTORIALS</h2>
-        <Button
-          text="+ Add Tutorial"
-          color="orange"
-          onClick={() => setOpen(true)}
-        />
+        <Button text="+ Add Tutorial" color="orange" onClick={() => setOpen(true)} />
       </div>
 
       <Table
@@ -248,24 +221,12 @@ function AppTutorial() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title="Add Tutorial"
-        size="lg"
-      >
-        <AppTutorialForm
-          onClose={() => setOpen(false)}
-          onSubmit={handleSubmit}
-        />
+
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Tutorial" size="md">
+        <AppTutorialForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      <Modal
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        title="Edit Tutorial"
-        size="lg"
-      >
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Tutorial" size="md">
         <AppTutorialForm
           onClose={() => setEditOpen(false)}
           initialData={selectedItem}
@@ -274,69 +235,51 @@ function AppTutorial() {
         />
       </Modal>
 
-      <Modal
-        open={viewOpen}
-        onClose={() => setViewOpen(false)}
-        title="View Tutorial"
-        size="lg"
-      >
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Tutorial" size="lg">
         {selectedItem && (
-        <div className="container-fluid p-2">
-  <div className="row align-items-start">
-    
-    {/* LEFT SIDE – TEXT (col-md-6) */}
-    <div className="col-md-4">
-      <p>
-        <b>User Type:</b> {selectedItem.usertype}
-      </p>
-    </div>
+          <div className="container-fluid p-2">
+            <div className="row align-items-start">
+              <div className="col-md-4">
+                <p><b>User Type:</b> {selectedItem.usertype}</p>
+                <p><b>Description:</b> {selectedItem.description || "No Description"}</p>
+              </div>
 
-    {/* RIGHT SIDE – VIDEO (col-md-6) */}
-    <div className="col-md-8">
-      <p>
-        <b>Tutorial Image:</b>
-      </p>
+              <div className="col-md-8">
+                <p><b>Tutorial Image:</b></p>
+                {selectedItem.app_image ? (
+                  <video
+                    src={`${process.env.REACT_APP_API_BASE_URL}/${selectedItem.app_image}`}
+                    width="100%"
+                    height="300"
+                    controls
+                    playsInline
+                    style={{ borderRadius: "8px", marginTop: "5px" }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <p>No Image</p>
+                )}
+              </div>
+            </div>
 
-      {selectedItem.app_image ? (
-        <video
-          src={`${process.env.REACT_APP_API_BASE_URL}/${selectedItem.app_image}`}
-          width="100%"
-          height="300"
-          controls
-          playsInline
-          style={{ borderRadius: "8px", marginTop: "5px" }}
-        >
-          Your browser does not support the video tag.
-        </video>
-      ) : (
-        <p>No Image</p>
-      )}
-    </div>
-
-  </div>
-
-  {/* CLOSE BUTTON */}
-  <div className="text-end mt-3">
-    <button
-      className="btn btn-secondary"
-      onClick={() => setViewOpen(false)}
-    >
-      Close
-    </button>
-  </div>
-</div>
-
+            <div className="text-end mt-3">
+              <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
+                Close
+              </button>
+            </div>
+          </div>
         )}
       </Modal>
     </div>
   );
 }
 
-/* FORM */
-
+/* FORM COMPONENT */
 function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [usertype, setUsertype] = useState("");
+  const [usertype, setUsertype] = useState(initialData?.usertype || "");
   const [imageFile, setImageFile] = useState(null);
+  const [description, setDescription] = useState(initialData?.description || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -344,6 +287,8 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
     if (!isEdit) {
       formData.append("usertype", usertype);
     }
+    formData.append("description", description); // 🔹 added
+
     if (imageFile) {
       formData.append("app_image", imageFile);
     } else if (initialData?.app_image && isEdit) {
@@ -355,15 +300,15 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-      {/* ADD ONLY */}
       {!isEdit && (
         <div className="mb-3">
           <label className="form-label">User Type</label>
           <select
-            className="form-control"
+            className="form-select"
             value={usertype}
             onChange={(e) => setUsertype(e.target.value)}
             required
+            disabled={isEdit} // 🔹 disable in edit mode
           >
             <option value="">Select User Type</option>
             <option value="client">Client</option>
@@ -371,6 +316,18 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
           </select>
         </div>
       )}
+
+      <div className="mb-3">
+        <label className="form-label">Description</label>
+        <textarea
+          className="form-control"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          placeholder="Enter tutorial description"
+          required
+        />
+      </div>
 
       <div className="mb-3">
         <label className="form-label">Tutorial Image</label>
@@ -383,11 +340,7 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="text-end">
-        <button
-          type="button"
-          className="btn btn-secondary me-2"
-          onClick={onClose}
-        >
+        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
           Cancel
         </button>
         <button type="submit" className="btn btn-success">

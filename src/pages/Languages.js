@@ -155,12 +155,14 @@ function Languages() {
   // TABLE
   
   const columns = [
+    { header: "S.No", accessor: "srNo" },
     { header: "Language Name", accessor: "language_name" },
     { header: "Special Character", accessor: "special_character" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = Array.isArray(languagesList) ? languagesList.map((item) => ({
+  const tableData = Array.isArray(languagesList) ? languagesList.map((item, index) => ({
+    srNo: (currentPage - 1) * 10 + index + 1,
   ...item,
   actions: (
     <div className="actions">
@@ -207,7 +209,7 @@ function Languages() {
         onPageChange={setCurrentPage}
       />
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Language" size="lg">
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Language" size="md">
         <LanguageForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 

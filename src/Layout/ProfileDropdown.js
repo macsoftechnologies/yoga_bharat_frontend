@@ -29,7 +29,7 @@ const ProfileDropdown = () => {
   return (
     <div className="profile-dropdown">
       <img
-        src="/yoga-02.jpg"
+        src="/Yoga-icon-01.png"
         alt="Profile"
         className="profile-thumb"
         data-bs-toggle="dropdown"
@@ -38,15 +38,15 @@ const ProfileDropdown = () => {
       <ul className="dropdown-menu dropdown-menu-end">
         <li className="profile-header text-center">
           <img
-            src="/yoga-02.jpg"
+            src="/Yoga-icon-01.png"
             className="profile-img"
             alt="Profile"
           />
           <h6 className="profile-name">Jane</h6>
-          <p className="profile-email">jane@jane.com</p>
+          {/* <p className="profile-email">jane@jane.com</p>
           <small className="profile-updated">
             Last updated 3 mins ago
-          </small>
+          </small> */}
         </li>
 
         {/* <li><a className="dropdown-item" href="#">Profile</a></li> */}

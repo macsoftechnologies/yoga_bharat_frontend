@@ -24,6 +24,7 @@ import AdminForgotPassword from "./pages/AdminForgotPassword";
 import Home from "./pages/Home";
 import AdminOtp from "./pages/AdminOtp";
 import TrainerProfile from "./pages/TrainerProfile";
+import ClientProfile from "./pages/ClientProfile";
 
 function App() {
   return (
@@ -55,7 +56,8 @@ function App() {
           <Route path="/feature-banners" element={<FeatureBanners />} />
           <Route path="/languages" element={<Languages />} />
           <Route path="/transactions" element={<Transactions />} />
-          <Route path="/trainer/:id" element={<TrainerProfile />} />
+          <Route path="/trainer/:userId" element={<TrainerProfile />} />
+          <Route path="/client/:userId" element={<ClientProfile />} />
         </Route>
       </Routes>
     </BrowserRouter>

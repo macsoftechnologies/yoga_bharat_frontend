@@ -11,7 +11,7 @@ const Navbar = ({ toggleSidebar }) => {
     </button>
 
 
-      <input type="text" placeholder="Search..." className="form-control w-50" />
+      {/* <input type="text" placeholder="Search..." className="form-control w-50" /> */}
 
       <div className="ms-auto">
         <ProfileDropdown />

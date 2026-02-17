@@ -13,7 +13,6 @@ import {
 } from "../services/authService";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
-/* MAIN PAGE */
 function SplashScreenPage() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -23,23 +22,21 @@ function SplashScreenPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  /* FETCH LIST */
   const fetchSplashScreens = async (page) => {
-  try {
-    const res = await getSplashScreens(page, 10);
-
-    if (res && Array.isArray(res.data)) {
-      setSplashList(res.data);
-      setTotalPages(res.totalPages);
-    } else {
+    try {
+      const res = await getSplashScreens(page, 10);
+      if (res && Array.isArray(res.data)) {
+        setSplashList(res.data);
+        setTotalPages(res.totalPages);
+      } else {
+        setSplashList([]);
+        setTotalPages(1);
+      }
+    } catch (err) {
+      Swal.fire("Error", "Failed to fetch splash screens", "error");
       setSplashList([]);
       setTotalPages(1);
     }
-  } catch (err) {
-    Swal.fire("Error", "Failed to fetch splash screens", "error");
-    setSplashList([]);
-    setTotalPages(1);
-  }
   };
 
   useEffect(() => {
@@ -56,14 +53,11 @@ function SplashScreenPage() {
     }
   };
 
-
-  /* EDIT  */
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditOpen(true);
   };
 
-  /* DELETE  */
   const handleDelete = async (splashscreenId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -75,7 +69,6 @@ function SplashScreenPage() {
       confirmButtonColor: "#ff7a00",
       cancelButtonColor: "#28a745",
     });
-
     if (!confirm.isConfirmed) return;
 
     try {
@@ -98,12 +91,14 @@ function SplashScreenPage() {
     }
   };
 
-  /* ADD / UPDATE */
   const handleSubmit = async (data) => {
     try {
       let res;
       if (selectedItem && editOpen) {
-        res = await updateSplashScreen({ splashscreenId: selectedItem.splashscreenId, ...data });
+        res = await updateSplashScreen({
+          splashscreenId: selectedItem.splashscreenId,
+          ...data,
+        });
         Swal.fire({
           title: "Updated!",
           text: res.message || "Splash screen updated successfully",
@@ -141,41 +136,41 @@ function SplashScreenPage() {
     }
   };
 
-  /* TABLE COLUMNS */
   const columns = [
-    { header: "Text", accessor: "text" },
+    { header: "S.No", accessor: "srNo" },
     { header: "Screen Type", accessor: "screen_type" },
+    { header: "Text", accessor: "text" },
+    { header: "Screen No", accessor: "screen_no" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = splashList.map((item) => ({
+  const tableData = splashList.map((item, index) => ({
+    srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
     actions: (
       <div className="actions">
-          <button
-            className="icon-btn view"
-            title="View"
-            onClick={() => handleView(item.splashscreenId)}
-          >
-            <FaEye />
-          </button>
-
-          <button
-            className="icon-btn edit"
-            title="Edit"
-            onClick={() => handleEdit(item)}
-          >
-            <FaEdit />
-          </button>
-
-          <button
-            className="icon-btn delete"
-            title="Delete"
-            onClick={() => handleDelete(item.splashscreenId)}
-          >
-            <FaTrash />
-          </button>
-        </div>
+        <button
+          className="icon-btn view"
+          title="View"
+          onClick={() => handleView(item.splashscreenId)}
+        >
+          <FaEye />
+        </button>
+        <button
+          className="icon-btn edit"
+          title="Edit"
+          onClick={() => handleEdit(item)}
+        >
+          <FaEdit />
+        </button>
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => handleDelete(item.splashscreenId)}
+        >
+          <FaTrash />
+        </button>
+      </div>
     ),
   }));
 
@@ -194,12 +189,17 @@ function SplashScreenPage() {
         onPageChange={setCurrentPage}
       />
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Splash Screen" size="lg">
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Splash Screen" size="md">
         <SplashScreenForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Splash Screen" size="lg">
-        <SplashScreenForm onClose={() => setEditOpen(false)} initialData={selectedItem} isEdit onSubmit={handleSubmit} />
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Splash Screen" size="md">
+        <SplashScreenForm
+          onClose={() => setEditOpen(false)}
+          initialData={selectedItem}
+          isEdit
+          onSubmit={handleSubmit}
+        />
       </Modal>
 
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Splash Screen" size="md">
@@ -207,31 +207,31 @@ function SplashScreenPage() {
           <div style={{ padding: 10 }}>
             <p><b>Text:</b> {selectedItem.text}</p>
             <p><b>Screen Type:</b> {selectedItem.screen_type}</p>
+            <p><b>Screen No:</b> {selectedItem.screen_no}</p>
             <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>Close</button>
           </div>
         )}
       </Modal>
-
-      
     </div>
   );
 }
 
-/* FORM  */
 function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
   const [text, setText] = useState(initialData?.text || "");
   const [screenType, setScreenType] = useState(initialData?.screen_type || "");
+  const [screenNo, setScreenNo] = useState(initialData?.screen_no || "");
 
   useEffect(() => {
     if (isEdit && initialData) {
       setText(initialData.text || "");
       setScreenType(initialData.screen_type || "");
+      setScreenNo(initialData.screen_no || "");
     }
   }, [initialData, isEdit]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ text, screen_type: screenType });
+    onSubmit({ text, screen_type: screenType, screen_no: screenNo });
     onClose();
   };
 
@@ -239,27 +239,43 @@ function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
     <form className="custom-form" onSubmit={handleSubmit}>
       <div className="mb-3">
         <label className="form-label">Text</label>
-        <input
-          type="text"
+        <textarea
           className="form-control"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Enter text"
           required
+          rows={4}
         />
       </div>
-
       <div className="mb-3">
         <label className="form-label">Screen Type</label>
         <select
-          className="form-control"
+          className="form-select"
           value={screenType}
           onChange={(e) => setScreenType(e.target.value)}
+          disabled={isEdit}
           required
         >
           <option value="">Select Screen Type</option>
           <option value="client">Client</option>
           <option value="trainer">Trainer</option>
+        </select>
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label">Screen No</label>
+        <select
+          className="form-select"
+          value={screenNo}
+          onChange={(e) => setScreenNo(e.target.value)}
+          disabled={isEdit}
+          required
+        >
+          <option value="">Select Screen No</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
         </select>
       </div>
 

@@ -24,6 +24,7 @@ function Modal({
 
   let sizeClass = "";
   if (size === "sm") sizeClass = "modal-sm";
+  if (size === "mc") sizeClass = "modal-custom-md";
   if (size === "lg") sizeClass = "modal-lg";
   if (size === "xl") sizeClass = "modal-xl";
 

@@ -157,6 +157,7 @@ function Yoga() {
 
   // Table columns
   const columns = [
+    { header: "S.No", accessor: "srNo" },
     { header: "Yoga Name", accessor: "yoga_name" },
     { header: "Client Price", accessor: "client_price" },
     { header: "Trainer Price", accessor: "trainer_price" },
@@ -168,7 +169,8 @@ function Yoga() {
   ];
 
   // Table data
-  const tableData = yogaList.map((item) => ({
+  const tableData = yogaList.map((item, index) => ({
+    srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
     yoga_image: item.yoga_image ? (
       <img

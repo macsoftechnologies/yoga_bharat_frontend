@@ -10,7 +10,7 @@ import {
   FaUser,
   FaFileAlt,
   FaHeartbeat,
-  FaBell,
+  // FaBell,
   FaBookOpen,
   FaPhone,
   FaFileContract,
@@ -30,8 +30,7 @@ const Sidebar = ({ sidebarOpen }) => {
 
   const [openDropdown, setOpenDropdown] = useState(false);
 
-  // Auto-open Users dropdown when inside client/trainer
-  useEffect(() => {
+    useEffect(() => {
     if (currentPath === "/client" || currentPath === "/trainer") {
       setOpenDropdown(true);
     }
@@ -65,7 +64,7 @@ const Sidebar = ({ sidebarOpen }) => {
         <li className="menu-item">
           <NavLink to="/yoga" className={({ isActive }) => isActive ? "active" : ""}>
             <MdCategory className="menu-icon" />
-            Yogas
+            Yoga Types
           </NavLink>
         </li>
 
@@ -133,26 +132,18 @@ const Sidebar = ({ sidebarOpen }) => {
         </li> */}
 
         {/* Notifications */}
-        <li className="menu-item">
+        {/* <li className="menu-item">
           <NavLink to="/notifications" className={({ isActive }) => isActive ? "active" : ""}>
             <FaBell className="menu-icon" />
             Notifications
           </NavLink>
-        </li>
+        </li> */}
 
         {/* App Tutorial */}
         <li className="menu-item">
           <NavLink to="/app-tutorial" className={({ isActive }) => isActive ? "active" : ""}>
             <FaBookOpen className="menu-icon" />
             App Tutorial
-          </NavLink>
-        </li>
-
-        {/* Callback Request */}
-        <li className="menu-item">
-          <NavLink to="/callback-request" className={({ isActive }) => isActive ? "active" : ""}>
-            <FaPhone className="menu-icon" />
-            Callback Request
           </NavLink>
         </li>
 
@@ -185,6 +176,13 @@ const Sidebar = ({ sidebarOpen }) => {
           <NavLink to="/languages" className={({ isActive }) => isActive ? "active" : ""}>
             <FaLanguage className="menu-icon" />
             Languages
+          </NavLink>
+        </li>
+        {/* Callback Request */}
+        <li className="menu-item">
+          <NavLink to="/callback-request" className={({ isActive }) => isActive ? "active" : ""}>
+            <FaPhone className="menu-icon" />
+            Callback Request
           </NavLink>
         </li>
 

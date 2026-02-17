@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
-import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Swal from "sweetalert2";
 import {
@@ -8,10 +7,10 @@ import {
   getTerms,
   getTermsById,
   updateTerms,
-  deleteTerms,
+  // deleteTerms,
 } from "../services/authService";
 import "../forms/form.css";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaEdit } from "react-icons/fa";
 
 function TermsConditions() {
   const [open, setOpen] = useState(false);
@@ -22,22 +21,21 @@ function TermsConditions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-    useEffect(() => {
+  useEffect(() => {
     fetchTerms(currentPage);
   }, [currentPage]);
 
   const fetchTerms = async (page) => {
     try {
       const res = await getTerms(page, 10);
-      console.log("Terms response:", res);
 
       let data = [];
       let pages = 1;
+
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
-      }
-      else if (Array.isArray(res)) {
+      } else if (Array.isArray(res)) {
         data = res;
       }
 
@@ -66,38 +64,6 @@ function TermsConditions() {
     setEditOpen(true);
   };
 
-  const handleDelete = async (termsId) => {
-    const confirm = await Swal.fire({
-      title: "Are you sure?",
-      text: "This Terms & Conditions will be deleted!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#ff7a00",
-      cancelButtonColor: "#28a745",
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    const res = await deleteTerms(termsId);
-
-    Swal.fire({
-      title: "Deleted!",
-      text: res.message || "Terms deleted successfully",
-      icon: "success",
-      position: "top-end",
-      toast: true,
-      showConfirmButton: false,
-      timer: 6000,
-      timerProgressBar: true,
-      background: "#ff7a00",
-      color: "#ffffff",
-    });
-
-    fetchTerms();
-  };
-
   const handleSubmit = async (data) => {
     let res;
 
@@ -111,13 +77,12 @@ function TermsConditions() {
         title: "Updated!",
         text: res.message || "Terms updated successfully",
         icon: "success",
-        iconColor: "#22c8d8",
         position: "top-end",
         toast: true,
         showConfirmButton: false,
         timer: 6000,
-        timerProgressBar: true,
-        background: "#35a542",
+        timerProgressBar: true, 
+        background: "#35a542", 
         color: "#ffffff",
       });
     } else {
@@ -127,13 +92,12 @@ function TermsConditions() {
         title: "Added!",
         text: res.message || "Terms added successfully",
         icon: "success",
-        iconColor: "#22c8d8",
         position: "top-end",
         toast: true,
         showConfirmButton: false,
         timer: 6000,
-        timerProgressBar: true,
-        background: "#35a542",
+        timerProgressBar: true, 
+        background: "#35a542", 
         color: "#ffffff",
       });
     }
@@ -141,16 +105,18 @@ function TermsConditions() {
     setOpen(false);
     setEditOpen(false);
     setSelectedItem(null);
-    fetchTerms();
+    fetchTerms(currentPage);
   };
 
   const columns = [
+    { header: "S.No", accessor: "srNo" },
     { header: "User Type", accessor: "usertype" },
     { header: "Text", accessor: "text" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = termsList.map((item) => ({
+  const tableData = termsList.map((item, index) => ({
+    srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
     actions: (
       <div className="actions">
@@ -169,14 +135,6 @@ function TermsConditions() {
         >
           <FaEdit />
         </button>
-
-        <button
-          className="icon-btn delete"
-          title="Delete"
-          onClick={() => handleDelete(item.termsId)}
-        >
-          <FaTrash />
-        </button>
       </div>
     ),
   }));
@@ -185,7 +143,6 @@ function TermsConditions() {
     <div>
       <div className="d-flex justify-content-between mb-3">
         <h2>Terms & Conditions</h2>
-        <Button text="+ Add Terms" color="orange" onClick={() => setOpen(true)} />
       </div>
 
       <Table
@@ -196,20 +153,20 @@ function TermsConditions() {
         onPageChange={setCurrentPage}
       />
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Terms" size="lg">
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Terms" size="md">
         <TermsForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Terms" size="lg">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Terms" size="md">
         <TermsForm
           onClose={() => setEditOpen(false)}
           initialData={selectedItem}
-          isEdit
+          isEdit={true}
           onSubmit={handleSubmit}
         />
       </Modal>
-      
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Terms"  size="md">
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Terms" size="md">
         {selectedItem && (
           <div style={{ padding: 10 }}>
             <p><b>User Type:</b> {selectedItem.usertype}</p>
@@ -224,10 +181,19 @@ function TermsConditions() {
   );
 }
 
-/* FORM */
 function TermsForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [text, setText] = useState(initialData?.text || "");
-  const [usertype, setUsertype] = useState(initialData?.usertype || "");
+  const [text, setText] = useState("");
+  const [usertype, setUsertype] = useState("");
+
+  useEffect(() => {
+    if (initialData) {
+      setText(initialData.text || "");
+      setUsertype(initialData.usertype || "");
+    } else {
+      setText("");
+      setUsertype("");
+    }
+  }, [initialData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -240,10 +206,11 @@ function TermsForm({ onClose, initialData, isEdit, onSubmit }) {
       <div className="mb-3">
         <label className="form-label">User Type</label>
         <select
-          className="form-control"
+          className="form-select"
           value={usertype}
           onChange={(e) => setUsertype(e.target.value)}
           required
+          disabled={isEdit}
         >
           <option value="">Select User Type</option>
           <option value="client">Client</option>
@@ -263,9 +230,14 @@ function TermsForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="text-end">
-        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
+        <button
+          type="button"
+          className="btn btn-secondary me-2"
+          onClick={onClose}
+        >
           Cancel
         </button>
+
         <button type="submit" className="btn btn-success">
           {isEdit ? "Update" : "Save"}
         </button>
