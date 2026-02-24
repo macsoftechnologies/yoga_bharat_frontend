@@ -1,7 +1,7 @@
 import React from "react";
 import "./Table.css";
 
-const Table = ({ columns, data, currentPage, totalPages, onPageChange }) => {
+const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading = false }) => {
   return (
     <div className="table-container">
       <table className="custom-table">
@@ -14,7 +14,13 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange }) => {
         </thead>
 
         <tbody>
-          {data.length > 0 ? (
+          {isLoading ? (
+            <tr>
+              <td colSpan={columns.length} style={{ textAlign: "center", padding: "40px 0" }}>
+                <div className="table-spinner"></div>
+              </td>
+            </tr>
+          ) : data.length > 0 ? (
             data.map((row, index) => (
               <tr key={index}>
                 {columns.map((col) => (
@@ -23,8 +29,9 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange }) => {
               </tr>
             ))
           ) : (
+            // CASE 3: No data → show message (NO spinner here)
             <tr>
-              <td colSpan={columns.length} style={{ textAlign: "center" }}>
+              <td colSpan={columns.length} style={{ textAlign: "center", padding: "40px 0", color: "#888", fontSize: "15px" }}>
                 No records found
               </td>
             </tr>
@@ -65,6 +72,3 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange }) => {
 };
 
 export default Table;
-
-
-

@@ -3,8 +3,22 @@
 }
 
 .dashboard-title {
-  font-weight: 600;
-  color: #333;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  animation: colorChange 4s infinite alternate;
+  background: black;
+  padding: 10px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #db3737, #3a3a3a);
+}
+
+@keyframes colorChange {
+  0% { color: #ff7a00; }
+  50% { color: #16a951; }
+  100% { color: #2196f3; }
+  100% { color: #f9fafb; }
 }
 
 .page-header h2 {
@@ -12,7 +26,7 @@
   margin-bottom: 20px;
 }
 .content-card {
-  background: #fff;
+  background: #dfd7cf;
   border-radius: 10px;
   padding: 25px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -84,4 +98,9 @@
   padding-left: 12px;
   padding-right: 12px;
   margin-bottom: 20px;
+}
+.addstyle{
+    border-radius: 10px;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+    padding: 25px 20px;
 }

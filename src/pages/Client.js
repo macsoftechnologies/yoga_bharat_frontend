@@ -9,12 +9,14 @@ function Client() {
   const [clients, setClients] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchClients(currentPage);
   }, [currentPage]);
 
   const fetchClients = async (page) => {
+    setLoading(true);
     try {
       const res = await getClients(page, 10);
 
@@ -31,6 +33,8 @@ function Client() {
     } catch (err) {
       setClients([]);
       setTotalPages(1);
+    }finally {
+      setLoading(false); 
     }
   };
 
@@ -127,6 +131,7 @@ function Client() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading}
       />
     </div>
   );

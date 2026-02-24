@@ -21,15 +21,16 @@ function AppTutorial() {
   const [tutorialsList, setTutorialsList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); // ✅ Added
 
   useEffect(() => {
     fetchTutorials(currentPage);
   }, [currentPage]);
 
   const fetchTutorials = async (page) => {
+    setLoading(true); // ✅ Start loading
     try {
       const res = await getAppTutorials(page, 10);
-      console.log("Tutorials response:", res);
 
       let data = [];
       let pages = 1;
@@ -53,13 +54,14 @@ function AppTutorial() {
       setTutorialsList([]);
       setTotalPages(1);
       Swal.fire("Error", "Failed to fetch tutorials", "error");
+    } finally {
+      setLoading(false); // ✅ Stop loading always
     }
   };
 
-  const handleView = async (appId) => {
+  const handleView = async (item) => {
     try {
-      console.log("....apptutorial", appId);
-      const res = await getAppTutorialById(appId.appId);
+      const res = await getAppTutorialById(item.appId);
       setSelectedItem({
         ...res.data,
         usertype: res.data.usertype || res.data.user_type || "",
@@ -71,9 +73,18 @@ function AppTutorial() {
     }
   };
 
-  const handleEdit = (item) => {
-    setSelectedItem(item);
-    setEditOpen(true);
+  const handleEdit = async (item) => {
+    try {
+      const res = await getAppTutorialById(item.appId);
+      setSelectedItem({
+        ...res.data,
+        usertype: res.data.usertype || res.data.user_type || "",
+      });
+      setEditOpen(true);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to fetch tutorial details", "error");
+    }
   };
 
   const handleDelete = async (appId) => {
@@ -92,9 +103,7 @@ function AppTutorial() {
 
     try {
       await deleteAppTutorial(appId);
-
       setTutorialsList((prev) => prev.filter((item) => item.appId !== appId));
-
       Swal.fire({
         title: "Deleted!",
         text: "Tutorial deleted successfully",
@@ -109,18 +118,13 @@ function AppTutorial() {
       });
     } catch (err) {
       console.error(err);
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Delete failed",
-        "error"
-      );
+      Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
     }
   };
 
   const handleSubmit = async (formData) => {
     try {
       if (selectedItem && editOpen) {
-        formData.append("appId", selectedItem.appId);
         await updateAppTutorial(formData);
         Swal.fire({
           title: "Updated!",
@@ -150,48 +154,59 @@ function AppTutorial() {
         });
       }
 
-      fetchTutorials();
+      fetchTutorials(currentPage);
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
     } catch (err) {
       console.error(err);
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Operation failed",
-        "error"
-      );
+      Swal.fire("Error", err.response?.data?.message || "Operation failed", "error");
     }
   };
 
-  // 🔹 UPDATED COLUMNS with Description
   const columns = [
     { header: "S.No", accessor: "srNo" },
     { header: "User Type", accessor: "usertype" },
-    { header: "Description", accessor: "description" }, // 🔹 new
-    { header: "Tutorial Image", accessor: "app_image" },
+    { header: "Description", accessor: "description" },
+    { header: "Tutorial Video", accessor: "app_image" },
     { header: "Actions", accessor: "actions" },
   ];
 
-  // 🔹 UPDATED tableData with description
   const tableData = tutorialsList.map((item, index) => ({
     srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
-    description: item.description || "-", // 🔹 show description
+
+    description: (
+      <span
+        title={item.description || "-"}
+        style={{
+          display: "block",
+          maxWidth: "200px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          cursor: "pointer",
+        }}
+      >
+        {item.description || "-"}
+      </span>
+    ),
+
     app_image: item.app_image ? (
       <video
         src={`${process.env.REACT_APP_API_BASE_URL}/${item.app_image}`}
-        width="200"
-        height="150"
+        width="160"
+        height="90"
         controls
         playsInline
-        style={{ borderRadius: "8px", marginTop: "10px" }}
+        style={{ borderRadius: "8px" }}
       >
         Your browser does not support the video tag.
       </video>
     ) : (
-      "No Image"
+      "No Video"
     ),
+
     actions: (
       <div className="actions">
         <button className="icon-btn view" title="View" onClick={() => handleView(item)}>
@@ -200,7 +215,11 @@ function AppTutorial() {
         <button className="icon-btn edit" title="Edit" onClick={() => handleEdit(item)}>
           <FaEdit />
         </button>
-        <button className="icon-btn delete" title="Delete" onClick={() => handleDelete(item.appId)}>
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => handleDelete(item.appId)}
+        >
           <FaTrash />
         </button>
       </div>
@@ -220,6 +239,7 @@ function AppTutorial() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading} // ✅ Added
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Tutorial" size="md">
@@ -227,42 +247,41 @@ function AppTutorial() {
       </Modal>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Tutorial" size="md">
-        <AppTutorialForm
-          onClose={() => setEditOpen(false)}
-          initialData={selectedItem}
-          isEdit
-          onSubmit={handleSubmit}
-        />
+        {selectedItem && (
+          <AppTutorialForm
+            key={selectedItem.appId}
+            onClose={() => setEditOpen(false)}
+            initialData={selectedItem}
+            isEdit
+            onSubmit={handleSubmit}
+          />
+        )}
       </Modal>
 
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Tutorial" size="lg">
         {selectedItem && (
           <div className="container-fluid p-2">
             <div className="row align-items-start">
-              <div className="col-md-4">
-                <p><b>User Type:</b> {selectedItem.usertype}</p>
-                <p><b>Description:</b> {selectedItem.description || "No Description"}</p>
-              </div>
-
-              <div className="col-md-8">
-                <p><b>Tutorial Image:</b></p>
-                {selectedItem.app_image ? (
-                  <video
-                    src={`${process.env.REACT_APP_API_BASE_URL}/${selectedItem.app_image}`}
-                    width="100%"
-                    height="300"
-                    controls
-                    playsInline
-                    style={{ borderRadius: "8px", marginTop: "5px" }}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                ) : (
-                  <p>No Image</p>
-                )}
-              </div>
+                <div className="col-12">
+                  <p><b>User Type:</b> {selectedItem.usertype}</p>
+                  <p><b>Description:</b> {selectedItem.description || "No Description"}</p>
+                  <p><b>Tutorial Video:</b></p>
+                  {selectedItem.app_image ? (
+                    <video
+                      src={`${process.env.REACT_APP_API_BASE_URL}/${selectedItem.app_image}`}
+                      width="100%"
+                      height="350"
+                      controls
+                      playsInline
+                      style={{ borderRadius: "8px", marginTop: "5px" }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <p>No Video</p>
+                  )}
+                </div>
             </div>
-
             <div className="text-end mt-3">
               <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
                 Close
@@ -275,23 +294,41 @@ function AppTutorial() {
   );
 }
 
-/* FORM COMPONENT */
 function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [usertype, setUsertype] = useState(initialData?.usertype || "");
+  const [usertype, setUsertype] = useState(
+    initialData?.usertype || initialData?.user_type || ""
+  );
   const [imageFile, setImageFile] = useState(null);
   const [description, setDescription] = useState(initialData?.description || "");
+  const [previewUrl, setPreviewUrl] = useState(
+    initialData?.app_image
+      ? `${process.env.REACT_APP_API_BASE_URL}/${initialData.app_image}`
+      : null
+  );
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     const formData = new FormData();
-    if (!isEdit) {
-      formData.append("usertype", usertype);
+
+    if (isEdit && initialData?.appId) {
+      formData.append("appId", initialData.appId);
     }
-    formData.append("description", description); // 🔹 added
+
+    formData.append("usertype", usertype);
+    formData.append("description", description);
 
     if (imageFile) {
       formData.append("app_image", imageFile);
-    } else if (initialData?.app_image && isEdit) {
+    } else if (isEdit && initialData?.app_image) {
       formData.append("app_image", initialData.app_image);
     }
 
@@ -300,7 +337,7 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-      {!isEdit && (
+      {!isEdit ? (
         <div className="mb-3">
           <label className="form-label">User Type</label>
           <select
@@ -308,12 +345,21 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
             value={usertype}
             onChange={(e) => setUsertype(e.target.value)}
             required
-            disabled={isEdit} // 🔹 disable in edit mode
           >
             <option value="">Select User Type</option>
             <option value="client">Client</option>
             <option value="trainer">Trainer</option>
           </select>
+        </div>
+      ) : (
+        <div className="mb-3">
+          <label className="form-label">User Type</label>
+          <input
+            className="form-control"
+            value={usertype}
+            readOnly
+            style={{ backgroundColor: "#e9ecef" }}
+          />
         </div>
       )}
 
@@ -330,13 +376,32 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="mb-3">
-        <label className="form-label">Tutorial Image</label>
+        <label className="form-label">Tutorial Video</label>
         <input
           type="file"
           className="form-control"
-          accept="*"
-          onChange={(e) => setImageFile(e.target.files[0])}
+          accept="video/*"
+          onChange={handleFileChange}
         />
+
+        {previewUrl && (
+          <div className="mt-2">
+            <small className="text-muted d-block mb-1">
+              {imageFile ? "New Video Preview:" : "Current Video:"}
+            </small>
+            <video
+              key={previewUrl}
+              src={previewUrl}
+              width="100%"
+              height="180"
+              controls
+              playsInline
+              style={{ borderRadius: "8px" }}
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        )}
       </div>
 
       <div className="text-end">

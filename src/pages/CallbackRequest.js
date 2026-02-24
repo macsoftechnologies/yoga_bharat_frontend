@@ -11,16 +11,20 @@ function CallbackRequest() {
   const [requestList, setRequestList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); 
 
   const fetchRequests = async (page = 1) => {
+    setLoading(true);
     try {
       const data = await getCallBackRequests(page, 10);
       setRequestList(data);
-      setTotalPages(data.totalPages || 1); // in case your API includes totalPages in data
+      setTotalPages(data.totalPages || 1);
     } catch (err) {
       Swal.fire("Error", "Failed to fetch callback requests", "error");
       setRequestList([]);
       setTotalPages(1);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,7 +58,6 @@ function CallbackRequest() {
         color: "#ffffff",
       });
 
-      // update the status in the table
       setRequestList((prev) =>
         prev.map((item) =>
           item.callRequestId === request.callRequestId
@@ -85,20 +88,19 @@ function CallbackRequest() {
     role: item.userId?.role || "",
     mobileNumber: item.mobileNumber,
     status: (
- <span
-  style={{
-    color: item.status === "pending" ? "red" : "green",
-    backgroundColor: item.status === "pending" ? "#ffe5e5" : "#e5ffe5",
-    fontWeight: 600,
-    cursor: item.status === "pending" ? "pointer" : "default",
-    padding: "4px 8px",
-    borderRadius: "4px",
-  }}
-  onClick={() => handleOpenPending(item)}
->
-  {item.status}
-</span>
-
+      <span
+        style={{
+          color: item.status === "pending" ? "red" : "green",
+          backgroundColor: item.status === "pending" ? "#ffe5e5" : "#e5ffe5",
+          fontWeight: 600,
+          cursor: item.status === "pending" ? "pointer" : "default",
+          padding: "4px 8px",
+          borderRadius: "4px",
+        }}
+        onClick={() => handleOpenPending(item)}
+      >
+        {item.status}
+      </span>
     ),
     date: item.date,
   }));
@@ -106,7 +108,7 @@ function CallbackRequest() {
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>Callback Requests</h2>
+        <h2>CALLBACK REQUESTS</h2>
       </div>
 
       <Table
@@ -116,6 +118,7 @@ function CallbackRequest() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
         rowsPerPage={10}
+        isLoading={loading}
       />
 
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Request Details" size="md">

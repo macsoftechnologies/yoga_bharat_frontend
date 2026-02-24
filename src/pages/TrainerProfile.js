@@ -20,6 +20,7 @@ function TrainerProfile() {
   const [totalPages, setTotalPages] = useState(1);
   const [earningsPage, setEarningsPage] = useState(1);
   const [earningsTotalPages, setEarningsTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); 
 
   // Modal State for Full Image View
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,6 +41,7 @@ function TrainerProfile() {
     if (!userId) return;
 
     const fetchTrainer = async () => {
+      setLoading(true);
       try {
         const res = await getTrainers(1, 10);
         if (res && Array.isArray(res)) {
@@ -53,7 +55,9 @@ function TrainerProfile() {
         }
       } catch (error) {
         console.error("Fetch Trainer Error:", error);
-      }
+      }finally {
+      setLoading(false); 
+    }
     };
 
     fetchTrainer();
@@ -104,8 +108,11 @@ function TrainerProfile() {
     fetchEarnings();
   }, [trainer?.userId]);
 
-  if (!trainer) return <div className="p-3">Loading...</div>;
-
+if (!trainer) return (
+  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
+    <div className="table-spinner"></div>
+  </div>
+);
   const getImageUrl = (filename) => {
     if (!filename) return "";
     return `${process.env.REACT_APP_API_BASE_URL}/${filename}`;
@@ -366,6 +373,7 @@ function TrainerProfile() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          isLoading={loading}
         />
       </div>
 

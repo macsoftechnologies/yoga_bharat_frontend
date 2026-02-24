@@ -7,7 +7,6 @@ import {
   getTerms,
   getTermsById,
   updateTerms,
-  // deleteTerms,
 } from "../services/authService";
 import "../forms/form.css";
 import { FaEye, FaEdit } from "react-icons/fa";
@@ -20,12 +19,14 @@ function TermsConditions() {
   const [termsList, setTermsList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); // ✅ Added
 
   useEffect(() => {
     fetchTerms(currentPage);
   }, [currentPage]);
 
   const fetchTerms = async (page) => {
+    setLoading(true); // ✅ Start loading
     try {
       const res = await getTerms(page, 10);
 
@@ -46,6 +47,8 @@ function TermsConditions() {
       setTermsList([]);
       setTotalPages(1);
       Swal.fire("Error", "Failed to fetch terms", "error");
+    } finally {
+      setLoading(false); // ✅ Stop loading always
     }
   };
 
@@ -72,7 +75,6 @@ function TermsConditions() {
         termsId: selectedItem.termsId,
         ...data,
       });
-
       Swal.fire({
         title: "Updated!",
         text: res.message || "Terms updated successfully",
@@ -81,13 +83,12 @@ function TermsConditions() {
         toast: true,
         showConfirmButton: false,
         timer: 6000,
-        timerProgressBar: true, 
-        background: "#35a542", 
+        timerProgressBar: true,
+        background: "#35a542",
         color: "#ffffff",
       });
     } else {
       res = await addTerms(data);
-
       Swal.fire({
         title: "Added!",
         text: res.message || "Terms added successfully",
@@ -96,8 +97,8 @@ function TermsConditions() {
         toast: true,
         showConfirmButton: false,
         timer: 6000,
-        timerProgressBar: true, 
-        background: "#35a542", 
+        timerProgressBar: true,
+        background: "#35a542",
         color: "#ffffff",
       });
     }
@@ -118,6 +119,23 @@ function TermsConditions() {
   const tableData = termsList.map((item, index) => ({
     srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
+
+    text: (
+      <span
+        title={item.text || "-"}
+        style={{
+          display: "block",
+          maxWidth: "400px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          cursor: "pointer",
+        }}
+      >
+        {item.text || "-"}
+      </span>
+    ),
+
     actions: (
       <div className="actions">
         <button
@@ -127,7 +145,6 @@ function TermsConditions() {
         >
           <FaEye />
         </button>
-
         <button
           className="icon-btn edit"
           title="Edit"
@@ -142,7 +159,7 @@ function TermsConditions() {
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>Terms & Conditions</h2>
+        <h2>TERMS & CONDITIONS</h2>
       </div>
 
       <Table
@@ -151,6 +168,7 @@ function TermsConditions() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading} // ✅ Added
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Terms" size="md">
@@ -230,14 +248,9 @@ function TermsForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="text-end">
-        <button
-          type="button"
-          className="btn btn-secondary me-2"
-          onClick={onClose}
-        >
+        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
           Cancel
         </button>
-
         <button type="submit" className="btn btn-success">
           {isEdit ? "Update" : "Save"}
         </button>

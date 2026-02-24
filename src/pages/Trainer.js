@@ -19,12 +19,14 @@
     const [certificates, setCertificates] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [loading, setLoading] = useState(false); 
 
     useEffect(() => {
       fetchData(currentPage);
     }, [currentPage]);
 
     const fetchData = async (page) => {
+      setLoading(true);
       try {
         const res = await getTrainers(page, 10);
 
@@ -41,7 +43,9 @@
       } catch {
         setTrainers([]);
         setTotalPages(1);
-      }
+      }finally {
+      setLoading(false); 
+    }
     };
 
     const openModal = async (item) => {
@@ -170,6 +174,7 @@
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          isLoading={loading}
         />
 
         <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Trainer Details" size="xl">

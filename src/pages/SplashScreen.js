@@ -21,8 +21,11 @@ function SplashScreenPage() {
   const [splashList, setSplashList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); 
+  
 
   const fetchSplashScreens = async (page) => {
+    setLoading(true);
     try {
       const res = await getSplashScreens(page, 10);
       if (res && Array.isArray(res.data)) {
@@ -36,6 +39,8 @@ function SplashScreenPage() {
       Swal.fire("Error", "Failed to fetch splash screens", "error");
       setSplashList([]);
       setTotalPages(1);
+    }finally {
+      setLoading(false); 
     }
   };
 
@@ -85,7 +90,7 @@ function SplashScreenPage() {
         background: "#ff7a00",
         color: "#ffffff",
       });
-      fetchSplashScreens();
+      fetchSplashScreens(currentPage);
     } catch {
       Swal.fire("Error", "Failed to delete splash screen", "error");
     }
@@ -132,7 +137,7 @@ function SplashScreenPage() {
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
-      fetchSplashScreens();
+      fetchSplashScreens(currentPage);
     }
   };
 
@@ -147,6 +152,23 @@ function SplashScreenPage() {
   const tableData = splashList.map((item, index) => ({
     srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
+
+    text: (
+      <span
+        title={item.text || "-"}
+        style={{
+          display: "block",
+          maxWidth: "300px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          cursor: "pointer",
+        }}
+      >
+        {item.text || "-"}
+      </span>
+    ),
+
     actions: (
       <div className="actions">
         <button
@@ -177,7 +199,7 @@ function SplashScreenPage() {
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>Splash Screens</h2>
+        <h2>SPLASH SCREENS</h2>
         <Button text="+ Add Splash Screen" color="orange" onClick={() => setOpen(true)} />
       </div>
 
@@ -187,6 +209,8 @@ function SplashScreenPage() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading}
+
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Splash Screen" size="md">
@@ -248,6 +272,7 @@ function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
           rows={4}
         />
       </div>
+
       <div className="mb-3">
         <label className="form-label">Screen Type</label>
         <select

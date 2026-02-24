@@ -49,8 +49,11 @@ useEffect(() => {
 
     fetchBookings();
   }, [currentPage, client]);
-
-  if (!client) return <div className="p-3">Loading...</div>;
+  if (!client) return (
+  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
+    <div className="table-spinner"></div>
+  </div>
+);
 
   const columns = [
     { header: "S.No", accessor: "srNo" },

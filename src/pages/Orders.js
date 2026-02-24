@@ -23,6 +23,8 @@ function Orders() {
   const [searchText, setSearchText] = useState("");
   const [searchType, setSearchType] = useState("");
 
+  /* ================= FETCH ORDERS ================= */
+
   const fetchOrders = useCallback(
     async (page = 1) => {
       try {
@@ -53,17 +55,21 @@ function Orders() {
         setLoading(false);
       }
     },
-    [filters, searchText, searchType],
+    [filters, searchText, searchType]
   );
 
   useEffect(() => {
     fetchOrders(currentPage);
   }, [currentPage, fetchOrders]);
 
+  /* ================= VIEW ================= */
+
   const handleView = (item) => {
     setSelectedOrder(item);
     setViewOpen(true);
   };
+
+  /* ================= FILTER CHANGE ================= */
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -73,6 +79,27 @@ function Orders() {
     setCurrentPage(1);
     fetchOrders(1);
   };
+
+  /* ================= CLEAR FILTERS ================= */
+
+  const handleClearFilters = () => {
+    setFilters({
+      bookingType: "",
+      status: "",
+      fromDate: "",
+      toDate: "",
+    });
+
+    setSearchText("");
+    setSearchType("");
+    setCurrentPage(1);
+
+    setTimeout(() => {
+      fetchOrders(1);
+    }, 0);
+  };
+
+  /* ================= TABLE COLUMNS ================= */
 
   const columns = [
     { header: "S.No", accessor: "srNo" },
@@ -113,6 +140,8 @@ function Orders() {
       </button>
     ),
   }));
+
+  /* ================= UI ================= */
 
   return (
     <div>
@@ -165,6 +194,8 @@ function Orders() {
         </div>
       </div>
 
+      {/* ================= FILTER CARD ================= */}
+
       <div className="card p-3 mb-3">
         <h5 className="mb-3">Filters</h5>
 
@@ -194,6 +225,7 @@ function Orders() {
               <option value="">All</option>
               <option value="accepted">Accepted</option>
               <option value="opened">Opened</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
@@ -227,25 +259,36 @@ function Orders() {
               border: "none",
               padding: "8px 16px",
               borderRadius: "4px",
+              marginRight: "10px",
             }}
           >
             <FaFilter />
             <span style={{ marginLeft: "6px" }}>Filter</span>
           </button>
+
+          <button
+            onClick={handleClearFilters}
+            style={{
+              background: "#7d6c6c",
+              color: "#fff",
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: "4px",
+            }}
+          >
+            Clear
+          </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center p-4">Loading...</div>
-      ) : (
-        <Table
-          columns={columns}
-          data={tableData}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
-      )}
+      <Table
+        columns={columns}
+        data={tableData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        isLoading={loading}
+      />
 
       <Modal
         open={viewOpen}

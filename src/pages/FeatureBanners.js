@@ -21,12 +21,14 @@ function FeatureBanners() {
   const [featuresList, setFeaturesList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); // ✅ Added
 
   useEffect(() => {
     fetchFeatures(currentPage);
   }, [currentPage]);
 
   const fetchFeatures = async (page) => {
+    setLoading(true); // ✅ Start loading
     try {
       const res = await getFeatures(page, 10);
       let data = [];
@@ -43,6 +45,8 @@ function FeatureBanners() {
       setFeaturesList([]);
       setTotalPages(1);
       Swal.fire("Error", "Failed to fetch features", "error");
+    } finally {
+      setLoading(false); // ✅ Stop loading always
     }
   };
 
@@ -87,7 +91,7 @@ function FeatureBanners() {
         background: "#ff7a00",
         color: "#ffffff",
       });
-      fetchFeatures();
+      fetchFeatures(currentPage);
     } catch (err) {
       Swal.fire("Error", "Delete failed", "error");
     }
@@ -125,7 +129,7 @@ function FeatureBanners() {
           color: "#ffffff",
         });
       }
-      fetchFeatures();
+      fetchFeatures(currentPage);
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
@@ -182,7 +186,7 @@ function FeatureBanners() {
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>Banners</h2>
+        <h2>BANNERS</h2>
         <Button text="+ Add Feature" color="orange" onClick={() => setOpen(true)} />
       </div>
 
@@ -192,6 +196,7 @@ function FeatureBanners() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading} 
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Feature" size="md">

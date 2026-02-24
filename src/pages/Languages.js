@@ -15,12 +15,12 @@ function Languages() {
   const [languagesList, setLanguagesList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
+  const [loading, setLoading] = useState(false); // ✅ Added
 
   const fetchLanguages = async (page) => {
+    setLoading(true); // ✅ Start loading
     try {
       const res = await getLanguages(page, 10);
-      console.log("Languages response:", res);
 
       let data = [];
       let pages = 1;
@@ -28,8 +28,7 @@ function Languages() {
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
-      }
-      else if (Array.isArray(res)) {
+      } else if (Array.isArray(res)) {
         data = res;
       }
 
@@ -40,6 +39,8 @@ function Languages() {
       setLanguagesList([]);
       setTotalPages(1);
       Swal.fire("Error", "Failed to fetch languages", "error");
+    } finally {
+      setLoading(false); // ✅ Stop loading always
     }
   };
 
@@ -65,12 +66,11 @@ function Languages() {
           showConfirmButton: false,
           timer: 6000,
           timerProgressBar: true,
-          color: "#ffffff", 
+          color: "#ffffff",
           background: "#35a542",
         });
       } else {
-        // Add
-       const response = await addLanguage(data);
+        const response = await addLanguage(data);
         Swal.fire({
           title: "Added!",
           text: response.message || "Language added successfully",
@@ -80,11 +80,11 @@ function Languages() {
           showConfirmButton: false,
           timer: 6000,
           timerProgressBar: true,
-          color: "#ffffff", 
+          color: "#ffffff",
           background: "#35a542",
         });
       }
-      fetchLanguages();
+      fetchLanguages(currentPage);
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
@@ -102,8 +102,7 @@ function Languages() {
   const handleView = async (languageId) => {
     try {
       const res = await getLanguageById(languageId);
-      const languageData = res.data; 
-      setSelectedItem(languageData);
+      setSelectedItem(res.data);
       setViewOpen(true);
     } catch (err) {
       console.error(err);
@@ -112,48 +111,40 @@ function Languages() {
   };
 
   const handleDelete = async (languageId) => {
-  const confirm = await Swal.fire({
-    title: "Are you sure?",
-    text: "This language will be deleted!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, delete",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#35a542", 
-    cancelButtonColor: "#ff7a00",
-  });
-
-  if (!confirm.isConfirmed) return;
-
-  try {
-    const res = await deleteLanguage(languageId);
-
-    Swal.fire({
-      title: "Deleted!",
-      text: res.message || "Language deleted successfully",
-      icon: "success",
-      position: "top-end",
-      toast: true,
-      showConfirmButton: false,
-      timer: 6000,
-      timerProgressBar: true,
-      background: "#ff7a00",
-      color: "#ffffff",
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This language will be deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#35a542",
+      cancelButtonColor: "#ff7a00",
     });
 
-    fetchLanguages();
-  } catch (err) {
-    console.error(err);
-    Swal.fire(
-      "Error",
-      err.response?.data?.message || "Delete failed",
-      "error"
-    );
-  }
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await deleteLanguage(languageId);
+      Swal.fire({
+        title: "Deleted!",
+        text: res.message || "Language deleted successfully",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 6000,
+        timerProgressBar: true,
+        background: "#ff7a00",
+        color: "#ffffff",
+      });
+      fetchLanguages(currentPage);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
+    }
   };
 
-  // TABLE
-  
   const columns = [
     { header: "S.No", accessor: "srNo" },
     { header: "Language Name", accessor: "language_name" },
@@ -161,43 +152,30 @@ function Languages() {
     { header: "Actions", accessor: "actions" },
   ];
 
-  const tableData = Array.isArray(languagesList) ? languagesList.map((item, index) => ({
-    srNo: (currentPage - 1) * 10 + index + 1,
-  ...item,
-  actions: (
-    <div className="actions">
-        <button
-          className="icon-btn view"
-          title="View"
-          onClick={() => handleView(item.languageId)}
-        >
-          <FaEye />
-        </button>
-
-        <button
-          className="icon-btn edit"
-          title="Edit"
-          onClick={() => handleEdit(item)}
-        >
-          <FaEdit />
-        </button>
-
-        <button
-          className="icon-btn delete"
-          title="Delete"
-          onClick={() => handleDelete(item.languageId)}
-        >
-          <FaTrash />
-        </button>
-      </div>
-  ),
-  })) : [];
-
+  const tableData = Array.isArray(languagesList)
+    ? languagesList.map((item, index) => ({
+        srNo: (currentPage - 1) * 10 + index + 1,
+        ...item,
+        actions: (
+          <div className="actions">
+            <button className="icon-btn view" title="View" onClick={() => handleView(item.languageId)}>
+              <FaEye />
+            </button>
+            <button className="icon-btn edit" title="Edit" onClick={() => handleEdit(item)}>
+              <FaEdit />
+            </button>
+            <button className="icon-btn delete" title="Delete" onClick={() => handleDelete(item.languageId)}>
+              <FaTrash />
+            </button>
+          </div>
+        ),
+      }))
+    : [];
 
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>Languages</h2>
+        <h2>LANGUAGES</h2>
         <Button text="+ Add Language" color="orange" onClick={() => setOpen(true)} />
       </div>
 
@@ -207,6 +185,7 @@ function Languages() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading} // ✅ Added
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Language" size="md">
@@ -221,28 +200,18 @@ function Languages() {
           onSubmit={handleSubmit}
         />
       </Modal>
-      <Modal
-        open={viewOpen}
-        onClose={() => setViewOpen(false)}
-        title="Language Details"
-        size="md"
-      >
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Language Details" size="md">
         {selectedItem && (
-            <div style={{ padding: "10px" }}>
-              <p><b>Language:</b> {selectedItem.language_name}</p>
-              <p><b>Special Character:</b> {selectedItem.special_character}</p>
-
-              <button
-                className="btn btn-secondary mt-2"
-                onClick={() => setViewOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-          )}
-
+          <div style={{ padding: "10px" }}>
+            <p><b>Language:</b> {selectedItem.language_name}</p>
+            <p><b>Special Character:</b> {selectedItem.special_character}</p>
+            <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>
+              Close
+            </button>
+          </div>
+        )}
       </Modal>
-
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
-// import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Swal from "sweetalert2";
 import {
@@ -20,8 +19,10 @@ function PrivacyPolicy() {
   const [policyList, setPolicyList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); // ✅ Added
 
   const fetchPrivacy = async (page) => {
+    setLoading(true); // ✅ Start loading
     try {
       const res = await getPrivacyList(page, 10);
 
@@ -42,6 +43,8 @@ function PrivacyPolicy() {
       setPolicyList([]);
       setTotalPages(1);
       Swal.fire("Error", "Failed to fetch privacy policies", "error");
+    } finally {
+      setLoading(false); // ✅ Stop loading always
     }
   };
 
@@ -56,7 +59,6 @@ function PrivacyPolicy() {
           privacyId: selectedItem.privacyId,
           ...data,
         });
-
         Swal.fire({
           title: "Updated!",
           text: "Privacy policy updated successfully",
@@ -65,13 +67,12 @@ function PrivacyPolicy() {
           toast: true,
           showConfirmButton: false,
           timer: 6000,
-          timerProgressBar: true, 
-          background: "#35a542", 
+          timerProgressBar: true,
+          background: "#35a542",
           color: "#ffffff",
         });
       } else {
         await addPrivacy(data);
-
         Swal.fire({
           title: "Added!",
           text: "Privacy policy added successfully",
@@ -80,8 +81,8 @@ function PrivacyPolicy() {
           toast: true,
           showConfirmButton: false,
           timer: 6000,
-          timerProgressBar: true, 
-          background: "#35a542", 
+          timerProgressBar: true,
+          background: "#35a542",
           color: "#ffffff",
         });
       }
@@ -121,6 +122,23 @@ function PrivacyPolicy() {
     ? policyList.map((item, index) => ({
         srNo: (currentPage - 1) * 10 + index + 1,
         ...item,
+
+        text: (
+          <span
+            title={item.text || "-"}
+            style={{
+              display: "block",
+              maxWidth: "400px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              cursor: "pointer",
+            }}
+          >
+            {item.text || "-"}
+          </span>
+        ),
+
         actions: (
           <div className="actions">
             <button
@@ -130,7 +148,6 @@ function PrivacyPolicy() {
             >
               <FaEye />
             </button>
-
             <button
               className="icon-btn edit"
               title="Edit"
@@ -146,8 +163,7 @@ function PrivacyPolicy() {
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>Privacy Policy</h2>
-        {/* <Button text="+ Add Policy" color="orange" onClick={() => setOpen(true)} /> */}
+        <h2>PRIVACY POLICY</h2>
       </div>
 
       <Table
@@ -156,6 +172,7 @@ function PrivacyPolicy() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading} // ✅ Added
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Policy" size="md">
@@ -186,7 +203,6 @@ function PrivacyPolicy() {
   );
 }
 
-/* FORM */
 function PolicyForm({ onClose, initialData, isEdit, onSubmit }) {
   const [text, setText] = useState("");
   const [usertype, setUsertype] = useState("");
@@ -236,14 +252,9 @@ function PolicyForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="text-end mt-3">
-        <button
-          type="button"
-          className="btn btn-secondary me-2"
-          onClick={onClose}
-        >
+        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
           Cancel
         </button>
-
         <button type="submit" className="btn btn-success">
           {isEdit ? "Update" : "Save"}
         </button>

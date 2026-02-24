@@ -12,7 +12,6 @@ import Orders from "./pages/Orders";
 import SplashScreen from "./pages/SplashScreen";
 import HealthPreference from "./pages/HealthPreference";
 import ProfessionDetails from "./pages/ProfessionDetails";
-import Notifications from "./pages/Notifications";
 import AppTutorial from "./pages/AppTutorial";
 import CallbackRequest from "./pages/CallbackRequest";
 import TermsConditions from "./pages/TermsConditions";
@@ -25,6 +24,12 @@ import Home from "./pages/Home";
 import AdminOtp from "./pages/AdminOtp";
 import TrainerProfile from "./pages/TrainerProfile";
 import ClientProfile from "./pages/ClientProfile";
+import TotalEarnings   from "./pages/TotalEarnings";
+import TotalBookings   from "./pages/TotalBookings";
+import ActiveClients   from "./pages/ActiveClients";
+import ActiveTrainers  from "./pages/ActiveTrainers";
+import Sms from "./pages/Sms";
+
 
 function App() {
   return (
@@ -48,7 +53,7 @@ function App() {
           <Route path="/splash-screen" element={<SplashScreen />} />
           <Route path="/health-preference" element={<HealthPreference />} />
           <Route path="/profession-details" element={<ProfessionDetails />} />
-          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/sms" element={<Sms />} />
           <Route path="/app-tutorial" element={<AppTutorial />} />
           <Route path="/callback-request" element={<CallbackRequest />} />
           <Route path="/terms-conditions" element={<TermsConditions />} />
@@ -58,6 +63,10 @@ function App() {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/trainer/:userId" element={<TrainerProfile />} />
           <Route path="/client/:userId" element={<ClientProfile />} />
+          <Route path="/dashboard/total-earnings"  element={<TotalEarnings />} />
+          <Route path="/dashboard/total-bookings"  element={<TotalBookings />} />
+          <Route path="/dashboard/active-clients"  element={<ActiveClients />} />
+          <Route path="/dashboard/active-trainers" element={<ActiveTrainers />} />
         </Route>
       </Routes>
     </BrowserRouter>

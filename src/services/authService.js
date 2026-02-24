@@ -499,3 +499,16 @@ export const dashboardTypeDistribution = async () => {
 
   return res.data;
 };
+
+
+export const addBulksms = async (data) => {
+  const res = await api.post("/notifications/addbulksms", data, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data;
+};
+
+export const getSmsList = async (page = 1, limit = 10) => {
+  const res = await api.get(`/notifications/sms?page=${page}&limit=${limit}`);
+  return res.data;
+};

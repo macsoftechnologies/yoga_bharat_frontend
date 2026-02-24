@@ -15,6 +15,8 @@ function HealthPreference() {
   const [list, setList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); 
+  
 
 
   useEffect(() => {
@@ -22,6 +24,7 @@ function HealthPreference() {
   }, [currentPage]);
 
   const fetchData = async (page) => {
+    setLoading(true);
   try {
     const res = await getHealthPreferences(page, 10);
     console.log("HealthPreferences response:", res);
@@ -51,7 +54,9 @@ function HealthPreference() {
     console.error("Fetch error:", error);
     setList([]);
     setTotalPages(1);
-  }
+  }finally {
+      setLoading(false); 
+    }
   };
 
   const handleView = async (prefId) => {
@@ -195,6 +200,7 @@ function HealthPreference() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        isLoading={loading}
       />
       <Modal open={open} onClose={() => setOpen(false)} title="Add Health Preference" size="md">
         <HealthPreferenceForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />

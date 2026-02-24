@@ -10,7 +10,7 @@ import {
   FaUser,
   FaFileAlt,
   FaHeartbeat,
-  // FaBell,
+  FaBell,
   FaBookOpen,
   FaPhone,
   FaFileContract,
@@ -28,11 +28,18 @@ const Sidebar = ({ sidebarOpen }) => {
   const location = useLocation();
   const currentPath = location.pathname;
 
+  // ✅ Separate dropdown states (nothing removed)
   const [openDropdown, setOpenDropdown] = useState(false);
+  const [openNotificationDropdown, setOpenNotificationDropdown] =
+    useState(false);
 
-    useEffect(() => {
+  useEffect(() => {
     if (currentPath === "/client" || currentPath === "/trainer") {
       setOpenDropdown(true);
+    }
+
+    if (currentPath === "/sms") {
+      setOpenNotificationDropdown(true);
     }
   }, [currentPath]);
 
@@ -93,7 +100,8 @@ const Sidebar = ({ sidebarOpen }) => {
 
             <li className="menu-item subitem">
               <NavLink to="/trainer" className={({ isActive }) => isActive ? "active" : ""}>
-                <MdRadioButtonUnchecked className="menu-icon" />Yoga Teacher/ Trainer
+                <MdRadioButtonUnchecked className="menu-icon" />
+                Yoga Teacher/ Trainer
               </NavLink>
             </li>
           </>
@@ -122,22 +130,6 @@ const Sidebar = ({ sidebarOpen }) => {
             Health Preference
           </NavLink>
         </li>
-
-        {/* Profession Details */}
-        {/* <li className="menu-item">
-          <NavLink to="/profession-details" className={({ isActive }) => isActive ? "active" : ""}>
-            <FaBriefcase className="menu-icon" />
-            Profession Details
-          </NavLink>
-        </li> */}
-
-        {/* Notifications */}
-        {/* <li className="menu-item">
-          <NavLink to="/notifications" className={({ isActive }) => isActive ? "active" : ""}>
-            <FaBell className="menu-icon" />
-            Notifications
-          </NavLink>
-        </li> */}
 
         {/* App Tutorial */}
         <li className="menu-item">
@@ -178,6 +170,7 @@ const Sidebar = ({ sidebarOpen }) => {
             Languages
           </NavLink>
         </li>
+
         {/* Callback Request */}
         <li className="menu-item">
           <NavLink to="/callback-request" className={({ isActive }) => isActive ? "active" : ""}>
@@ -185,6 +178,35 @@ const Sidebar = ({ sidebarOpen }) => {
             Callback Request
           </NavLink>
         </li>
+
+        {/* Notifications Dropdown (SMS only added, nothing removed) */}
+        <li className="menu-item dropdown">
+          <div
+            className="dropdown-toggle no-arrow"
+            onClick={() =>
+              setOpenNotificationDropdown(!openNotificationDropdown)
+            }
+          >
+            <FaBell className="menu-icon user-icon" />
+            Notifications
+            <MdKeyboardArrowDown
+              className={`arrow-icon ${
+                openNotificationDropdown ? "rotate" : ""
+              }`}
+            />
+          </div>
+        </li>
+
+        {openNotificationDropdown && (
+          <>
+            <li className="menu-item subitem">
+              <NavLink to="/sms" className={({ isActive }) => isActive ? "active" : ""}>
+                <MdRadioButtonUnchecked className="menu-icon" />
+                SMS
+              </NavLink>
+            </li>
+          </>
+        )}
 
         {/* Transactions */}
         <li className="menu-item">
