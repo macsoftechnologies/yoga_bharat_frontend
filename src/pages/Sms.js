@@ -116,7 +116,7 @@ function Sms() {
           <FaEye />
         </button>
       </div>
-    ),
+    )
   }));
 
   return (
