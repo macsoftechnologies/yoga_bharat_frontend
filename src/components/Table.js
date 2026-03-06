@@ -1,7 +1,27 @@
 import React from "react";
 import "./Table.css";
 
+function buildPageList(current, total, delta = 2) {
+  const range = [];
+  const left = Math.max(2, current - delta);
+  const right = Math.min(total - 1, current + delta);
+
+  range.push(1);
+
+  if (left > 2) range.push("...");
+
+  for (let i = left; i <= right; i++) range.push(i);
+
+  if (right < total - 1) range.push("...");
+
+  if (total > 1) range.push(total);
+
+  return range;
+}
+
 const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading = false }) => {
+  const pages = buildPageList(currentPage, totalPages);
+
   return (
     <div className="table-container">
       <table className="custom-table">
@@ -29,7 +49,6 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading
               </tr>
             ))
           ) : (
-            // CASE 3: No data → show message (NO spinner here)
             <tr>
               <td colSpan={columns.length} style={{ textAlign: "center", padding: "40px 0", color: "#888", fontSize: "15px" }}>
                 No records found
@@ -39,7 +58,6 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading
         </tbody>
       </table>
 
-      {/* Pagination */}
       <div className="pagination">
         <button
           className="page-btn"
@@ -49,15 +67,32 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading
           ← Prev
         </button>
 
-        {[...Array(totalPages)].map((_, i) => (
-          <button
-            key={i}
-            className={`page-number ${currentPage === i + 1 ? "active" : ""}`}
-            onClick={() => onPageChange(i + 1)}
-          >
-            {i + 1}
-          </button>
-        ))}
+        {pages.map((page, i) =>
+          page === "..." ? (
+            <span
+              key={`ellipsis-${i}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "8px 4px",
+                fontSize: "14px",
+                color: "#888",
+                letterSpacing: "2px",
+              }}
+            >
+              ...
+            </span>
+          ) : (
+            <button
+              key={page}
+              className={`page-number ${currentPage === page ? "active" : ""}`}
+              onClick={() => onPageChange(page)}
+            >
+              {page}
+            </button>
+          )
+        )}
 
         <button
           className="page-btn"

@@ -6,15 +6,33 @@ import "./form.css";
 function HealthPreferenceForm({ onClose, isEdit, initialData, onSubmit }) {
   const [preferenceName, setPreferenceName] = useState("");
   const [preferenceIcon, setPreferenceIcon] = useState(null);
+  const [iconPreview, setIconPreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Pre-fill form when editing
-    useEffect(() => {
+  useEffect(() => {
     if (isEdit && initialData) {
       setPreferenceName(initialData.name || "");
-      setPreferenceIcon(null); // optional
+      setPreferenceIcon(null);
+
+      // ✅ Show existing icon preview (same as LawForm pattern)
+      const base = process.env.REACT_APP_API_BASE_URL || "";
+      const iconField =
+        initialData.preference_icon ||
+        initialData.icon ||
+        initialData.preferenceIcon ||
+        null;
+
+      setIconPreview(iconField ? `${base}/${iconField}` : null);
     }
   }, [isEdit, initialData]);
+
+  const handleIconChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPreferenceIcon(file);
+    setIconPreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,7 +49,6 @@ function HealthPreferenceForm({ onClose, isEdit, initialData, onSubmit }) {
     try {
       setLoading(true);
 
-      // Use correct key: prefId
       let response;
       if (isEdit && initialData?.prefId) {
         formData.append("prefId", initialData.prefId);
@@ -47,14 +64,13 @@ function HealthPreferenceForm({ onClose, isEdit, initialData, onSubmit }) {
         position: "top-end",
         toast: true,
         showConfirmButton: false,
-        timer: 6000,          // 8 seconds
+        timer: 6000,
         timerProgressBar: true,
-        color: "#ffffff", 
+        color: "#ffffff",
         background: "#35a542",
       });
 
-
-      onSubmit(); // Refresh table
+      onSubmit();
       onClose();
     } catch (err) {
       Swal.fire(
@@ -83,12 +99,52 @@ function HealthPreferenceForm({ onClose, isEdit, initialData, onSubmit }) {
 
       <div className="mb-3">
         <label>Preference Icon</label>
+
+        {/* ✅ Show current icon when editing (same as LawForm) */}
+        {isEdit && iconPreview && !preferenceIcon && (
+          <div className="mb-2 text-center">
+            <img
+              src={iconPreview}
+              alt="Current Icon"
+              style={{
+                width: "80px",
+                height: "80px",
+                objectFit: "cover",
+                borderRadius: "50%",
+                border: "2px solid #35a542",
+              }}
+              onError={(e) => { e.target.style.display = "none"; }}
+            />
+            <small className="text-success d-block mt-1">
+              📷 Current icon (choose file to replace)
+            </small>
+          </div>
+        )}
+
         <input
           type="file"
           className="form-control"
-          onChange={(e) => setPreferenceIcon(e.target.files[0])}
+          onChange={handleIconChange}
           required={!isEdit}
         />
+
+        {/* ✅ Preview of newly selected icon */}
+        {preferenceIcon && iconPreview && (
+          <div className="mt-2 text-center">
+            <img
+              src={iconPreview}
+              alt="New Icon"
+              style={{
+                width: "80px",
+                height: "80px",
+                objectFit: "cover",
+                borderRadius: "50%",
+                border: "2px solid #ffc107",
+              }}
+            />
+            <small className="text-warning d-block mt-1">✅ New icon selected</small>
+          </div>
+        )}
       </div>
 
       <div className="text-end">
