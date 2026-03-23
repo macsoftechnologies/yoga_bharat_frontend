@@ -194,6 +194,11 @@
   margin: 0 auto;
 }
 
+.custom-table tbody tr.clickable-row:hover {
+  background-color: rgba(255, 122, 0, 0.08);
+  transition: background-color 0.15s ease;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

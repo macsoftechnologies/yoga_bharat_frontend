@@ -14,6 +14,16 @@
   background: linear-gradient(135deg, #db3737, #3a3a3a);
 }
 
+.react-datepicker__calendar-icon {
+  right: 8px;
+  left: auto;
+}
+
+.react-datepicker__view-calendar-icon input {
+  padding-left: 10px;
+  padding-right: 35px;
+}
+
 @keyframes colorChange {
   0% { color: #ff7a00; }
   50% { color: #16a951; }

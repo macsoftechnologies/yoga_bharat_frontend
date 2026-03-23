@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "./Dashboard.css";
 import { useNavigate, useLocation } from "react-router-dom";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 import {
   Chart as ChartJS,
@@ -223,7 +225,7 @@ useEffect(() => {
         <h3 className="dashboard-title">YOGA DASHBOARD</h3>
 
         <div className="d-flex align-items-center gap-2">
-          <input
+          {/* <input
             type="date"
             className="form-control"
             value={fromDate}
@@ -234,7 +236,25 @@ useEffect(() => {
             className="form-control"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-          />
+          /> */}
+          <DatePicker
+  selected={fromDate ? new Date(fromDate) : null}
+  onChange={(date) => date ? setFromDate(date.toISOString().split("T")[0]) : setFromDate("")}
+  dateFormat="dd/MM/yyyy"
+  className="form-control"
+  placeholderText="DD/MM/YYYY"
+  showIcon
+  isClearable
+/>
+<DatePicker
+  selected={toDate ? new Date(toDate) : null}
+  onChange={(date) => date ? setToDate(date.toISOString().split("T")[0]) : setToDate("")}
+  dateFormat="dd/MM/yyyy"
+  className="form-control"
+  placeholderText="DD/MM/YYYY"
+  showIcon
+  isClearable
+/>
           <button
             onClick={handleFilter}
             className="d-flex align-items-center"

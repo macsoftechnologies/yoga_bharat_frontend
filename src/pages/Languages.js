@@ -15,10 +15,10 @@ function Languages() {
   const [languagesList, setLanguagesList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false); // ✅ Added
+  const [loading, setLoading] = useState(false); 
 
   const fetchLanguages = async (page) => {
-    setLoading(true); // ✅ Start loading
+    setLoading(true); 
     try {
       const res = await getLanguages(page, 10);
 
@@ -40,7 +40,7 @@ function Languages() {
       setTotalPages(1);
       Swal.fire("Error", "Failed to fetch languages", "error");
     } finally {
-      setLoading(false); // ✅ Stop loading always
+      setLoading(false); 
     }
   };
 

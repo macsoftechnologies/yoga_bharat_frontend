@@ -34,10 +34,10 @@ export const getHealthPreferences = async (page = 1, limit = 10) => {
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data.data;
+    return response.data;
   } catch (err) {
     console.error("API Error:", err);
-    return []; 
+    return { data: [], totalPages: 1, totalCount: 0 };
   }
 };
 
@@ -330,10 +330,10 @@ export const getYogaList = async (page = 1, limit = 10) => {
     const res = await api.get(`/yoga/list?page=${page}&limit=${limit}`, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return res.data.data || [];
+    return res.data; 
   } catch (err) {
     console.error("Get Yoga List API Error:", err);
-    return [];
+    return { data: [], totalPages: 1, totalCount: 0 }; 
   }
 };
 
@@ -370,10 +370,10 @@ export const getClients = async (page = 1, limit = 10) => {
     const res = await api.get(`/users/clients?page=${page}&limit=${limit}`, {
       headers: { "Content-Type": "application/json" },
     });
-    return res.data.data || [];
+    return res.data; 
   } catch (err) {
     console.error("Get Clients API Error:", err);
-    return [];
+    return { data: [], totalPages: 1, totalCount: 0 }; 
   }
 };
 
@@ -382,10 +382,10 @@ export const getTrainers = async (page = 1, limit = 10) => {
     const res = await api.get(`/users/trainers?page=${page}&limit=${limit}`, {
       headers: { "Content-Type": "application/json" },
     });
-    return res.data.data || [];
+    return res.data;
   } catch (err) {
     console.error("Get Trainers API Error:", err);
-    return [];
+    return { data: [], totalPages: 1, totalCount: 0 }; 
   }
 };
 

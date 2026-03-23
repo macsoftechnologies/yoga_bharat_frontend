@@ -2,25 +2,40 @@ import React from "react";
 import "./Table.css";
 
 function buildPageList(current, total, delta = 2) {
-  const range = [];
-  const left = Math.max(2, current - delta);
-  const right = Math.min(total - 1, current + delta);
+  if (!total || total <= 0) return [];
+  if (total === 1) return [1];
 
-  range.push(1);
+  const pages = new Set();
+  pages.add(1);
+  pages.add(total);
 
-  if (left > 2) range.push("...");
+  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+    pages.add(i);
+  }
 
-  for (let i = left; i <= right; i++) range.push(i);
+  const sorted = [...pages].sort((a, b) => a - b);
+  const result = [];
 
-  if (right < total - 1) range.push("...");
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+      result.push("...");
+    }
+    result.push(sorted[i]);
+  }
 
-  if (total > 1) range.push(total);
-
-  return range;
+  return result;
 }
 
-const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading = false }) => {
-  const pages = buildPageList(currentPage, totalPages);
+const Table = ({
+  columns,
+  data,
+  currentPage,
+  totalPages,
+  onPageChange,
+  isLoading = false,
+}) => {
+  const safeTotalPages = Math.max(1, totalPages || 1);
+  const pages = buildPageList(currentPage, safeTotalPages);
 
   return (
     <div className="table-container">
@@ -42,7 +57,18 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading
             </tr>
           ) : data.length > 0 ? (
             data.map((row, index) => (
-              <tr key={index}>
+              <tr
+                key={index}
+                // ✅ If _rowonClick exists on the row, entire <tr> becomes clickable
+                onClick={row._rowonClick || undefined}
+                style={
+                  row._rowonClick
+                    ? { cursor: "pointer" }
+                    : undefined
+                }
+                // ✅ Hover highlight for clickable rows (via CSS class)
+                className={row._rowonClick ? "clickable-row" : ""}
+              >
                 {columns.map((col) => (
                   <td key={col.accessor}>{row[col.accessor]}</td>
                 ))}
@@ -50,7 +76,15 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} style={{ textAlign: "center", padding: "40px 0", color: "#888", fontSize: "15px" }}>
+              <td
+                colSpan={columns.length}
+                style={{
+                  textAlign: "center",
+                  padding: "40px 0",
+                  color: "#888",
+                  fontSize: "15px",
+                }}
+              >
                 No records found
               </td>
             </tr>
@@ -58,50 +92,52 @@ const Table = ({ columns, data, currentPage, totalPages, onPageChange, isLoading
         </tbody>
       </table>
 
-      <div className="pagination">
-        <button
-          className="page-btn"
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-        >
-          ← Prev
-        </button>
+      {safeTotalPages > 0 && (
+        <div className="pagination">
+          <button
+            className="page-btn"
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          >
+            ← Prev
+          </button>
 
-        {pages.map((page, i) =>
-          page === "..." ? (
-            <span
-              key={`ellipsis-${i}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "8px 4px",
-                fontSize: "14px",
-                color: "#888",
-                letterSpacing: "2px",
-              }}
-            >
-              ...
-            </span>
-          ) : (
-            <button
-              key={page}
-              className={`page-number ${currentPage === page ? "active" : ""}`}
-              onClick={() => onPageChange(page)}
-            >
-              {page}
-            </button>
-          )
-        )}
+          {pages.map((page, i) =>
+            page === "..." ? (
+              <span
+                key={`ellipsis-${i}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "8px 4px",
+                  fontSize: "14px",
+                  color: "#888",
+                  letterSpacing: "2px",
+                }}
+              >
+                ...
+              </span>
+            ) : (
+              <button
+                key={`page-${page}`}
+                className={`page-number ${currentPage === page ? "active" : ""}`}
+                onClick={() => onPageChange(page)}
+              >
+                {page}
+              </button>
+            )
+          )}
 
-        <button
-          className="page-btn"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-        >
-          Next →
-        </button>
-      </div>
+          <button
+            className="page-btn"
+            disabled={currentPage === safeTotalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 };

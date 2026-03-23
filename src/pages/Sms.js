@@ -68,11 +68,11 @@ function Sms() {
   };
 
   const columns = [
-    { header: "S.No", accessor: "srNo" },
-    { header: "Message", accessor: "message" },
+    { header: "S.No",       accessor: "srNo" },
+    { header: "Message",    accessor: "message" },
     { header: "Recipients", accessor: "recipients" },
-    { header: "Sent At", accessor: "createdAt" },
-    { header: "Actions", accessor: "actions" },
+    { header: "Sent At",    accessor: "createdAt" },
+    { header: "Actions",    accessor: "actions" },
   ];
 
   const tableData = smsList.map((item, index) => ({
@@ -116,7 +116,7 @@ function Sms() {
           <FaEye />
         </button>
       </div>
-    )
+    ),
   }));
 
   return (
@@ -135,10 +135,12 @@ function Sms() {
         isLoading={loading}
       />
 
+      {/* Send SMS Modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Send Bulk SMS" size="md">
         <SmsForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
+      {/* View SMS Modal */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="SMS Details" size="lg">
         {selectedItem && (
           <div style={{ padding: 10 }}>
@@ -203,6 +205,7 @@ function Sms() {
   );
 }
 
+// ─── SMS Form ────────────────────────────────────────────────────────────────
 function SmsForm({ onClose, onSubmit }) {
   const [message, setMessage] = useState("");
   const [role, setRole] = useState("");
@@ -226,17 +229,38 @@ function SmsForm({ onClose, onSubmit }) {
     try {
       let allUsers = [];
       let page = 1;
-      const limit = 100;
+      const limit = 100; // fetch more per page to reduce calls
 
       while (true) {
-        const data =
-          selectedRole === "client"
-            ? await getClients(page, limit)
-            : await getTrainers(page, limit);
+        /*
+         * FIXED: getClients/getTrainers now return the full API object:
+         * { statusCode, totalPages, totalCount, data: [...] }
+         *
+         * OLD (broken):
+         *   if (!data || data.length === 0) break;
+         *   allUsers = [...allUsers, ...data];
+         *   ↑ data is an object → data.length = undefined → loop runs forever
+         *   ↑ spreading an object into array → wrong result → "Failed to load users"
+         *
+         * NEW (fixed):
+         *   const records = data.data  ← the actual array
+         *   const totalPages = data.totalPages
+         *   if no records → break
+         *   if page >= totalPages → break after adding
+         */
+        const res = selectedRole === "client"
+          ? await getClients(page, limit)
+          : await getTrainers(page, limit);
 
-        if (!data || data.length === 0) break;
-        allUsers = [...allUsers, ...data];
-        if (data.length < limit) break;
+        const records   = Array.isArray(res.data) ? res.data : [];
+        const totalPgs  = res.totalPages || 1;
+
+        if (records.length === 0) break;
+
+        allUsers = [...allUsers, ...records];
+
+        // Stop if we've fetched all pages
+        if (page >= totalPgs) break;
         page++;
       }
 
@@ -288,6 +312,7 @@ function SmsForm({ onClose, onSubmit }) {
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
+      {/* Role Selector */}
       <div className="mb-3">
         <label className="form-label">Select Role</label>
         <select
@@ -302,6 +327,7 @@ function SmsForm({ onClose, onSubmit }) {
         </select>
       </div>
 
+      {/* User List */}
       {role && (
         <div className="mb-3">
           <label className="form-label">
@@ -325,7 +351,11 @@ function SmsForm({ onClose, onSubmit }) {
           ) : userList.length === 0 ? (
             <div
               className="text-muted text-center py-2"
-              style={{ fontSize: "13px", border: "1px solid #dee2e6", borderRadius: 6 }}
+              style={{
+                fontSize: "13px",
+                border: "1px solid #dee2e6",
+                borderRadius: 6,
+              }}
             >
               No {role}s found.
             </div>
@@ -339,6 +369,7 @@ function SmsForm({ onClose, onSubmit }) {
                 background: "#fafafa",
               }}
             >
+              {/* Select All */}
               <div
                 style={{
                   padding: "8px 12px",
@@ -367,6 +398,7 @@ function SmsForm({ onClose, onSubmit }) {
                 </div>
               </div>
 
+              {/* User Rows */}
               {userList.map((user) => {
                 const isChecked = selectedUserIds.includes(user.userId);
                 return (
@@ -401,7 +433,8 @@ function SmsForm({ onClose, onSubmit }) {
                             width: 30,
                             height: 30,
                             borderRadius: "50%",
-                            background: role === "trainer" ? "#ff7a00" : "#0dcaf0",
+                            background:
+                              role === "trainer" ? "#ff7a00" : "#0dcaf0",
                             color: "#fff",
                             display: "inline-flex",
                             alignItems: "center",
@@ -414,8 +447,16 @@ function SmsForm({ onClose, onSubmit }) {
                           {user.name?.charAt(0)?.toUpperCase() || "?"}
                         </span>
                         <span>
-                          <span style={{ fontWeight: 600 }}>{user.name || "Unknown"}</span>
-                          <span style={{ color: "#888", fontSize: "12px", marginLeft: 8 }}>
+                          <span style={{ fontWeight: 600 }}>
+                            {user.name || "Unknown"}
+                          </span>
+                          <span
+                            style={{
+                              color: "#888",
+                              fontSize: "12px",
+                              marginLeft: 8,
+                            }}
+                          >
                             {user.mobileNumber || ""}
                           </span>
                         </span>
@@ -429,6 +470,7 @@ function SmsForm({ onClose, onSubmit }) {
         </div>
       )}
 
+      {/* Message */}
       <div className="mb-3">
         <label className="form-label">Message</label>
         <textarea
@@ -441,8 +483,13 @@ function SmsForm({ onClose, onSubmit }) {
         />
       </div>
 
+      {/* Actions */}
       <div className="text-end">
-        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
+        <button
+          type="button"
+          className="btn btn-secondary me-2"
+          onClick={onClose}
+        >
           Cancel
         </button>
         <button

@@ -15,30 +15,33 @@ function Yoga() {
   const [yogaList, setYogaList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchData(currentPage);
   }, [currentPage]);
 
-  // Fetch Yoga list
+  // ─── Fetch Yoga List ────────────────────────────────────────────────────────
   const fetchData = async (page) => {
     setLoading(true);
     try {
+      // getYogaList now returns res.data (full API object):
+      // { statusCode, totalCount, totalPages, currentPage, data: [...] }
       const res = await getYogaList(page, 10);
-      const yogaData = Array.isArray(res.data) ? res.data : res;
-      const total = res.totalPages || 1;
+
+      const yogaData = Array.isArray(res.data) ? res.data : [];
+      const total    = res.totalPages || 1;
 
       setYogaList(
         yogaData.map((item) => ({
-          yogaId: item.yogaId,
-          yoga_name: item.yoga_name,
-          client_price: item.client_price,
+          yogaId:        item.yogaId,
+          yoga_name:     item.yoga_name,
+          client_price:  item.client_price,
           trainer_price: item.trainer_price,
-          yoga_desc: item.yoga_desc,
-          yoga_image: item.yoga_image,
-          yoga_icon: item.yoga_icon,
-          duration: item.duration,
+          yoga_desc:     item.yoga_desc,
+          yoga_image:    item.yoga_image,
+          yoga_icon:     item.yoga_icon,
+          duration:      item.duration,
         }))
       );
 
@@ -52,24 +55,24 @@ function Yoga() {
       setYogaList([]);
       setTotalPages(1);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
-  // VIEW
+  // ─── View ───────────────────────────────────────────────────────────────────
   const handleView = async (yogaId) => {
     try {
       const res = await yogaById(yogaId);
       const yoga = res.data;
       setSelectedYoga({
-        yogaId: yoga.yogaId,
-        yoga_name: yoga.yoga_name,
-        client_price: yoga.client_price,
+        yogaId:        yoga.yogaId,
+        yoga_name:     yoga.yoga_name,
+        client_price:  yoga.client_price,
         trainer_price: yoga.trainer_price,
-        yoga_desc: yoga.yoga_desc,
-        yoga_image: yoga.yoga_image,
-        yoga_icon: yoga.yoga_icon,
-        duration: yoga.duration,
+        yoga_desc:     yoga.yoga_desc,
+        yoga_image:    yoga.yoga_image,
+        yoga_icon:     yoga.yoga_icon,
+        duration:      yoga.duration,
       });
       setViewOpen(true);
     } catch (err) {
@@ -81,20 +84,20 @@ function Yoga() {
     }
   };
 
-  // EDIT
+  // ─── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = async (yogaId) => {
     try {
       const res = await yogaById(yogaId);
       const yoga = res.data;
       setSelectedYoga({
-        yogaId: yoga.yogaId,
-        yoga_name: yoga.yoga_name,
-        client_price: yoga.client_price,
+        yogaId:        yoga.yogaId,
+        yoga_name:     yoga.yoga_name,
+        client_price:  yoga.client_price,
         trainer_price: yoga.trainer_price,
-        yoga_desc: yoga.yoga_desc,
-        yoga_image: yoga.yoga_image,
-        yoga_icon: yoga.yoga_icon,
-        duration: yoga.duration,
+        yoga_desc:     yoga.yoga_desc,
+        yoga_image:    yoga.yoga_image,
+        yoga_icon:     yoga.yoga_icon,
+        duration:      yoga.duration,
       });
       setEditOpen(true);
     } catch (err) {
@@ -106,7 +109,7 @@ function Yoga() {
     }
   };
 
-  // DELETE
+  // ─── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = async (yogaId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -145,7 +148,7 @@ function Yoga() {
     }
   };
 
-  // After add/update
+  // ─── After add/update ───────────────────────────────────────────────────────
   const handleSubmit = () => {
     fetchData(currentPage);
     setSelectedYoga(null);
@@ -153,20 +156,20 @@ function Yoga() {
     setEditOpen(false);
   };
 
-  // Table columns
+  // ─── Table Columns ──────────────────────────────────────────────────────────
   const columns = [
-    { header: "S.No", accessor: "srNo" },
-    { header: "Yoga Name", accessor: "yoga_name" },
-    { header: "Client Price", accessor: "client_price" },
+    { header: "S.No",          accessor: "srNo" },
+    { header: "Yoga Name",     accessor: "yoga_name" },
+    { header: "Client Price",  accessor: "client_price" },
     { header: "Trainer Price", accessor: "trainer_price" },
-    { header: "Description", accessor: "yoga_desc" },
-    { header: "Image", accessor: "yoga_image" },
-    { header: "Icon", accessor: "yoga_icon" },
-    { header: "Duration", accessor: "duration" },
-    { header: "Actions", accessor: "actions" },
+    { header: "Description",   accessor: "yoga_desc" },
+    { header: "Image",         accessor: "yoga_image" },
+    { header: "Icon",          accessor: "yoga_icon" },
+    { header: "Duration",      accessor: "duration" },
+    { header: "Actions",       accessor: "actions" },
   ];
 
-  // Table data
+  // ─── Table Data ─────────────────────────────────────────────────────────────
   const tableData = yogaList.map((item, index) => ({
     srNo: (currentPage - 1) * 10 + index + 1,
     ...item,
@@ -221,19 +224,32 @@ function Yoga() {
 
     actions: (
       <div className="actions">
-        <button className="icon-btn view" title="View" onClick={() => handleView(item.yogaId)}>
+        <button
+          className="icon-btn view"
+          title="View"
+          onClick={() => handleView(item.yogaId)}
+        >
           <FaEye />
         </button>
-        <button className="icon-btn edit" title="Edit" onClick={() => handleEdit(item.yogaId)}>
+        <button
+          className="icon-btn edit"
+          title="Edit"
+          onClick={() => handleEdit(item.yogaId)}
+        >
           <FaEdit />
         </button>
-        <button className="icon-btn delete" title="Delete" onClick={() => handleDelete(item.yogaId)}>
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={() => handleDelete(item.yogaId)}
+        >
           <FaTrash />
         </button>
       </div>
     ),
   }));
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       {/* Header */}
@@ -283,42 +299,31 @@ function Yoga() {
           <div className="container" style={{ padding: "10px" }}>
             <div className="row mb-3">
               <div className="col-md-6">
-                <p>
-                  <b>Yoga Name:</b> {selectedYoga.yoga_name}
-                </p>
+                <p><b>Yoga Name:</b> {selectedYoga.yoga_name}</p>
               </div>
               <div className="col-md-6">
-                <p>
-                  <b>Client Price:</b> {selectedYoga.client_price}
-                </p>
+                <p><b>Client Price:</b> {selectedYoga.client_price}</p>
               </div>
             </div>
 
             <div className="row mb-3">
               <div className="col-md-6">
-                <p>
-                  <b>Trainer Price:</b> {selectedYoga.trainer_price}
-                </p>
+                <p><b>Trainer Price:</b> {selectedYoga.trainer_price}</p>
               </div>
               <div className="col-md-6">
-                <p>
-                  <b>Duration:</b> {selectedYoga.duration}
-                </p>
+                <p><b>Duration:</b> {selectedYoga.duration}</p>
               </div>
             </div>
 
             <div className="row mb-3">
               <div className="col-md-12">
-                <p>
-                  <b>Description:</b> {selectedYoga.yoga_desc}
-                </p>
+                <p><b>Description:</b> {selectedYoga.yoga_desc}</p>
               </div>
             </div>
 
             <div className="row">
               <div className="col-md-6 text-center mb-3">
-                <b>Image:</b>
-                <br />
+                <b>Image:</b><br />
                 {selectedYoga.yoga_image ? (
                   <img
                     src={`${process.env.REACT_APP_API_BASE_URL}/${selectedYoga.yoga_image}`}
@@ -337,8 +342,7 @@ function Yoga() {
               </div>
 
               <div className="col-md-6 text-center mb-3">
-                <b>Icon:</b>
-                <br />
+                <b>Icon:</b><br />
                 {selectedYoga.yoga_icon ? (
                   <img
                     src={`${process.env.REACT_APP_API_BASE_URL}/${selectedYoga.yoga_icon}`}

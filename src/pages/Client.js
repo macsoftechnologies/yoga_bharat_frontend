@@ -9,98 +9,73 @@ function Client() {
   const [clients, setClients] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(10); // ✅ records per page
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchClients(currentPage);
-  }, [currentPage]);
+    fetchClients(currentPage, limit);
+  }, [currentPage, limit]);
 
-  const fetchClients = async (page) => {
+  const fetchClients = async (page, lim) => {
     setLoading(true);
     try {
-      const res = await getClients(page, 10);
+      const res = await getClients(page, lim);
 
       if (Array.isArray(res)) {
         setClients(res);
         setTotalPages(1);
+        setTotalCount(res.length);
       } else if (res && Array.isArray(res.data)) {
         setClients(res.data);
         setTotalPages(res.totalPages || 1);
+        setTotalCount(res.totalCount || res.data.length);
       } else {
         setClients([]);
         setTotalPages(1);
+        setTotalCount(0);
       }
     } catch (err) {
       setClients([]);
       setTotalPages(1);
-    }finally {
-      setLoading(false); 
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // When limit changes, reset to page 1
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setCurrentPage(1);
   };
 
   const goToProfile = (userId) => {
     navigate(`/client/${userId}`);
   };
 
-  const cellStyle = { cursor: "pointer" };
-
   const columns = [
-    { header: "S.No", accessor: "srNo" },
-    { header: "Name", accessor: "name" },
-    { header: "Email", accessor: "email" },
-    { header: "Mobile", accessor: "mobileNumber" },
-    { header: "Gender", accessor: "gender" },
-    { header: "Age", accessor: "age" },
-    { header: "Role", accessor: "role" },
+    { header: "S.No",      accessor: "srNo" },
+    { header: "Name",      accessor: "name" },
+    { header: "Email",     accessor: "email" },
+    { header: "Mobile",    accessor: "mobileNumber" },
+    { header: "Gender",    accessor: "gender" },
+    { header: "Age",       accessor: "age" },
+    { header: "Role",      accessor: "role" },
     { header: "Pref Name", accessor: "healthPrefNames" },
     { header: "Pref Icon", accessor: "healthPrefIcons" },
   ];
 
   const tableData = clients.map((item, index) => ({
-    srNo: (
-      <span
-        style={{ cursor: "pointer", color: "#6f42c1", fontWeight: "600" }}
-        onClick={() => goToProfile(item.userId)}
-      >
-        {(currentPage - 1) * 10 + index + 1}
-      </span>
-    ),
+    _rowonClick: () => goToProfile(item.userId),
 
-    name: (
-      <span style={cellStyle} onClick={() => goToProfile(item.userId)}>
-        {item.name}
-      </span>
-    ),
-
-    email: (
-      <span style={cellStyle} onClick={() => goToProfile(item.userId)}>
-        {item.email}
-      </span>
-    ),
-
-    mobileNumber: (
-      <span style={cellStyle} onClick={() => goToProfile(item.userId)}>
-        {item.mobileNumber}
-      </span>
-    ),
-
-    gender: (
-      <span style={cellStyle} onClick={() => goToProfile(item.userId)}>
-        {item.gender}
-      </span>
-    ),
-
-    age: (
-      <span style={cellStyle} onClick={() => goToProfile(item.userId)}>
-        {item.age}
-      </span>
-    ),
-
-    role: (
-      <span style={cellStyle} onClick={() => goToProfile(item.userId)}>
-        {item.role}
-      </span>
-    ),
+    srNo: (currentPage - 1) * limit + index + 1,
+    name: item.name,
+    email: item.email,
+    mobileNumber: item.mobileNumber,
+    gender: item.gender,
+    age: item.age,
+    role: item.role,
 
     healthPrefNames:
       item.health_preference?.length > 0
@@ -116,14 +91,58 @@ function Client() {
               alt={pref.preference_name}
               width="50"
               className="me-1"
-            /> 
+            />
           ))
         : "N/A",
   }));
 
   return (
     <div>
-      <h2 className="mb-3">CLIENT LIST</h2>
+      {/* ── Header Row ── */}
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <h2 className="mb-0">CLIENT LIST</h2>
+
+        {/* Records per page */}
+        <div className="d-flex align-items-center gap-2">
+          <label
+            style={{ fontSize: "13px", color: "#666", whiteSpace: "nowrap" }}
+          >
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{ width: "75px" }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+      </div>
+
+      {/* ── Info Row ── */}
+      <div
+        className="d-flex align-items-center justify-content-between mb-3"
+        style={{ fontSize: "13px", color: "#555" }}
+      >
+        {/* Showing X records */}
+        <span>
+          Showing{" "}
+          <strong style={{ color: "#ff7a00" }}>{clients.length}</strong>{" "}
+          {totalCount > clients.length ? (
+            <>of <strong>{totalCount}</strong></>
+          ) : null}{" "}
+          records
+        </span>
+
+        {/* Row click hint */}
+        <span style={{ color: "#aaa", fontSize: "12px", fontStyle: "italic" }}>
+          Click any row to view profile →
+        </span>
+      </div>
 
       <Table
         columns={columns}

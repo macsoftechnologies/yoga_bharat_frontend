@@ -20,9 +20,9 @@ function TrainerProfile() {
   const [totalPages, setTotalPages] = useState(1);
   const [earningsPage, setEarningsPage] = useState(1);
   const [earningsTotalPages, setEarningsTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
 
-  // Modal State for Full Image View
+  // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
 
@@ -36,34 +36,48 @@ function TrainerProfile() {
     setModalImage("");
   };
 
-  // Fetch Trainer Info
+  // ─── Fetch Trainer Info ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
 
     const fetchTrainer = async () => {
       setLoading(true);
       try {
-        const res = await getTrainers(1, 10);
-        if (res && Array.isArray(res)) {
-          const selectedTrainer = res.find((t) => t.userId === userId);
-          setTrainer(selectedTrainer || null);
+        const res = await getTrainers(1, 100);
 
-          if (selectedTrainer?.userId) {
-            const certRes = await getCertificatesByUser(selectedTrainer.userId);
-            setCertificates(certRes?.data || []);
-          }
+        /*
+         * FIXED: getTrainers now returns full API object { data: [...], totalPages: N }
+         * not a bare array. So Array.isArray(res) is false and res.find() would crash.
+         *
+         * OLD (broken):
+         *   if (res && Array.isArray(res)) {
+         *     const selectedTrainer = res.find(t => t.userId === userId);
+         *   }
+         *   ↑ res is an object now → Array.isArray(res) = false → trainer never set
+         *
+         * NEW (fixed):
+         *   const trainerArray = Array.isArray(res.data) ? res.data : [];
+         *   const selectedTrainer = trainerArray.find(t => t.userId === userId);
+         */
+        const trainerArray = Array.isArray(res.data) ? res.data : [];
+        const selectedTrainer = trainerArray.find((t) => t.userId === userId);
+        setTrainer(selectedTrainer || null);
+
+        if (selectedTrainer?.userId) {
+          const certRes = await getCertificatesByUser(selectedTrainer.userId);
+          setCertificates(certRes?.data || []);
         }
       } catch (error) {
         console.error("Fetch Trainer Error:", error);
-      }finally {
-      setLoading(false); 
-    }
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchTrainer();
   }, [userId]);
 
-  // Fetch Bookings
+  // ─── Fetch Bookings ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!trainer?.userId) return;
 
@@ -87,15 +101,13 @@ function TrainerProfile() {
     fetchBookings();
   }, [currentPage, trainer]);
 
-  // Fetch Earnings
+  // ─── Fetch Earnings ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!trainer?.userId) return;
 
     const fetchEarnings = async () => {
       try {
         const res = await getTrainerEarning(trainer.userId);
-        console.log("Earnings API response:", res);
-
         const data = Array.isArray(res) ? res : res?.data;
         setEarnings(data || []);
         setEarningsTotalPages(1);
@@ -108,68 +120,80 @@ function TrainerProfile() {
     fetchEarnings();
   }, [trainer?.userId]);
 
-if (!trainer) return (
-  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
-    <div className="table-spinner"></div>
-  </div>
-);
+  // ─── Loading State ──────────────────────────────────────────────────────────
+  if (!trainer) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "300px",
+        }}
+      >
+        <div className="table-spinner"></div>
+      </div>
+    );
+  }
+
   const getImageUrl = (filename) => {
     if (!filename) return "";
     return `${process.env.REACT_APP_API_BASE_URL}/${filename}`;
   };
 
-  // Bookings Table
+  // ─── Bookings Table ─────────────────────────────────────────────────────────
   const columns = [
-    { header: "S.No", accessor: "srNo" },
-    { header: "Trainer Name", accessor: "trainerName" },
-    { header: "Client Name", accessor: "clientName" },
+    { header: "S.No",          accessor: "srNo" },
+    { header: "Trainer Name",  accessor: "trainerName" },
+    { header: "Client Name",   accessor: "clientName" },
     { header: "Client UserId", accessor: "clientUserId" },
-    { header: "Booking Type", accessor: "bookingType" },
-    { header: "Yoga Name", accessor: "yogaName" },
-    { header: "Language", accessor: "language" },
-    { header: "Client Price", accessor: "clientPrice" },
-    { header: "Date", accessor: "scheduledDate" },
-    { header: "Time", accessor: "time" },
-    { header: "Status", accessor: "status" },
+    { header: "Booking Type",  accessor: "bookingType" },
+    { header: "Yoga Name",     accessor: "yogaName" },
+    { header: "Language",      accessor: "language" },
+    { header: "Client Price",  accessor: "clientPrice" },
+    { header: "Date",          accessor: "scheduledDate" },
+    { header: "Time",          accessor: "time" },
+    { header: "Status",        accessor: "status" },
   ];
 
   const tableData = ordersList.map((item, index) => ({
-    srNo: (currentPage - 1) * 10 + index + 1,
-    trainerName: trainer?.name || "-",
-    clientName: item.clientId?.[0]?.name || "-",
-    clientUserId: item.clientId?.[0]?.userId || "-",
-    bookingType: item.bookingType || "-",
-    yogaName: item.yogaId?.[0]?.yoga_name || "-",
-    language: item.languageId?.[0]?.language_name || "-",
-    clientPrice: `₹${item.yogaId?.[0]?.client_price || 0}`,
+    srNo:          (currentPage - 1) * 10 + index + 1,
+    trainerName:   trainer?.name || "-",
+    clientName:    item.clientId?.[0]?.name || "-",
+    clientUserId:  item.clientId?.[0]?.userId || "-",
+    bookingType:   item.bookingType || "-",
+    yogaName:      item.yogaId?.[0]?.yoga_name || "-",
+    language:      item.languageId?.[0]?.language_name || "-",
+    clientPrice:   `₹${item.yogaId?.[0]?.client_price || 0}`,
     scheduledDate: item.scheduledDate
       ? new Date(item.scheduledDate).toLocaleDateString()
       : "-",
-    time: item.time || "-",
+    time:   item.time || "-",
     status: item.status || "-",
   }));
 
-  // Earnings Table
+  // ─── Earnings Table ─────────────────────────────────────────────────────────
   const earningColumns = [
-    { header: "S.No", accessor: "srNo" },
-    { header: "Client Name", accessor: "name" },
-    { header: "Role", accessor: "role" },
-    { header: "Date", accessor: "date" },
+    { header: "S.No",          accessor: "srNo" },
+    { header: "Client Name",   accessor: "name" },
+    { header: "Role",          accessor: "role" },
+    { header: "Date",          accessor: "date" },
     { header: "Trainer Price", accessor: "trainer_price" },
     { header: "Earned Amount", accessor: "earned_amount" },
   ];
 
   const earningTableData = earnings.map((item, index) => ({
-    srNo: index + 1,
-    name: item.clientId?.[0]?.name || "-",
-    role: item.clientId?.[0]?.role || "-",
-    date: item.date ? new Date(item.date).toLocaleDateString() : "-",
+    srNo:          index + 1,
+    name:          item.clientId?.[0]?.name || "-",
+    role:          item.clientId?.[0]?.role || "-",
+    date:          item.date ? new Date(item.date).toLocaleDateString() : "-",
     trainer_price: item.yogaId?.[0]?.trainer_price
       ? `₹${item.yogaId[0].trainer_price}`
       : "-",
     earned_amount: item.earned_amount ? `₹${item.earned_amount}` : "₹0",
   }));
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="container mt-3">
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -249,13 +273,7 @@ if (!trainer) return (
                       <h6 style={{ margin: 0, fontWeight: "700" }}>
                         {c.headline || "Yoga Certificate"}
                       </h6>
-                      <p
-                        style={{
-                          margin: "6px 0 0",
-                          fontSize: "13px",
-                          color: "#000",
-                        }}
-                      >
+                      <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#000" }}>
                         {c.description || "No description available"}
                       </p>
                     </div>
@@ -268,17 +286,16 @@ if (!trainer) return (
           )}
         </div>
       </div>
-      {/* Payment  */}
+
+      {/* Payment Details */}
       <div className="card p-3 shadow-sm mb-4">
         <h4>Payment Details</h4>
-
         <div className="row mt-3">
           <div className="col-md-6">
             <p><b>Recipient:</b> {trainer.recipient_name || "N/A"}</p>
             <p><b>Account No:</b> {trainer.account_no || "N/A"}</p>
             <p><b>Account Branch:</b> {trainer.account_branch || "N/A"}</p>
           </div>
-
           <div className="col-md-6">
             <p><b>Branch Address:</b> {trainer.branch_address || "N/A"}</p>
             <p><b>IFSC Code:</b> {trainer.ifsc_code || "N/A"}</p>
@@ -286,26 +303,17 @@ if (!trainer) return (
         </div>
       </div>
 
+      {/* Professional Details + Yoga Video */}
       <div className="card p-3 shadow-sm mb-4">
         <div className="row">
-          
-          {/* Professional Details */}
           <div className="col-md-6">
             <h4>Professional Details</h4>
-
             {trainer.professional_details?.length > 0 ? (
               trainer.professional_details.map((item) => (
                 <div key={item._id} className="mb-2">
-                  <p className="mb-1">
-                    <b>Yoga:</b> {item.yoga_name}
-                  </p>
-                  <p className="mb-1">
-                    <b>Client Price:</b> ₹{item.client_price}
-                  </p>
-                  <p className="mb-1">
-                    <b>Trainer Price:</b> ₹{item.trainer_price}
-                  </p>
-                  {/* <hr /> */}
+                  <p className="mb-1"><b>Yoga:</b> {item.yoga_name}</p>
+                  <p className="mb-1"><b>Client Price:</b> ₹{item.client_price}</p>
+                  <p className="mb-1"><b>Trainer Price:</b> ₹{item.trainer_price}</p>
                 </div>
               ))
             ) : (
@@ -313,8 +321,6 @@ if (!trainer) return (
             )}
           </div>
 
-
-          {/* Yoga Video */}
           <div className="col-md-6">
             <h4>Yoga Video</h4>
             {trainer.yoga_video ? (
@@ -336,7 +342,6 @@ if (!trainer) return (
               <p>N/A</p>
             )}
           </div>
-
         </div>
       </div>
 
