@@ -59,14 +59,12 @@ const Table = ({
             data.map((row, index) => (
               <tr
                 key={index}
-                // ✅ If _rowonClick exists on the row, entire <tr> becomes clickable
                 onClick={row._rowonClick || undefined}
                 style={
                   row._rowonClick
                     ? { cursor: "pointer" }
                     : undefined
                 }
-                // ✅ Hover highlight for clickable rows (via CSS class)
                 className={row._rowonClick ? "clickable-row" : ""}
               >
                 {columns.map((col) => (

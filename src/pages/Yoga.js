@@ -15,37 +15,36 @@ function Yoga() {
   const [yogaList, setYogaList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchData(currentPage);
-  }, [currentPage]);
+    fetchData(currentPage, limit);
+  }, [currentPage, limit]); // ✅ FIXED HERE
 
-  // ─── Fetch Yoga List ────────────────────────────────────────────────────────
-  const fetchData = async (page) => {
+  const fetchData = async (page, activeLimit) => {
     setLoading(true);
     try {
-      // getYogaList now returns res.data (full API object):
-      // { statusCode, totalCount, totalPages, currentPage, data: [...] }
-      const res = await getYogaList(page, 10);
+      const res = await getYogaList(page, activeLimit);
 
       const yogaData = Array.isArray(res.data) ? res.data : [];
-      const total    = res.totalPages || 1;
 
       setYogaList(
         yogaData.map((item) => ({
-          yogaId:        item.yogaId,
-          yoga_name:     item.yoga_name,
-          client_price:  item.client_price,
+          yogaId: item.yogaId,
+          yoga_name: item.yoga_name,
+          client_price: item.client_price,
           trainer_price: item.trainer_price,
-          yoga_desc:     item.yoga_desc,
-          yoga_image:    item.yoga_image,
-          yoga_icon:     item.yoga_icon,
-          duration:      item.duration,
+          yoga_desc: item.yoga_desc,
+          yoga_image: item.yoga_image,
+          yoga_icon: item.yoga_icon,
+          duration: item.duration,
         }))
       );
 
-      setTotalPages(total);
+      setTotalPages(res.totalPages || 1);
+      setTotalCount(res.totalCount || 0);
     } catch (err) {
       Swal.fire(
         "Error",
@@ -54,25 +53,32 @@ function Yoga() {
       );
       setYogaList([]);
       setTotalPages(1);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── View ───────────────────────────────────────────────────────────────────
+  const handleLimitChange = (e) => {
+    const newLimit = Number(e.target.value);
+    setLimit(newLimit);
+    setCurrentPage(1);
+    fetchData(1, newLimit); // ✅ kept as it is (no deletion)
+  };
+
   const handleView = async (yogaId) => {
     try {
       const res = await yogaById(yogaId);
       const yoga = res.data;
       setSelectedYoga({
-        yogaId:        yoga.yogaId,
-        yoga_name:     yoga.yoga_name,
-        client_price:  yoga.client_price,
+        yogaId: yoga.yogaId,
+        yoga_name: yoga.yoga_name,
+        client_price: yoga.client_price,
         trainer_price: yoga.trainer_price,
-        yoga_desc:     yoga.yoga_desc,
-        yoga_image:    yoga.yoga_image,
-        yoga_icon:     yoga.yoga_icon,
-        duration:      yoga.duration,
+        yoga_desc: yoga.yoga_desc,
+        yoga_image: yoga.yoga_image,
+        yoga_icon: yoga.yoga_icon,
+        duration: yoga.duration,
       });
       setViewOpen(true);
     } catch (err) {
@@ -84,20 +90,19 @@ function Yoga() {
     }
   };
 
-  // ─── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = async (yogaId) => {
     try {
       const res = await yogaById(yogaId);
       const yoga = res.data;
       setSelectedYoga({
-        yogaId:        yoga.yogaId,
-        yoga_name:     yoga.yoga_name,
-        client_price:  yoga.client_price,
+        yogaId: yoga.yogaId,
+        yoga_name: yoga.yoga_name,
+        client_price: yoga.client_price,
         trainer_price: yoga.trainer_price,
-        yoga_desc:     yoga.yoga_desc,
-        yoga_image:    yoga.yoga_image,
-        yoga_icon:     yoga.yoga_icon,
-        duration:      yoga.duration,
+        yoga_desc: yoga.yoga_desc,
+        yoga_image: yoga.yoga_image,
+        yoga_icon: yoga.yoga_icon,
+        duration: yoga.duration,
       });
       setEditOpen(true);
     } catch (err) {
@@ -109,7 +114,6 @@ function Yoga() {
     }
   };
 
-  // ─── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = async (yogaId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -138,7 +142,7 @@ function Yoga() {
         color: "#ffffff",
         background: "#ff7a00",
       });
-      fetchData(currentPage);
+      fetchData(currentPage, limit);
     } catch (err) {
       Swal.fire(
         "Error",
@@ -148,30 +152,27 @@ function Yoga() {
     }
   };
 
-  // ─── After add/update ───────────────────────────────────────────────────────
   const handleSubmit = () => {
-    fetchData(currentPage);
+    fetchData(currentPage, limit);
     setSelectedYoga(null);
     setOpen(false);
     setEditOpen(false);
   };
 
-  // ─── Table Columns ──────────────────────────────────────────────────────────
   const columns = [
-    { header: "S.No",          accessor: "srNo" },
-    { header: "Yoga Name",     accessor: "yoga_name" },
-    { header: "Client Price",  accessor: "client_price" },
+    { header: "S.No", accessor: "srNo" },
+    { header: "Yoga Name", accessor: "yoga_name" },
+    { header: "Client Price", accessor: "client_price" },
     { header: "Trainer Price", accessor: "trainer_price" },
-    { header: "Description",   accessor: "yoga_desc" },
-    { header: "Image",         accessor: "yoga_image" },
-    { header: "Icon",          accessor: "yoga_icon" },
-    { header: "Duration",      accessor: "duration" },
-    { header: "Actions",       accessor: "actions" },
+    { header: "Description", accessor: "yoga_desc" },
+    { header: "Image", accessor: "yoga_image" },
+    { header: "Icon", accessor: "yoga_icon" },
+    { header: "Duration", accessor: "duration" },
+    { header: "Actions", accessor: "actions" },
   ];
 
-  // ─── Table Data ─────────────────────────────────────────────────────────────
   const tableData = yogaList.map((item, index) => ({
-    srNo: (currentPage - 1) * 10 + index + 1,
+    srNo: (currentPage - 1) * limit + index + 1,
     ...item,
 
     yoga_desc: (
@@ -249,16 +250,46 @@ function Yoga() {
     ),
   }));
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
-      {/* Header */}
       <div className="d-flex justify-content-between mb-3">
         <h2>YOGA LIST</h2>
         <Button text="+ Add Yoga" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      {/* Table */}
+      <div className="d-flex align-items-center justify-content-between mb-2 p-2">
+        <div className="d-flex align-items-center gap-2">
+          <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{
+              border: "2px solid #ff7a00",
+              padding: "2px",
+              cursor: "pointer",
+              width: "75px",
+            }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span style={{ fontSize: "16px", color: "#000" }}>
+          Showing{" "}
+          <strong style={{ color: "#ff7a00" }}>{yogaList.length}</strong>{" "}
+          {totalCount > yogaList.length ? (
+            <>of <strong>{totalCount}</strong></>
+          ) : null}{" "}
+          records
+        </span>
+      </div>
+
       <Table
         columns={columns}
         data={tableData}
@@ -268,12 +299,10 @@ function Yoga() {
         isLoading={loading}
       />
 
-      {/* ADD MODAL */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Yoga" size="lg">
         <YogaForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* EDIT MODAL */}
       <Modal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -288,7 +317,6 @@ function Yoga() {
         />
       </Modal>
 
-      {/* VIEW MODAL */}
       <Modal
         open={viewOpen}
         onClose={() => setViewOpen(false)}

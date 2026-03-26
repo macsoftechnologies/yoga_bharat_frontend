@@ -21,33 +21,47 @@ function FeatureBanners() {
   const [featuresList, setFeaturesList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false); // ✅ Added
+  const [totalCount, setTotalCount] = useState(0); // ✅ Total records
+  const [limit, setLimit] = useState(10); // ✅ Records per page
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchFeatures(currentPage);
-  }, [currentPage]);
+    fetchFeatures(currentPage, limit);
+  }, [currentPage, limit]);
 
-  const fetchFeatures = async (page) => {
-    setLoading(true); // ✅ Start loading
+  const fetchFeatures = async (page, limitValue) => {
+    setLoading(true);
     try {
-      const res = await getFeatures(page, 10);
+      const res = await getFeatures(page, limitValue);
       let data = [];
       let pages = 1;
+      let total = 0;
+
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
+        total = res.totalCount || data.length;
       } else if (Array.isArray(res)) {
         data = res;
+        total = data.length;
       }
+
       setFeaturesList(data);
       setTotalPages(pages);
+      setTotalCount(total);
     } catch (err) {
       setFeaturesList([]);
       setTotalPages(1);
+      setTotalCount(0);
       Swal.fire("Error", "Failed to fetch features", "error");
     } finally {
-      setLoading(false); // ✅ Stop loading always
+      setLoading(false);
     }
+  };
+
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setCurrentPage(1);
   };
 
   const handleView = async (featureId) => {
@@ -91,7 +105,7 @@ function FeatureBanners() {
         background: "#ff7a00",
         color: "#ffffff",
       });
-      fetchFeatures(currentPage);
+      fetchFeatures(currentPage, limit);
     } catch (err) {
       Swal.fire("Error", "Delete failed", "error");
     }
@@ -129,7 +143,7 @@ function FeatureBanners() {
           color: "#ffffff",
         });
       }
-      fetchFeatures(currentPage);
+      fetchFeatures(currentPage, limit);
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
@@ -148,7 +162,7 @@ function FeatureBanners() {
 
   const tableData = Array.isArray(featuresList)
     ? featuresList.map((item, index) => ({
-        srNo: (currentPage - 1) * 10 + index + 1,
+        srNo: (currentPage - 1) * limit + index + 1,
         ...item,
         feature_image: item.feature_image ? (
           <img
@@ -188,6 +202,31 @@ function FeatureBanners() {
       <div className="d-flex justify-content-between mb-3">
         <h2>BANNERS</h2>
         <Button text="+ Add Feature" color="orange" onClick={() => setOpen(true)} />
+      </div>
+
+      {/* ✅ Records per page + Showing X of Y records */}
+      <div className="d-flex align-items-center justify-content-between mb-2 p-2">
+        <div className="d-flex align-items-center gap-2">
+          <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span style={{ fontSize: "16px" }}>
+          Showing <strong style={{ color: "#ff7a00" }}>{featuresList.length}</strong>{" "}
+          {totalCount > featuresList.length && <>of <strong>{totalCount}</strong></>} records
+        </span>
       </div>
 
       <Table

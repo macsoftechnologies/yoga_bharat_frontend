@@ -21,34 +21,49 @@ function TermsConditions() {
   const [termsList, setTermsList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0); // ✅ Added
+  const [limit, setLimit] = useState(10); // ✅ Records per page
   const [loading, setLoading] = useState(false);
 
+  // Fetch terms when page or limit changes
   useEffect(() => {
-    fetchTerms(currentPage);
-  }, [currentPage]);
+    fetchTerms(currentPage, limit);
+  }, [currentPage, limit]);
 
-  const fetchTerms = async (page) => {
+  const fetchTerms = async (page, limitValue) => {
     setLoading(true);
     try {
-      const res = await getTerms(page, 10);
+      const res = await getTerms(page, limitValue);
       let data = [];
       let pages = 1;
+      let total = 0;
+
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
+        total = res.totalCount || data.length;
       } else if (Array.isArray(res)) {
         data = res;
+        total = data.length;
       }
+
       setTermsList(data);
       setTotalPages(pages);
+      setTotalCount(total); // ✅ Added
     } catch (err) {
       console.error(err);
       setTermsList([]);
       setTotalPages(1);
+      setTotalCount(0); // ✅ Added
       Swal.fire("Error", "Failed to fetch terms", "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setCurrentPage(1);
   };
 
   const handleView = async (termsId) => {
@@ -93,7 +108,7 @@ function TermsConditions() {
           background: "#d33",
           color: "#ffffff",
         });
-        await fetchTerms(currentPage);
+        await fetchTerms(currentPage, limit);
       } catch (err) {
         Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
       }
@@ -139,7 +154,7 @@ function TermsConditions() {
         });
         setOpen(false);
         setSelectedItem(null);
-        await fetchTerms(currentPage);
+        await fetchTerms(currentPage, limit);
         Swal.fire({
           title: "Added!",
           text: "Terms added successfully",
@@ -169,7 +184,7 @@ function TermsConditions() {
     ? termsList.map((item, index) => {
         const termsText = item.terms_and_conditions || "-";
         return {
-          srNo: (currentPage - 1) * 10 + index + 1,
+          srNo: (currentPage - 1) * limit + index + 1, // ✅ Updated S.No with limit
           ...item,
           displayText: (
             <span
@@ -220,6 +235,31 @@ function TermsConditions() {
       <div className="d-flex justify-content-between mb-3">
         <h2>TERMS & CONDITIONS</h2>
         <Button text="+ Add TERMS & CONDITIONS" color="orange" onClick={() => setOpen(true)} />
+      </div>
+
+      {/* ✅ Records per page + Showing count */}
+      <div className="d-flex align-items-center justify-content-between mb-2 p-2">
+        <div className="d-flex align-items-center gap-2">
+          <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span style={{ fontSize: "16px" }}>
+          Showing <strong style={{ color: "#ff7a00" }}>{termsList.length}</strong>{" "}
+          {totalCount > termsList.length && <>of <strong>{totalCount}</strong></>} records
+        </span>
       </div>
 
       <Table

@@ -11,7 +11,8 @@ function CallbackRequest() {
   const [requestList, setRequestList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
+  const [note, setNote] = useState("");
 
   const fetchRequests = async (page = 1) => {
     setLoading(true);
@@ -35,6 +36,7 @@ function CallbackRequest() {
   const handleOpenPending = (item) => {
     if (item.status === "pending") {
       setSelectedRequest(item);
+      setNote("");
       setViewOpen(true);
     }
   };
@@ -44,6 +46,7 @@ function CallbackRequest() {
       const res = await completeCallBackRequest({
         callRequestId: request.callRequestId,
         adminId: "a906c953-d3be-42a8-9ac0-a3f893de89a0",
+        note: note.trim(),
       });
 
       Swal.fire({
@@ -58,15 +61,17 @@ function CallbackRequest() {
         color: "#ffffff",
       });
 
+      // ✅ Update status AND save note into the list
       setRequestList((prev) =>
         prev.map((item) =>
           item.callRequestId === request.callRequestId
-            ? { ...item, status: "completed" }
+            ? { ...item, status: "completed", note: note.trim() }
             : item
         )
       );
 
       setViewOpen(false);
+      setNote("");
     } catch (err) {
       Swal.fire("Error", "Failed to complete request", "error");
       console.error(err);
@@ -79,6 +84,8 @@ function CallbackRequest() {
     { header: "Role", accessor: "role" },
     { header: "Mobile Number", accessor: "mobileNumber" },
     { header: "Date", accessor: "date" },
+    { header: "Scheduled Time", accessor: "scheduledTime" },
+    { header: "Note", accessor: "note" },         // ✅ NEW column
     { header: "Status", accessor: "status" },
   ];
 
@@ -87,6 +94,28 @@ function CallbackRequest() {
     name: item.userId?.name || "",
     role: item.userId?.role || "",
     mobileNumber: item.mobileNumber,
+    date: item.date,
+    scheduledTime: item.scheduledTime,
+
+    // ✅ Note cell — show note text or dash if empty
+    note: item.note ? (
+      <span
+        title={item.note}
+        style={{
+          display: "inline-block",
+          maxWidth: 150,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          verticalAlign: "middle",
+        }}
+      >
+        {item.note}
+      </span>
+    ) : (
+      <span style={{ color: "#aaa" }}>—</span>
+    ),
+
     status: (
       <span
         style={{
@@ -102,7 +131,6 @@ function CallbackRequest() {
         {item.status}
       </span>
     ),
-    date: item.date,
   }));
 
   return (
@@ -121,25 +149,78 @@ function CallbackRequest() {
         isLoading={loading}
       />
 
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Request Details" size="md">
+        <Modal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        title="Request Details"
+        size="md"
+      >
         {selectedRequest && (
           <div style={{ padding: 10 }}>
-            <p><b>Mobile Number:</b> {selectedRequest.mobileNumber}</p>
-            <p><b>Name:</b> {selectedRequest.userId?.name}</p>
-            <p><b>Role:</b> {selectedRequest.userId?.role}</p>
-            <p>
-              <b>Status:</b>{" "}
-              <span style={{ color: selectedRequest.status === "pending" ? "red" : "green", fontWeight: 600 }}>
-                {selectedRequest.status}
-              </span>
-            </p>
-            <p><b>Date:</b> {selectedRequest.date}</p>
+            <div className="row">
+              <div className="col-md-6">
+                <p><b>Mobile Number:</b> {selectedRequest.mobileNumber}</p>
+              </div>
+              <div className="col-md-6">
+                <p><b>Name:</b> {selectedRequest.userId?.name}</p>
+              </div>
+              <div className="col-md-6">
+                <p><b>Role:</b> {selectedRequest.userId?.role}</p>
+              </div>
+              <div className="col-md-6">
+                <p>
+                  <b>Status:</b>{" "}
+                  <span style={{ color: selectedRequest.status === "pending" ? "red" : "green", fontWeight: 600 }}>
+                    {selectedRequest.status}
+                  </span>
+                </p>
+              </div>
+              <div className="col-md-6">
+                <p><b>Date:</b> {selectedRequest.date}</p>
+              </div>
+              <div className="col-md-6">
+                <p><b>Scheduled Time:</b> {selectedRequest.scheduledTime}</p>
+              </div>
+            </div>
+
             {selectedRequest.status === "pending" && (
-              <button className="btn btn-success mt-2" onClick={() => handleComplete(selectedRequest)}>
-                Mark as Complete
-              </button>
+              <>
+                <div className="mb-3 mt-3">
+                  <label
+                    htmlFor="noteInput"
+                    style={{ fontWeight: 600, marginBottom: 6, display: "block" }}
+                  >
+                    Note <span style={{ color: "red" }}>*</span>
+                  </label>
+                  <textarea
+                    id="noteInput"
+                    className="form-control"
+                    rows={3}
+                    placeholder="Type a note to enable completion..."
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    style={{ resize: "vertical" }}
+                  />
+                </div>
+
+                <button
+                  className="btn btn-success mt-1"
+                  onClick={() => handleComplete(selectedRequest)}
+                  disabled={!note.trim()}
+                  style={{
+                    opacity: !note.trim() ? 0.5 : 1,
+                    cursor: !note.trim() ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Mark as Complete
+                </button>
+              </>
             )}
-            <button className="btn btn-secondary mt-2 ms-2" onClick={() => setViewOpen(false)}>
+
+            <button
+              className="btn btn-secondary mt-2 ms-2"
+              onClick={() => setViewOpen(false)}
+            >
               Close
             </button>
           </div>

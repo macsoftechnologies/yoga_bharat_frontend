@@ -229,25 +229,9 @@ function SmsForm({ onClose, onSubmit }) {
     try {
       let allUsers = [];
       let page = 1;
-      const limit = 100; // fetch more per page to reduce calls
+      const limit = 10;
 
       while (true) {
-        /*
-         * FIXED: getClients/getTrainers now return the full API object:
-         * { statusCode, totalPages, totalCount, data: [...] }
-         *
-         * OLD (broken):
-         *   if (!data || data.length === 0) break;
-         *   allUsers = [...allUsers, ...data];
-         *   ↑ data is an object → data.length = undefined → loop runs forever
-         *   ↑ spreading an object into array → wrong result → "Failed to load users"
-         *
-         * NEW (fixed):
-         *   const records = data.data  ← the actual array
-         *   const totalPages = data.totalPages
-         *   if no records → break
-         *   if page >= totalPages → break after adding
-         */
         const res = selectedRole === "client"
           ? await getClients(page, limit)
           : await getTrainers(page, limit);

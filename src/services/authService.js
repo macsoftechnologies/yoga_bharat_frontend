@@ -365,27 +365,73 @@ export const deleteYoga = async (yogaId) => {
 
 // ---------------- Users APIs  Clients----------------
 
-export const getClients = async (page = 1, limit = 10) => {
+export const getClients = async (page = 1, limit = 10, filters = {}) => {
   try {
-    const res = await api.get(`/users/clients?page=${page}&limit=${limit}`, {
+    const params = new URLSearchParams();
+    params.append("page",  page);
+    params.append("limit", limit);
+ 
+    if (filters.name)         params.append("name",         filters.name);
+    if (filters.mobileNumber) params.append("mobileNumber", filters.mobileNumber);
+    if (filters.gender)       params.append("gender",       filters.gender);
+    if (filters.fromDate)     params.append("fromDate",     filters.fromDate);
+    if (filters.toDate)       params.append("toDate",       filters.toDate);
+    if (filters.sortOrder)    params.append("sortOrder",    filters.sortOrder); // "asc" or "des"
+ 
+    const res = await api.get(`/users/clients?${params.toString()}`, {
       headers: { "Content-Type": "application/json" },
     });
-    return res.data; 
+    return res.data;
   } catch (err) {
     console.error("Get Clients API Error:", err);
-    return { data: [], totalPages: 1, totalCount: 0 }; 
+    return { data: [], totalPages: 1, totalCount: 0 };
   }
 };
 
-export const getTrainers = async (page = 1, limit = 10) => {
+export const getTrainers = async (page = 1, limit = 10, filters = {}) => {
   try {
-    const res = await api.get(`/users/trainers?page=${page}&limit=${limit}`, {
+    const params = new URLSearchParams();
+    params.append("page",  page);
+    params.append("limit", limit);
+ 
+    if (filters.name)         params.append("name",         filters.name);
+    if (filters.mobileNumber) params.append("mobileNumber", filters.mobileNumber);
+    if (filters.gender)       params.append("gender",       filters.gender);
+    if (filters.fromDate)     params.append("fromDate",     filters.fromDate);
+    if (filters.toDate)       params.append("toDate",       filters.toDate);
+    if (filters.sortOrder)    params.append("sortOrder",    filters.sortOrder); // "asc" or "des"
+ 
+    const res = await api.get(`/users/trainers?${params.toString()}`, {
       headers: { "Content-Type": "application/json" },
     });
     return res.data;
   } catch (err) {
     console.error("Get Trainers API Error:", err);
-    return { data: [], totalPages: 1, totalCount: 0 }; 
+    return { data: [], totalPages: 1, totalCount: 0 };
+  }
+};
+
+export const disableTrainer = async (userId, isDisabled) => {
+  const res = await api.post(
+    "/users/disabletrainer",
+    { userId, isDisabled: String(isDisabled) },
+    { headers: { "Content-Type": "application/json" } }
+  );
+  return res.data;
+};
+
+
+export const rejectTrainer = async (userId) => {
+  try {
+    const res = await api.post(
+      "/users/approvetrainer",
+      { userId, ekyc_status: "rejected" },
+      { headers: { "Content-Type": "application/json" } }
+    );
+    return res.data;
+  } catch (err) {
+    console.error("Reject Trainer API Error:", err);
+    throw err;
   }
 };
 
@@ -393,7 +439,7 @@ export const approveTrainer = async (userId) => {
   try {
     const res = await api.post(
       "/users/approvetrainer",
-      { userId },
+      { userId, ekyc_status: "approved" },
       { headers: { "Content-Type": "application/json" } }
     );
     return res.data;

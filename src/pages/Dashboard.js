@@ -80,6 +80,7 @@ export default function Dashboard() {
       const response = await dashboardMonthlyEarnings(year);
       const months = response?.data?.map((i) => i.month) || [];
       const totals = response?.data?.map((i) => i.totalAmount) || [];
+      // const totals = response?.data?.map((i) => Math.max(0, i.totalAmount)) || [];
       setEarningsData({
         labels: months,
         datasets: [
@@ -101,6 +102,7 @@ export default function Dashboard() {
       const response = await dashboardBookingStats(year);
       const months = response?.data?.map((i) => i.month) || [];
       const counts = response?.data?.map((i) => i.bookingCount) || [];
+
       setBookingData({
         labels: months,
         datasets: [
@@ -192,10 +194,24 @@ useEffect(() => {
     });
   };
 
+  const doughnutOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: "right", // ✅ move to right side
+      labels: {
+        boxWidth: 14,
+        padding: 15,
+      },
+    },
+  },
+};
+
   const statCards = [
     {
       label: "Total Earnings",
       value: `₹${stats.totalEarningsAmount}`,
+      // value: `₹${Math.max(0, stats.totalEarningsAmount)}`,
       colorClass: "green",
       path: "/dashboard/total-earnings",
     },
@@ -238,23 +254,23 @@ useEffect(() => {
             onChange={(e) => setToDate(e.target.value)}
           /> */}
           <DatePicker
-  selected={fromDate ? new Date(fromDate) : null}
-  onChange={(date) => date ? setFromDate(date.toISOString().split("T")[0]) : setFromDate("")}
-  dateFormat="dd/MM/yyyy"
-  className="form-control"
-  placeholderText="DD/MM/YYYY"
-  showIcon
-  isClearable
-/>
-<DatePicker
-  selected={toDate ? new Date(toDate) : null}
-  onChange={(date) => date ? setToDate(date.toISOString().split("T")[0]) : setToDate("")}
-  dateFormat="dd/MM/yyyy"
-  className="form-control"
-  placeholderText="DD/MM/YYYY"
-  showIcon
-  isClearable
-/>
+            selected={fromDate ? new Date(fromDate) : null}
+            onChange={(date) => date ? setFromDate(date.toISOString().split("T")[0]) : setFromDate("")}
+            dateFormat="dd/MM/yyyy"
+            className="form-control"
+            placeholderText="DD/MM/YYYY"
+            showIcon
+            isClearable
+          />
+          <DatePicker
+            selected={toDate ? new Date(toDate) : null}
+            onChange={(date) => date ? setToDate(date.toISOString().split("T")[0]) : setToDate("")}
+            dateFormat="dd/MM/yyyy"
+            className="form-control"
+            placeholderText="DD/MM/YYYY"
+            showIcon
+            isClearable
+          />
           <button
             onClick={handleFilter}
             className="d-flex align-items-center"
@@ -264,6 +280,7 @@ useEffect(() => {
               border: "none",
               padding: "8px 16px",
               borderRadius: "4px",
+              marginBottom: "18px",
             }}
           >
             <FaFilter />
@@ -277,6 +294,7 @@ useEffect(() => {
               border: "none",
               padding: "8px 16px",
               borderRadius: "4px",
+              marginBottom: "18px",
             }}
           >
             Clear
@@ -324,10 +342,10 @@ useEffect(() => {
         </div>
 
         <div className="row g-4 mt-2">
-          <div className="col-md-4">
+          <div className="col-md-8">
             <div className="chart-box text-center">
               <h5>Yoga Type Distribution</h5>
-              <Doughnut data={yogaTypeData} />
+              <Doughnut data={yogaTypeData} options={doughnutOptions} />
             </div>
           </div>
         </div>

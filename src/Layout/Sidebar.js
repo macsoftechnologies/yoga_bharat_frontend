@@ -91,6 +91,13 @@ const Sidebar = ({ sidebarOpen }) => {
 
         {openDropdown && (
           <>
+
+            {/* <li className="menu-item subitem">
+              <NavLink to="/allusers" className={({ isActive }) => isActive ? "active" : ""}>
+                <MdRadioButtonUnchecked className="menu-icon" />
+                All Users
+              </NavLink>
+            </li> */}
             <li className="menu-item subitem">
               <NavLink to="/client" className={({ isActive }) => isActive ? "active" : ""}>
                 <MdRadioButtonUnchecked className="menu-icon" />
@@ -210,9 +217,9 @@ const Sidebar = ({ sidebarOpen }) => {
 
         {/* Transactions */}
         <li className="menu-item">
-          <NavLink to="/transactions" className={({ isActive }) => isActive ? "active" : ""}>
+          <NavLink to="/paymentcycle" className={({ isActive }) => isActive ? "active" : ""}>
             <FaExchangeAlt className="menu-icon" />
-            Transactions
+            Payment Cycle
           </NavLink>
         </li>
 

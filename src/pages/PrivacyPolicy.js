@@ -21,35 +21,50 @@ function PrivacyPolicy() {
   const [policyList, setPolicyList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0); // ✅ Total records
+  const [limit, setLimit] = useState(10); // ✅ Records per page
   const [loading, setLoading] = useState(false);
 
-  const fetchPrivacy = async (page) => {
+  // Fetch privacy policies when page or limit changes
+  useEffect(() => {
+    fetchPrivacy(currentPage, limit);
+  }, [currentPage, limit]);
+
+  const fetchPrivacy = async (page, limitValue) => {
     setLoading(true);
     try {
-      const res = await getPrivacyList(page, 10);
+      const res = await getPrivacyList(page, limitValue);
       let data = [];
       let pages = 1;
+      let total = 0;
+
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
+        total = res.totalCount || data.length;
       } else if (Array.isArray(res)) {
         data = res;
+        total = data.length;
       }
+
       setPolicyList(data);
       setTotalPages(pages);
+      setTotalCount(total); // ✅ Total records
     } catch (err) {
       console.error(err);
       setPolicyList([]);
       setTotalPages(1);
+      setTotalCount(0);
       Swal.fire("Error", "Failed to fetch privacy policies", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchPrivacy(currentPage);
-  }, [currentPage]);
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
   const handleSubmit = async (data) => {
     try {
@@ -90,7 +105,7 @@ function PrivacyPolicy() {
         });
         setOpen(false);
         setSelectedItem(null);
-        await fetchPrivacy(currentPage);
+        await fetchPrivacy(currentPage, limit);
         Swal.fire({
           title: "Added!",
           text: "Privacy policy added successfully",
@@ -151,7 +166,7 @@ function PrivacyPolicy() {
           background: "#d33",
           color: "#ffffff",
         });
-        await fetchPrivacy(currentPage);
+        await fetchPrivacy(currentPage, limit);
       } catch (err) {
         Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
       }
@@ -169,7 +184,7 @@ function PrivacyPolicy() {
     ? policyList.map((item, index) => {
         const policyText = item.privacy_policy || "-";
         return {
-          srNo: (currentPage - 1) * 10 + index + 1,
+          srNo: (currentPage - 1) * limit + index + 1,
           ...item,
           displayText: (
             <span
@@ -220,6 +235,31 @@ function PrivacyPolicy() {
       <div className="d-flex justify-content-between mb-3">
         <h2>PRIVACY POLICY</h2>
         <Button text="+ Add PRIVACY POLICY" color="orange" onClick={() => setOpen(true)} />
+      </div>
+
+      {/* ✅ Records per page + Showing count */}
+      <div className="d-flex align-items-center justify-content-between mb-2 p-2">
+        <div className="d-flex align-items-center gap-2">
+          <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span style={{ fontSize: "16px" }}>
+          Showing <strong style={{ color: "#ff7a00" }}>{policyList.length}</strong>{" "}
+          {totalCount > policyList.length && <>of <strong>{totalCount}</strong></>} records
+        </span>
       </div>
 
       <Table

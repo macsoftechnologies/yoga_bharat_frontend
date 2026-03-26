@@ -21,25 +21,32 @@ function AppTutorial() {
   const [tutorialsList, setTutorialsList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false); // ✅ Added
+  const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(10); // ✅ Records per page
+  const [loading, setLoading] = useState(false);
 
+  // ✅ Fetch tutorials when page or limit changes
   useEffect(() => {
-    fetchTutorials(currentPage);
-  }, [currentPage]);
+    fetchTutorials(currentPage, limit);
+  }, [currentPage, limit]);
 
-  const fetchTutorials = async (page) => {
-    setLoading(true); // ✅ Start loading
+  // ✅ Fetch tutorials function
+  const fetchTutorials = async (page, limitValue) => {
+    setLoading(true);
     try {
-      const res = await getAppTutorials(page, 10);
+      const res = await getAppTutorials(page, limitValue);
 
       let data = [];
       let pages = 1;
+      let total = 0;
 
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
+        total = res.totalCount || res.count || data.length;
       } else if (Array.isArray(res)) {
         data = res;
+        total = data.length;
       }
 
       const mappedData = data.map((item) => ({
@@ -49,14 +56,22 @@ function AppTutorial() {
 
       setTutorialsList(mappedData);
       setTotalPages(pages);
+      setTotalCount(total);
     } catch (err) {
       console.error(err);
       setTutorialsList([]);
       setTotalPages(1);
+      setTotalCount(0);
       Swal.fire("Error", "Failed to fetch tutorials", "error");
     } finally {
-      setLoading(false); // ✅ Stop loading always
+      setLoading(false);
     }
+  };
+
+  // ✅ Handle changing records per page
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setCurrentPage(1);
   };
 
   const handleView = async (item) => {
@@ -116,6 +131,7 @@ function AppTutorial() {
         background: "#ff7a00",
         color: "#ffffff",
       });
+      fetchTutorials(currentPage, limit);
     } catch (err) {
       console.error(err);
       Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
@@ -154,7 +170,7 @@ function AppTutorial() {
         });
       }
 
-      fetchTutorials(currentPage);
+      fetchTutorials(currentPage, limit);
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
@@ -173,9 +189,8 @@ function AppTutorial() {
   ];
 
   const tableData = tutorialsList.map((item, index) => ({
-    srNo: (currentPage - 1) * 10 + index + 1,
+    srNo: (currentPage - 1) * limit + index + 1,
     ...item,
-
     description: (
       <span
         title={item.description || "-"}
@@ -191,7 +206,6 @@ function AppTutorial() {
         {item.description || "-"}
       </span>
     ),
-
     app_image: item.app_image ? (
       <video
         src={`${process.env.REACT_APP_API_BASE_URL}/${item.app_image}`}
@@ -206,7 +220,6 @@ function AppTutorial() {
     ) : (
       "No Video"
     ),
-
     actions: (
       <div className="actions">
         <button className="icon-btn view" title="View" onClick={() => handleView(item)}>
@@ -215,11 +228,7 @@ function AppTutorial() {
         <button className="icon-btn edit" title="Edit" onClick={() => handleEdit(item)}>
           <FaEdit />
         </button>
-        <button
-          className="icon-btn delete"
-          title="Delete"
-          onClick={() => handleDelete(item.appId)}
-        >
+        <button className="icon-btn delete" title="Delete" onClick={() => handleDelete(item.appId)}>
           <FaTrash />
         </button>
       </div>
@@ -233,13 +242,38 @@ function AppTutorial() {
         <Button text="+ Add Tutorial" color="orange" onClick={() => setOpen(true)} />
       </div>
 
+      {/* ✅ Records per page + count display */}
+      <div className="d-flex align-items-center justify-content-between mb-2 p-2">
+        <div className="d-flex align-items-center gap-2">
+          <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span style={{ fontSize: "16px" }}>
+          Showing <strong style={{ color: "#ff7a00" }}>{tutorialsList.length}</strong>{" "}
+          {totalCount > tutorialsList.length && <>of <strong>{totalCount}</strong></>} records
+        </span>
+      </div>
+
       <Table
         columns={columns}
         data={tableData}
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
-        isLoading={loading} // ✅ Added
+        isLoading={loading}
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Tutorial" size="md">
@@ -262,25 +296,25 @@ function AppTutorial() {
         {selectedItem && (
           <div className="container-fluid p-2">
             <div className="row align-items-start">
-                <div className="col-12">
-                  <p><b>User Type:</b> {selectedItem.usertype}</p>
-                  <p><b>Description:</b> {selectedItem.description || "No Description"}</p>
-                  <p><b>Tutorial Video:</b></p>
-                  {selectedItem.app_image ? (
-                    <video
-                      src={`${process.env.REACT_APP_API_BASE_URL}/${selectedItem.app_image}`}
-                      width="100%"
-                      height="350"
-                      controls
-                      playsInline
-                      style={{ borderRadius: "8px", marginTop: "5px" }}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                  ) : (
-                    <p>No Video</p>
-                  )}
-                </div>
+              <div className="col-12">
+                <p><b>User Type:</b> {selectedItem.usertype}</p>
+                <p><b>Description:</b> {selectedItem.description || "No Description"}</p>
+                <p><b>Tutorial Video:</b></p>
+                {selectedItem.app_image ? (
+                  <video
+                    src={`${process.env.REACT_APP_API_BASE_URL}/${selectedItem.app_image}`}
+                    width="100%"
+                    height="350"
+                    controls
+                    playsInline
+                    style={{ borderRadius: "8px", marginTop: "5px" }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <p>No Video</p>
+                )}
+              </div>
             </div>
             <div className="text-end mt-3">
               <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
@@ -295,15 +329,11 @@ function AppTutorial() {
 }
 
 function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [usertype, setUsertype] = useState(
-    initialData?.usertype || initialData?.user_type || ""
-  );
+  const [usertype, setUsertype] = useState(initialData?.usertype || initialData?.user_type || "");
   const [imageFile, setImageFile] = useState(null);
   const [description, setDescription] = useState(initialData?.description || "");
   const [previewUrl, setPreviewUrl] = useState(
-    initialData?.app_image
-      ? `${process.env.REACT_APP_API_BASE_URL}/${initialData.app_image}`
-      : null
+    initialData?.app_image ? `${process.env.REACT_APP_API_BASE_URL}/${initialData.app_image}` : null
   );
 
   const handleFileChange = (e) => {
@@ -316,7 +346,6 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const formData = new FormData();
 
     if (isEdit && initialData?.appId) {
@@ -354,12 +383,7 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
       ) : (
         <div className="mb-3">
           <label className="form-label">User Type</label>
-          <input
-            className="form-control"
-            value={usertype}
-            readOnly
-            style={{ backgroundColor: "#e9ecef" }}
-          />
+          <input className="form-control" value={usertype} readOnly style={{ backgroundColor: "#e9ecef" }} />
         </div>
       )}
 
@@ -377,27 +401,13 @@ function AppTutorialForm({ onClose, initialData, isEdit, onSubmit }) {
 
       <div className="mb-3">
         <label className="form-label">Tutorial Video</label>
-        <input
-          type="file"
-          className="form-control"
-          accept="video/*"
-          onChange={handleFileChange}
-        />
-
+        <input type="file" className="form-control" accept="video/*" onChange={handleFileChange} />
         {previewUrl && (
           <div className="mt-2">
             <small className="text-muted d-block mb-1">
               {imageFile ? "New Video Preview:" : "Current Video:"}
             </small>
-            <video
-              key={previewUrl}
-              src={previewUrl}
-              width="100%"
-              height="180"
-              controls
-              playsInline
-              style={{ borderRadius: "8px" }}
-            >
+            <video key={previewUrl} src={previewUrl} width="100%" height="180" controls playsInline style={{ borderRadius: "8px" }}>
               Your browser does not support the video tag.
             </video>
           </div>

@@ -21,32 +21,43 @@ function SplashScreenPage() {
   const [splashList, setSplashList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false); 
-  
+  const [loading, setLoading] = useState(false);
+  const [limit, setLimit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchSplashScreens = async (page) => {
+  const fetchSplashScreens = async (page, activeLimit) => {
     setLoading(true);
     try {
-      const res = await getSplashScreens(page, 10);
+      const res = await getSplashScreens(page, activeLimit);
       if (res && Array.isArray(res.data)) {
         setSplashList(res.data);
-        setTotalPages(res.totalPages);
+        setTotalPages(res.totalPages || 1);
+        setTotalCount(res.totalCount || 0);
       } else {
         setSplashList([]);
         setTotalPages(1);
+        setTotalCount(0);
       }
     } catch (err) {
       Swal.fire("Error", "Failed to fetch splash screens", "error");
       setSplashList([]);
       setTotalPages(1);
-    }finally {
-      setLoading(false); 
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSplashScreens(currentPage);
-  }, [currentPage]);
+    fetchSplashScreens(currentPage, limit);
+  }, [currentPage, limit]);
+
+  const handleLimitChange = (e) => {
+    const newLimit = Number(e.target.value);
+    setLimit(newLimit);
+    setCurrentPage(1);
+    fetchSplashScreens(1, newLimit);
+  };
 
   const handleView = async (splashscreenId) => {
     try {
@@ -90,7 +101,7 @@ function SplashScreenPage() {
         background: "#ff7a00",
         color: "#ffffff",
       });
-      fetchSplashScreens(currentPage);
+      fetchSplashScreens(currentPage, limit);
     } catch {
       Swal.fire("Error", "Failed to delete splash screen", "error");
     }
@@ -137,7 +148,7 @@ function SplashScreenPage() {
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
-      fetchSplashScreens(currentPage);
+      fetchSplashScreens(currentPage, limit);
     }
   };
 
@@ -150,9 +161,8 @@ function SplashScreenPage() {
   ];
 
   const tableData = splashList.map((item, index) => ({
-    srNo: (currentPage - 1) * 10 + index + 1,
+    srNo: (currentPage - 1) * limit + index + 1,
     ...item,
-
     text: (
       <span
         title={item.text || "-"}
@@ -168,28 +178,15 @@ function SplashScreenPage() {
         {item.text || "-"}
       </span>
     ),
-
     actions: (
       <div className="actions">
-        <button
-          className="icon-btn view"
-          title="View"
-          onClick={() => handleView(item.splashscreenId)}
-        >
+        <button className="icon-btn view" onClick={() => handleView(item.splashscreenId)}>
           <FaEye />
         </button>
-        <button
-          className="icon-btn edit"
-          title="Edit"
-          onClick={() => handleEdit(item)}
-        >
+        <button className="icon-btn edit" onClick={() => handleEdit(item)}>
           <FaEdit />
         </button>
-        <button
-          className="icon-btn delete"
-          title="Delete"
-          onClick={() => handleDelete(item.splashscreenId)}
-        >
+        <button className="icon-btn delete" onClick={() => handleDelete(item.splashscreenId)}>
           <FaTrash />
         </button>
       </div>
@@ -203,6 +200,30 @@ function SplashScreenPage() {
         <Button text="+ Add Splash Screen" color="orange" onClick={() => setOpen(true)} />
       </div>
 
+      <div className="d-flex align-items-center justify-content-between mb-2 p-2">
+        <div className="d-flex align-items-center gap-2">
+          <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span style={{ fontSize: "16px" }}>
+          Showing <strong style={{ color: "#ff7a00" }}>{splashList.length}</strong>{" "}
+          {totalCount > splashList.length && <>of <strong>{totalCount}</strong></>} records
+        </span>
+      </div>
+
       <Table
         columns={columns}
         data={tableData}
@@ -210,7 +231,6 @@ function SplashScreenPage() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
         isLoading={loading}
-
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Splash Screen" size="md">
@@ -218,12 +238,7 @@ function SplashScreenPage() {
       </Modal>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Splash Screen" size="md">
-        <SplashScreenForm
-          onClose={() => setEditOpen(false)}
-          initialData={selectedItem}
-          isEdit
-          onSubmit={handleSubmit}
-        />
+        <SplashScreenForm onClose={() => setEditOpen(false)} initialData={selectedItem} isEdit onSubmit={handleSubmit} />
       </Modal>
 
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Splash Screen" size="md">
@@ -263,25 +278,12 @@ function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
     <form className="custom-form" onSubmit={handleSubmit}>
       <div className="mb-3">
         <label className="form-label">Text</label>
-        <textarea
-          className="form-control"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Enter text"
-          required
-          rows={4}
-        />
+        <textarea className="form-control" value={text} onChange={(e) => setText(e.target.value)} required rows={4} />
       </div>
 
       <div className="mb-3">
         <label className="form-label">Screen Type</label>
-        <select
-          className="form-select"
-          value={screenType}
-          onChange={(e) => setScreenType(e.target.value)}
-          disabled={isEdit}
-          required
-        >
+        <select className="form-select" value={screenType} onChange={(e) => setScreenType(e.target.value)} disabled={isEdit} required>
           <option value="">Select Screen Type</option>
           <option value="client">Client</option>
           <option value="trainer">Trainer</option>
@@ -290,13 +292,7 @@ function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
 
       <div className="mb-3">
         <label className="form-label">Screen No</label>
-        <select
-          className="form-select"
-          value={screenNo}
-          onChange={(e) => setScreenNo(e.target.value)}
-          disabled={isEdit}
-          required
-        >
+        <select className="form-select" value={screenNo} onChange={(e) => setScreenNo(e.target.value)} disabled={isEdit} required>
           <option value="">Select Screen No</option>
           <option value="1">1</option>
           <option value="2">2</option>
@@ -305,12 +301,8 @@ function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="text-end">
-        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
-          Cancel
-        </button>
-        <button type="submit" className="btn btn-success">
-          {isEdit ? "Update" : "Save"}
-        </button>
+        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>Cancel</button>
+        <button type="submit" className="btn btn-success">{isEdit ? "Update" : "Save"}</button>
       </div>
     </form>
   );

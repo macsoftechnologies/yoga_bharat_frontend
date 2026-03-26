@@ -5,7 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Yoga from "./pages/Yoga";
-import User from "./pages/User";
+import AllUsers from "./pages/AllUsers";
 import Client from "./pages/Client";
 import Trainer from "./pages/Trainer";
 import Orders from "./pages/Orders";
@@ -18,7 +18,7 @@ import TermsConditions from "./pages/TermsConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FeatureBanners from "./pages/FeatureBanners";
 import Languages from "./pages/Languages";
-import Transactions from "./pages/Transactions";
+import PaymentCycle from "./pages/PaymentCycle";
 import AdminForgotPassword from "./pages/AdminForgotPassword";
 import Home from "./pages/Home";
 import AdminOtp from "./pages/AdminOtp";
@@ -29,6 +29,7 @@ import TotalBookings   from "./pages/TotalBookings";
 import ActiveClients   from "./pages/ActiveClients";
 import ActiveTrainers  from "./pages/ActiveTrainers";
 import Sms from "./pages/Sms";
+
 
 
 function App() {
@@ -46,7 +47,7 @@ function App() {
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/yoga" element={<Yoga />} />
-          <Route path="/user" element={<User />} />
+          <Route path="/allusers" element={<AllUsers />} />
           <Route path="/client" element={<Client />} />
           <Route path="/trainer" element={<Trainer />} />
           <Route path="/orders" element={<Orders />} />
@@ -60,7 +61,7 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/feature-banners" element={<FeatureBanners />} />
           <Route path="/languages" element={<Languages />} />
-          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/paymentcycle" element={<PaymentCycle />} />
           <Route path="/trainer/:userId" element={<TrainerProfile />} />
           <Route path="/client/:userId" element={<ClientProfile />} />
           <Route path="/dashboard/total-earnings"  element={<TotalEarnings />} />

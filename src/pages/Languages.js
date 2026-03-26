@@ -15,38 +15,50 @@ function Languages() {
   const [languagesList, setLanguagesList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0); // ✅ Total records
+  const [limit, setLimit] = useState(10); // ✅ Records per page
   const [loading, setLoading] = useState(false); 
 
-  const fetchLanguages = async (page) => {
+  useEffect(() => {
+    fetchLanguages(currentPage, limit);
+  }, [currentPage, limit]);
+
+  const fetchLanguages = async (page, limitValue) => {
     setLoading(true); 
     try {
-      const res = await getLanguages(page, 10);
+      const res = await getLanguages(page, limitValue);
 
       let data = [];
       let pages = 1;
+      let total = 0;
 
       if (res && Array.isArray(res.data)) {
         data = res.data;
         pages = res.totalPages || 1;
+        total = res.totalCount || data.length;
       } else if (Array.isArray(res)) {
         data = res;
+        total = data.length;
       }
 
       setLanguagesList(data);
       setTotalPages(pages);
+      setTotalCount(total);
     } catch (err) {
       console.error(err);
       setLanguagesList([]);
       setTotalPages(1);
+      setTotalCount(0);
       Swal.fire("Error", "Failed to fetch languages", "error");
     } finally {
       setLoading(false); 
     }
   };
 
-  useEffect(() => {
-    fetchLanguages(currentPage);
-  }, [currentPage]);
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
   const handleSubmit = async (data) => {
     try {
@@ -84,7 +96,7 @@ function Languages() {
           background: "#35a542",
         });
       }
-      fetchLanguages(currentPage);
+      fetchLanguages(currentPage, limit);
       setOpen(false);
       setEditOpen(false);
       setSelectedItem(null);
@@ -138,7 +150,7 @@ function Languages() {
         background: "#ff7a00",
         color: "#ffffff",
       });
-      fetchLanguages(currentPage);
+      fetchLanguages(currentPage, limit);
     } catch (err) {
       console.error(err);
       Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
@@ -154,7 +166,7 @@ function Languages() {
 
   const tableData = Array.isArray(languagesList)
     ? languagesList.map((item, index) => ({
-        srNo: (currentPage - 1) * 10 + index + 1,
+        srNo: (currentPage - 1) * limit + index + 1,
         ...item,
         actions: (
           <div className="actions">
@@ -179,13 +191,38 @@ function Languages() {
         <Button text="+ Add Language" color="orange" onClick={() => setOpen(true)} />
       </div>
 
+      {/* ✅ Records per page + Showing X of Y records */}
+      <div className="d-flex align-items-center justify-content-between mb-2 p-2">
+        <div className="d-flex align-items-center gap-2">
+          <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+            Records per page:
+          </label>
+          <select
+            className="form-select form-select-sm"
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+            value={limit}
+            onChange={handleLimitChange}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span style={{ fontSize: "16px" }}>
+          Showing <strong style={{ color: "#ff7a00" }}>{languagesList.length}</strong>{" "}
+          {totalCount > languagesList.length && <>of <strong>{totalCount}</strong></>} records
+        </span>
+      </div>
+
       <Table
         columns={columns}
         data={tableData}
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
-        isLoading={loading} // ✅ Added
+        isLoading={loading}
       />
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add Language" size="md">

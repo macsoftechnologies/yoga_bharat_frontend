@@ -114,3 +114,37 @@
     box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
     padding: 25px 20px;
 }
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  min-width: 80px;
+}
+
+.status-accepted {
+  background-color: #DCFCE7; 
+  color: #166534; 
+}
+
+.status-opened {
+  background-color: #FEF3C7; 
+  color: #92400E;
+}
+
+.status-completed {
+  background-color: #DBEAFE; 
+  color: #1E40AF; 
+}
+
+.status-cancelled {
+  background-color: #FEE2E2; 
+  color: #991B1B; 
+}
+.status-ongoing {
+  background-color: #F3E8FF;   
+  color: #6B21A8;          
+}
