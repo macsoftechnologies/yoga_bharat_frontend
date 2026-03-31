@@ -146,8 +146,9 @@ function Trainer() {
       if (appliedFilters.toDate)       params.toDate       = appliedFilters.toDate;
       if (sortOrder === "asc")         params.sortOrder    = "asc";
       if (sortOrder === "desc")        params.sortOrder    = "des";
+      params.isExport                                      = true;
 
-      const res = await getTrainers(1, 10000, params);
+      const res = await getTrainers(null, null,{ ...params});
       if (Array.isArray(res))       return res;
       if (Array.isArray(res?.data)) return res.data;
       return [];
@@ -335,7 +336,8 @@ function Trainer() {
     }
   };
 
-  const goToProfile = (userId) => navigate(`/trainer/${userId}`);
+  const goToProfile = (userId, trainerData) => navigate(`/trainer/${userId}`, { state: { trainer: trainerData } });
+
 
   // ── Created Date column header with sort dropdown ─────────────────────────
   const CreatedDateHeader = (
@@ -410,7 +412,7 @@ function Trainer() {
   ];
 
   const tableData = trainers.map((item, index) => ({
-    _rowonClick:  () => goToProfile(item.userId),
+  _rowonClick: () => goToProfile(item.userId, item),
     sno:          index + 1 + (currentPage - 1) * limit,
     name:         item.name,
     mobileNumber: item.mobileNumber,

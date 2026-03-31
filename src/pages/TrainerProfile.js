@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Table from "../components/Table";
 import {
   getTrainers,
@@ -15,6 +15,7 @@ import * as XLSX from "xlsx";
 function TrainerProfile() {
   const { userId } = useParams();
   const navigate   = useNavigate();
+  const location   = useLocation();
 
   const [trainer,      setTrainer]      = useState(null);
   const [certificates, setCertificates] = useState([]);
@@ -37,6 +38,8 @@ function TrainerProfile() {
 
   // ── Booking yoga name options ──────────────────────────────────────────────
   const [bookingYogaOptions, setBookingYogaOptions] = useState([]);
+  const [bookingLimit,      setBookingLimit]      = useState(10);
+  const [bookingTotalCount, setBookingTotalCount] = useState(0);
 
   // ── Bookings filters ───────────────────────────────────────────────────────
   const [bookingFilters, setBookingFilters] = useState({
@@ -62,6 +65,12 @@ function TrainerProfile() {
   const [earningsLimit,      setEarningsLimit]      = useState(10);
   const [earningsLoading,    setEarningsLoading]    = useState(false);
   const [earningsTotal,      setEarningsTotal]      = useState(0);
+  const [appliedEarningFilters, setAppliedEarningFilters] = useState({
+  yogaType:    "",
+  bookingType: "",
+  fromDate:    "",
+  toDate:      "",
+});
 
   // ── Earnings filters ───────────────────────────────────────────────────────
   const [earningFilters, setEarningFilters] = useState({
@@ -76,27 +85,46 @@ function TrainerProfile() {
 
   // ─── Fetch Trainer Info ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!userId) return;
-    const fetchTrainer = async () => {
-      setLoading(true);
-      try {
-        const res          = await getTrainers(1, 10);
-        const trainerArray = Array.isArray(res.data) ? res.data : [];
-        const selected     = trainerArray.find((t) => t.userId === userId);
-        setTrainer(selected || null);
-
-        if (selected?.userId) {
-          const certRes = await getCertificatesByUser(selected.userId);
-          setCertificates(certRes?.data || []);
-        }
-      } catch (error) {
-        console.error("Fetch Trainer Error:", error);
-      } finally {
+  if (!userId) return;
+  const fetchTrainer = async () => {
+    setLoading(true);
+    try {
+      // ✅ CASE 1: came from Trainer list — data passed via navigate state
+      if (location.state?.trainer) {
+        setTrainer(location.state.trainer);
+        // still fetch certificates
+        const certRes = await getCertificatesByUser(userId);
+        setCertificates(certRes?.data || []);
         setLoading(false);
+        return;
       }
-    };
-    fetchTrainer();
-  }, [userId]);
+
+      // ✅ CASE 2: page refresh — loop pages with limit:10 only
+      let found = null;
+      for (let page = 1; page <= 50; page++) {
+        const res = await getTrainers(page, 10);
+        const arr = Array.isArray(res.data) ? res.data
+                  : Array.isArray(res)      ? res : [];
+
+        found = arr.find((t) => t.userId === userId);
+        if (found) break;
+        if (arr.length < 10) break; // no more pages
+      }
+      setTrainer(found || null);
+
+      if (found?.userId) {
+        const certRes = await getCertificatesByUser(found.userId);
+        setCertificates(certRes?.data || []);
+      }
+    } catch (error) {
+      console.error("Fetch Trainer Error:", error);
+      setTrainer(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchTrainer();
+  }, [userId]); // eslint-disable-line
 
   // ─── Fetch yoga name options for Bookings tab filter ──────────────────────
   useEffect(() => {
@@ -125,33 +153,35 @@ function TrainerProfile() {
 
   // ─── Fetch Bookings ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!trainer?.userId) return;
-    const fetchBookings = async () => {
-      try {
-        const filters = {};
-        if (appliedBookingFilters.bookingType) filters.bookingType = appliedBookingFilters.bookingType;
-        if (appliedBookingFilters.status)      filters.status      = appliedBookingFilters.status;
-        if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
-        if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
-        if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
+  if (!trainer?.userId) return;
+  const fetchBookings = async () => {
+    try {
+      const filters = {};
+      if (appliedBookingFilters.bookingType) filters.bookingType = appliedBookingFilters.bookingType;
+      if (appliedBookingFilters.status)      filters.status      = appliedBookingFilters.status;
+      if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
+      if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
+      if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
 
-        const res = await getBookings(currentPage, 10, {
-          accepted_trainerId: trainer.userId,
-          ...filters,
-        });
-        if (res && Array.isArray(res.data)) {
-          setOrdersList(res.data);
-          setTotalPages(res.totalPages || 1);
-        } else {
-          setOrdersList([]);
-          setTotalPages(1);
-        }
-      } catch (error) {
-        console.error("Fetch Bookings Error:", error);
+      const res = await getBookings(currentPage, bookingLimit, { 
+        accepted_trainerId: trainer.userId,
+        ...filters,
+      });
+      if (res && Array.isArray(res.data)) {
+        setOrdersList(res.data);
+        setTotalPages(res.totalPages || 1);
+        setBookingTotalCount(res.totalCount || 0); 
+      } else {
+        setOrdersList([]);
+        setTotalPages(1);
+        setBookingTotalCount(0);
       }
-    };
-    fetchBookings();
-  }, [currentPage, trainer, appliedBookingFilters]);
+    } catch (error) {
+      console.error("Fetch Bookings Error:", error);
+    }
+  };
+  fetchBookings();
+}, [currentPage, trainer, appliedBookingFilters, bookingLimit]);
 
   // ─── Fetch Earnings ────────────────────────────────────────────────────────
   const fetchEarnings = useCallback(
@@ -248,12 +278,14 @@ function TrainerProfile() {
 
   const handleApplyEarningFilters = () => {
     setEarningsPage(1);
+    setAppliedEarningFilters({ ...earningFilters }); 
     fetchEarnings(1, earningFilters, earningsLimit);
   };
 
   const handleClearEarningFilters = () => {
     const cleared = { yogaType: "", bookingType: "", fromDate: "", toDate: "" };
     setEarningFilters(cleared);
+    setAppliedEarningFilters(cleared);
     setEarningsPage(1);
     fetchEarnings(1, cleared, earningsLimit);
   };
@@ -278,9 +310,9 @@ function TrainerProfile() {
       if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
       if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
       if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
+            filters.isExport                                      = true;
 
-      const res = await getBookings(1, 10000, {
-        accepted_trainerId: trainer.userId,
+      const res = await getBookings(1, 10, {accepted_trainerId: trainer.userId,
         ...filters,
       });
       if (res && Array.isArray(res.data)) return res.data;
@@ -375,25 +407,73 @@ function TrainerProfile() {
   // ── EARNINGS EXPORT ───────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
 
+  // const fetchAllEarningsForExport = async () => {
+  //   if (!trainer?.userId) return [];
+  //   try {
+  //     const payload = {
+  //       trainerId:   trainer.userId,
+  //       yogaType:    earningFilters.yogaType    || "",
+  //       bookingType: earningFilters.bookingType || "",
+  //       fromDate:    earningFilters.fromDate    || "",
+  //       toDate:      earningFilters.toDate      || "",
+  //     };
+  //     const res = await getTrainerEarning(trainer.userId, payload);
+  //     if (Array.isArray(res))        return res;
+  //     if (Array.isArray(res?.data))  return res.data;
+  //     return [];
+  //   } catch (err) {
+  //     console.error("Export fetch error:", err);
+  //     return [];
+  //   }
+  // };
+
   const fetchAllEarningsForExport = async () => {
-    if (!trainer?.userId) return [];
-    try {
-      const payload = {
-        trainerId:   trainer.userId,
-        yogaType:    earningFilters.yogaType    || "",
-        bookingType: earningFilters.bookingType || "",
-        fromDate:    earningFilters.fromDate    || "",
-        toDate:      earningFilters.toDate      || "",
-      };
-      const res = await getTrainerEarning(trainer.userId, 1, 10000, payload);
-      if (Array.isArray(res))        return res;
-      if (Array.isArray(res?.data))  return res.data;
-      return [];
-    } catch (err) {
-      console.error("Export fetch error:", err);
-      return [];
+  if (!trainer?.userId) return [];
+  try {
+    const payload = {
+      trainerId:   trainer.userId,
+      yogaType:    appliedEarningFilters.yogaType    || "",
+      bookingType: appliedEarningFilters.bookingType || "",
+      fromDate:    appliedEarningFilters.fromDate    || "",
+      toDate:      appliedEarningFilters.toDate      || "",
+    };
+
+    const res = await getTrainerEarning(trainer.userId, payload);
+
+    let data = [];
+    if (Array.isArray(res))                  data = res;
+    else if (res && Array.isArray(res.data)) data = res.data;
+
+    // ✅ Apply same client-side filters using appliedEarningFilters
+    let filteredData = [...data];
+
+    if (appliedEarningFilters.bookingType) {
+      filteredData = filteredData.filter(
+        (item) => item.bookingDetails?.bookingType === appliedEarningFilters.bookingType
+      );
     }
-  };
+    if (appliedEarningFilters.yogaType) {
+      filteredData = filteredData.filter(
+        (item) => item.yogaDetails?.yoga_name === appliedEarningFilters.yogaType
+      );
+    }
+    if (appliedEarningFilters.fromDate) {
+      filteredData = filteredData.filter(
+        (item) => new Date(item.date) >= new Date(appliedEarningFilters.fromDate)
+      );
+    }
+    if (appliedEarningFilters.toDate) {
+      filteredData = filteredData.filter(
+        (item) => new Date(item.date) <= new Date(appliedEarningFilters.toDate)
+      );
+    }
+
+    return filteredData;
+  } catch (err) {
+    console.error("Export fetch error:", err);
+    return [];
+  }
+};
 
   // ✅ FIXED: now reads from yogaDetails / bookingDetails (same as table display)
   const buildEarningExportRows = (data) =>
@@ -469,13 +549,24 @@ function TrainerProfile() {
   };
 
   // ── Loading state ──────────────────────────────────────────────────────────
-  if (!trainer) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
-        <div className="table-spinner" />
-      </div>
-    );
-  }
+  if (loading) {
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
+      <div className="table-spinner" />
+    </div>
+  );
+}
+
+if (!trainer) {
+  return (
+    <div style={{ textAlign: "center", padding: "60px", color: "#888" }}>
+      <h4>Trainer not found</h4>
+      <button className="btn btn-secondary mt-3" onClick={() => navigate("/trainer")}>
+        ← Back to Trainer List
+      </button>
+    </div>
+  );
+}
 
   const getImageUrl = (filename) => {
     if (!filename) return "";
@@ -890,6 +981,43 @@ function TrainerProfile() {
                 </button>
               </div>
             </div>
+
+
+            {/* Records per page + count — BOOKINGS TAB ✅ */}
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <div className="d-flex align-items-center gap-2">
+                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+                  Records per page:
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  style={{
+                    border: "2px solid #ff7a00", padding: "2px",
+                    cursor: "pointer", width: "75px",
+                  }}
+                  value={bookingLimit}                      
+                  onChange={(e) => {
+                    setBookingLimit(Number(e.target.value));   
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+
+              <span style={{ fontSize: "16px", color: "#000" }}>
+                Showing{" "}
+                <strong style={{ color: "#ff7a00" }}>{ordersList.length}</strong>  
+                {bookingTotalCount > ordersList.length
+                  ? <> of <strong>{bookingTotalCount}</strong></>            
+                  : null}{" "}
+                records
+              </span>
+            </div>
+            
 
             {/* Bookings Table */}
             <Table

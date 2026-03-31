@@ -365,22 +365,29 @@ export const deleteYoga = async (yogaId) => {
 
 // ---------------- Users APIs  Clients----------------
 
-export const getClients = async (page = 1, limit = 10, filters = {}) => {
+export const getClients = async (page = 1, limit = 10, params = {}) => {
   try {
-    const params = new URLSearchParams();
-    params.append("page",  page);
-    params.append("limit", limit);
+    // const params = new URLSearchParams();
+    // params.append("page",  page);
+    // params.append("limit", limit);
  
-    if (filters.name)         params.append("name",         filters.name);
-    if (filters.mobileNumber) params.append("mobileNumber", filters.mobileNumber);
-    if (filters.gender)       params.append("gender",       filters.gender);
-    if (filters.fromDate)     params.append("fromDate",     filters.fromDate);
-    if (filters.toDate)       params.append("toDate",       filters.toDate);
-    if (filters.sortOrder)    params.append("sortOrder",    filters.sortOrder); // "asc" or "des"
+    // if (filters.name)         params.append("name",         filters.name);
+    // if (filters.mobileNumber) params.append("mobileNumber", filters.mobileNumber);
+    // if (filters.gender)       params.append("gender",       filters.gender);
+    // if (filters.fromDate)     params.append("fromDate",     filters.fromDate);
+    // if (filters.toDate)       params.append("toDate",       filters.toDate);
+    // if (filters.sortOrder)    params.append("sortOrder",    filters.sortOrder); // "asc" or "des"
  
-    const res = await api.get(`/users/clients?${params.toString()}`, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const queryParams = { ...params };
+  if (page  != null) queryParams.page  = page;   // ✅ skipped when null
+  if (limit != null) queryParams.limit = limit;
+
+    // const res = await api.get(`/users/clients?${params.toString()}`, {
+    //   headers: { "Content-Type": "application/json" },
+    // });
+
+    const res = await api.get("/users/clients", { params: queryParams });
+
     return res.data;
   } catch (err) {
     console.error("Get Clients API Error:", err);
@@ -388,22 +395,24 @@ export const getClients = async (page = 1, limit = 10, filters = {}) => {
   }
 };
 
-export const getTrainers = async (page = 1, limit = 10, filters = {}) => {
+export const getTrainers = async (page = 1, limit = 10, params = {}) => {
   try {
-    const params = new URLSearchParams();
-    params.append("page",  page);
-    params.append("limit", limit);
+    // const params = new URLSearchParams();
+    const queryParams = { ...params };
+    if (page  != null) queryParams.page = page;
+    if (limit != null) queryParams.limit = limit;
  
-    if (filters.name)         params.append("name",         filters.name);
-    if (filters.mobileNumber) params.append("mobileNumber", filters.mobileNumber);
-    if (filters.gender)       params.append("gender",       filters.gender);
-    if (filters.fromDate)     params.append("fromDate",     filters.fromDate);
-    if (filters.toDate)       params.append("toDate",       filters.toDate);
-    if (filters.sortOrder)    params.append("sortOrder",    filters.sortOrder); // "asc" or "des"
+    // if (filters.name)         params.append("name",         filters.name);
+    // if (filters.mobileNumber) params.append("mobileNumber", filters.mobileNumber);
+    // if (filters.gender)       params.append("gender",       filters.gender);
+    // if (filters.fromDate)     params.append("fromDate",     filters.fromDate);
+    // if (filters.toDate)       params.append("toDate",       filters.toDate);
+    // if (filters.sortOrder)    params.append("sortOrder",    filters.sortOrder); // "asc" or "des"
  
-    const res = await api.get(`/users/trainers?${params.toString()}`, {
-      headers: { "Content-Type": "application/json" },
-    });
+    // const res = await api.get(`/users/trainers?${params.toString()}`, {
+    //   headers: { "Content-Type": "application/json" },
+    // });
+    const res = await api.get("/users/trainers", { params: queryParams });
     return res.data;
   } catch (err) {
     console.error("Get Trainers API Error:", err);
@@ -557,4 +566,79 @@ export const addBulksms = async (data) => {
 export const getSmsList = async (page = 1, limit = 10) => {
   const res = await api.get(`/notifications/sms?page=${page}&limit=${limit}`);
   return res.data;
+};
+
+
+
+export const getPaymentCycles = async (page = 1, limit = 10, params = {}) => {
+  try {
+    const queryParams = { ...params };
+    // const params = new URLSearchParams();
+    if (page  != null) queryParams.page = page;
+    if (limit != null) queryParams.limit = limit;
+ 
+    // if (filters.trainerId) params.append("trainerId", filters.trainerId);
+    // if (filters.status)    params.append("status",    filters.status);
+ 
+    // const res = await api.get(`/admin/payment-cycles?${params.toString()}`, {
+    //   headers: { "Content-Type": "application/json" },
+    // });
+    const res = await api.get("/admin/payment-cycles", { params: queryParams });
+    return res.data;
+  } catch (err) {
+    console.error("Get Payment Cycles API Error:", err);
+    return { data: [], totalPages: 1, totalCount: 0 };
+  }
+};
+
+export const getPaymentCycleById = async (cycleId) => {
+  try { 
+    const res = await api.get(`/admin/payment-cycles/${cycleId}/earnings`, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Get Payment Cycle By ID Error:", err);
+    return { data: null, earnings: [] };
+  }
+};
+
+
+// ── Approve Payment Cycle ─────────────────────────────────────────────────
+export const approvePaymentCycle = async (cycleId, payload) => {
+  try {
+    const res = await api.post(`/admin/payment-cycles/${cycleId}/approve`, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Approve Payment Cycle Error:", err);
+    throw err;
+  }
+};
+ 
+// ── Reject Payment Cycle ──────────────────────────────────────────────────
+export const rejectPaymentCycle = async (cycleId, payload) => {
+  try {
+    const res = await api.post(`/admin/payment-cycles/${cycleId}/reject`, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Reject Payment Cycle Error:", err);
+    throw err;
+  }
+};
+ 
+// ── Mark Payment Cycle as Paid ────────────────────────────────────────────
+export const markPaymentCyclePaid = async (cycleId, payload) => {
+  try {
+    const res = await api.post(`/admin/payment-cycles/${cycleId}/mark-paid`, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Mark Payment Cycle Paid Error:", err);
+    throw err;
+  }
 };

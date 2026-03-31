@@ -19,12 +19,10 @@ function Client() {
   const [loading,     setLoading]     = useState(false);
   const [exporting,   setExporting]   = useState(false);
 
-  // ── Sort state ─────────────────────────────────────────────────────────────
-  const [sortOrder,        setSortOrder]        = useState("");   // "" | "asc" | "desc"
+  const [sortOrder,        setSortOrder]        = useState("");
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef(null);
 
-  // close sort dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target))
@@ -34,7 +32,6 @@ function Client() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Filters ────────────────────────────────────────────────────────────────
   const [filters, setFilters] = useState({
     name:         "",
     mobileNumber: "",
@@ -43,7 +40,6 @@ function Client() {
     toDate:       "",
   });
 
-  // appliedFilters drives the actual API call — only updates on "Filter" click
   const [appliedFilters, setAppliedFilters] = useState({
     name:         "",
     mobileNumber: "",
@@ -52,19 +48,15 @@ function Client() {
     toDate:       "",
   });
 
-  // ── Core fetch (useCallback, no state deps — all values passed as args) ────
-  //    This completely avoids stale closure on sortOrder / appliedFilters
   const fetchClients = useCallback(async (page, lim, activeFilters, activeSortOrder) => {
     setLoading(true);
     try {
-      // Build a clean params object — backend uses GET query string
       const params = {};
       if (activeFilters.name)         params.name         = activeFilters.name;
       if (activeFilters.mobileNumber) params.mobileNumber = activeFilters.mobileNumber;
       if (activeFilters.gender)       params.gender       = activeFilters.gender;
       if (activeFilters.fromDate)     params.fromDate     = activeFilters.fromDate;
       if (activeFilters.toDate)       params.toDate       = activeFilters.toDate;
-      // Backend expects "asc" or "des" (NOT "desc")
       if (activeSortOrder === "asc")  params.sortOrder    = "asc";
       if (activeSortOrder === "desc") params.sortOrder    = "des";
 
@@ -91,44 +83,40 @@ function Client() {
     } finally {
       setLoading(false);
     }
-  }, []); // stable — no closure deps
+  }, []);
 
-  // ── useEffect: fires whenever page/limit/appliedFilters/sortOrder changes ──
   useEffect(() => {
     fetchClients(currentPage, limit, appliedFilters, sortOrder);
   }, [currentPage, limit, appliedFilters, sortOrder, fetchClients]);
 
-  // ── Sort handler ───────────────────────────────────────────────────────────
   const handleSort = (order) => {
-    setSortOrder(order);          // → triggers useEffect with latest sortOrder
+    setSortOrder(order);
     setSortDropdownOpen(false);
     setCurrentPage(1);
   };
 
-  // ── Filter handlers ────────────────────────────────────────────────────────
   const handleFilterChange = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
   const handleApplyFilters = () => {
     setCurrentPage(1);
-    setAppliedFilters({ ...filters }); // → triggers useEffect
+    setAppliedFilters({ ...filters });
   };
 
   const handleClearFilters = () => {
     const cleared = { name: "", mobileNumber: "", gender: "", fromDate: "", toDate: "" };
     setFilters(cleared);
-    setAppliedFilters(cleared);   // → triggers useEffect
-    setSortOrder("");              // → triggers useEffect
+    setAppliedFilters(cleared);
+    setSortOrder("");
     setCurrentPage(1);
   };
 
-  // ── Limit change ───────────────────────────────────────────────────────────
   const handleLimitChange = (e) => {
     setLimit(Number(e.target.value));
     setCurrentPage(1);
   };
 
-  // ── Export helpers ─────────────────────────────────────────────────────────
+  // ✅ FIXED — 2 step export, no 10000
   const fetchAllClientsForExport = async () => {
     try {
       const params = {};
@@ -139,8 +127,10 @@ function Client() {
       if (appliedFilters.toDate)       params.toDate       = appliedFilters.toDate;
       if (sortOrder === "asc")         params.sortOrder    = "asc";
       if (sortOrder === "desc")        params.sortOrder    = "des";
+      params.isExport                                      = true;
 
-      const res = await getClients(1, 10000, params);
+      // Step 2 — fetch all using real total as limit
+      const res = await getClients(null, null, { ...params });
       if (Array.isArray(res))       return res;
       if (Array.isArray(res?.data)) return res.data;
       return [];
@@ -152,24 +142,21 @@ function Client() {
 
   const buildClientExportRows = (data) =>
     data.map((item, index) => ({
-      "S.No":               index + 1,
-      "Name":               item.name         || "-",
-      "Email":              item.email        || "-",
-      "Mobile":             item.mobileNumber || "-",
-      "Gender":             item.gender       || "-",
-      "Age":                item.age          || "-",
-      "Role":               item.role         || "-",
-      "Health Preference":  item.health_preference?.length > 0
-                              ? item.health_preference.map((p) => p.preference_name).join(", ")
-                              : "-",
-      "Created Date":       item.createdAt? new Date(item.createdAt).toLocaleDateString("en-IN", {
-                                day:   "2-digit",
-                                month: "2-digit",
-                                year:  "numeric",
-                              })
-                            : "-",
-
-                              
+      "S.No":              index + 1,
+      "Name":              item.name         || "-",
+      "Email":             item.email        || "-",
+      "Mobile":            item.mobileNumber || "-",
+      "Gender":            item.gender       || "-",
+      "Age":               item.age          || "-",
+      "Role":              item.role         || "-",
+      "Health Preference": item.health_preference?.length > 0
+                             ? item.health_preference.map((p) => p.preference_name).join(", ")
+                             : "-",
+      "Created Date":      item.createdAt
+                             ? new Date(item.createdAt).toLocaleDateString("en-IN", {
+                                 day: "2-digit", month: "2-digit", year: "numeric",
+                               })
+                             : "-",
     }));
 
   const exportCSV = async () => {
@@ -225,9 +212,9 @@ function Client() {
     }
   };
 
-  const goToProfile = (userId) => navigate(`/client/${userId}`);
+  const goToProfile = (userId, clientData) =>
+    navigate(`/client/${userId}`, { state: { client: clientData } });
 
-  // ── Created Date column header with sort dropdown ─────────────────────────
   const CreatedDateHeader = (
     <div ref={sortDropdownRef} style={{ position: "relative", display: "inline-block" }}>
       <div
@@ -286,7 +273,6 @@ function Client() {
     </div>
   );
 
-  // ── Table columns ──────────────────────────────────────────────────────────
   const columns = [
     { header: "S.No",              accessor: "srNo" },
     { header: "Name",              accessor: "name" },
@@ -295,12 +281,12 @@ function Client() {
     { header: "Gender",            accessor: "gender" },
     { header: "Age",               accessor: "age" },
     { header: "Role",              accessor: "role" },
-    { header: CreatedDateHeader,   accessor: "createdDate" },   
+    { header: CreatedDateHeader,   accessor: "createdDate" },
     { header: "Health Preference", accessor: "healthPrefNames" },
   ];
 
   const tableData = clients.map((item, index) => ({
-    _rowonClick: () => goToProfile(item.userId),
+    _rowonClick: () => goToProfile(item.userId, item),
 
     srNo:         (currentPage - 1) * limit + index + 1,
     name:         item.name,
@@ -311,30 +297,25 @@ function Client() {
     role:         item.role,
     createdDate:  item.createdAt
       ? new Date(item.createdAt).toLocaleDateString("en-IN", {
-          day:   "2-digit",
-          month: "2-digit",
-          year:  "numeric",
+          day: "2-digit", month: "2-digit", year: "numeric",
         })
       : "-",
-    healthPrefNames:
-      item.health_preference?.length > 0
-        ? item.health_preference.map((p) => p.preference_name).join(", ")
-        : "N/A",
-    healthPrefIcons:
-      item.health_preference?.length > 0
-        ? item.health_preference.map((pref) => (
-            <img
-              key={pref._id}
-              src={`${process.env.REACT_APP_API_BASE_URL}/${pref.preference_icon}`}
-              alt={pref.preference_name}
-              width="50"
-              className="me-1"
-            />
-          ))
-        : "N/A",
+    healthPrefNames: item.health_preference?.length > 0
+      ? item.health_preference.map((p) => p.preference_name).join(", ")
+      : "N/A",
+    healthPrefIcons: item.health_preference?.length > 0
+      ? item.health_preference.map((pref) => (
+          <img
+            key={pref._id}
+            src={`${process.env.REACT_APP_API_BASE_URL}/${pref.preference_icon}`}
+            alt={pref.preference_name}
+            width="50"
+            className="me-1"
+          />
+        ))
+      : "N/A",
   }));
 
-  // ── Shared button styles ───────────────────────────────────────────────────
   const btnFilter = {
     background: "linear-gradient(135deg, #000000, #fcd34d)",
     color: "#fff", border: "none",
@@ -362,11 +343,9 @@ function Client() {
     cursor: disabled ? "not-allowed" : "pointer",
   });
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
 
-      {/* ── Export overlay ── */}
       {exporting && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)",
@@ -384,7 +363,6 @@ function Client() {
         </div>
       )}
 
-      {/* ── Row 1: Title + Records per page ── */}
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
           CLIENT LIST
@@ -407,7 +385,6 @@ function Client() {
         </div>
       </div>
 
-      {/* ── Row 2: Hint + record count ── */}
       <div
         className="d-flex align-items-center justify-content-between mb-3"
         style={{ fontSize: "16px", marginTop: "20px", color: "#000" }}
@@ -425,7 +402,6 @@ function Client() {
         </span>
       </div>
 
-      {/* ── Filter Card ── */}
       <div className="card p-3 mb-3 shadow-sm">
         <h5 className="mb-3">Filters</h5>
         <div className="row">
@@ -516,7 +492,6 @@ function Client() {
         </div>
       </div>
 
-      {/* ── Table ── */}
       <Table
         columns={columns}
         data={tableData}

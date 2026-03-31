@@ -19,6 +19,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FeatureBanners from "./pages/FeatureBanners";
 import Languages from "./pages/Languages";
 import PaymentCycle from "./pages/PaymentCycle";
+import PaymentCycleProfile from "./pages/PaymentCycleProfile";
 import AdminForgotPassword from "./pages/AdminForgotPassword";
 import Home from "./pages/Home";
 import AdminOtp from "./pages/AdminOtp";
@@ -64,6 +65,7 @@ function App() {
           <Route path="/paymentcycle" element={<PaymentCycle />} />
           <Route path="/trainer/:userId" element={<TrainerProfile />} />
           <Route path="/client/:userId" element={<ClientProfile />} />
+          <Route path="/paymentcycle/:cycleId" element={<PaymentCycleProfile />} />
           <Route path="/dashboard/total-earnings"  element={<TotalEarnings />} />
           <Route path="/dashboard/total-bookings"  element={<TotalBookings />} />
           <Route path="/dashboard/active-clients"  element={<ActiveClients />} />
