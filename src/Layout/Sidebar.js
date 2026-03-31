@@ -10,7 +10,6 @@ import {
   FaUser,
   FaFileAlt,
   FaHeartbeat,
-  FaBell,
   FaBookOpen,
   FaPhone,
   FaFileContract,
@@ -187,7 +186,7 @@ const Sidebar = ({ sidebarOpen }) => {
         </li>
 
         {/* Notifications Dropdown (SMS only added, nothing removed) */}
-        <li className="menu-item dropdown">
+        {/* <li className="menu-item dropdown">
           <div
             className="dropdown-toggle no-arrow"
             onClick={() =>
@@ -202,7 +201,7 @@ const Sidebar = ({ sidebarOpen }) => {
               }`}
             />
           </div>
-        </li>
+        </li> */}
 
         {openNotificationDropdown && (
           <>
