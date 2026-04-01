@@ -7,6 +7,7 @@ import {
   approvePaymentCycle,
   rejectPaymentCycle,
   markPaymentCyclePaid,
+  reinitiatePaymentCycle,  // ✅ imported from authService — no direct api import needed
 } from "../services/authService";
 
 /* ─── Status badge colours ──────────────────────────────────────────────── */
@@ -15,67 +16,80 @@ const STATUS_STYLES = {
   approved:       { background: "#28a745", color: "#fff" },
   rejected:       { background: "#dc3545", color: "#fff" },
   paid:           { background: "#0d6efd", color: "#fff" },
-  failed:         { background: "#6c757d", color: "#fff" },
+  failed:         { background: "#b02a37", color: "#fff", border: "2px solid #ff4d4d" },
 };
 
 const getStatusStyle = (s = "") =>
   STATUS_STYLES[s.toLowerCase()] ?? { background: "#aaa", color: "#fff" };
 
-const fmtDate = (v) =>
-  v
-    ? new Date(v).toLocaleDateString("en-IN", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-      })
-    : "N/A";
+/* ─── Date formatters ───────────────────────────────────────────────────── */
+const parseDateSafe = (v) => {
+  if (!v) return null;
+  if (typeof v === "string" && /T|Z/.test(v)) return new Date(v);
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const [y, m, d] = v.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  return new Date(v);
+};
 
-const fmtDateTime = (v) =>
-  v
-    ? new Date(v).toLocaleString("en-IN", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-    : "N/A";
+const fmtDate = (v) => {
+  if (!v) return "-";
+  const d = new Date(v);
+  // Use UTC values to avoid timezone shift
+  const day   = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year  = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const fmtDateTime = (v) => {
+  if (!v) return "-";
+  const d = new Date(v);
+  // Use UTC values to avoid timezone shift
+  const day   = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year  = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const toInputDate = (d) => {
+  if (!d) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+};
 
 /* ─── Swal toast helpers ────────────────────────────────────────────────── */
 const toastSuccess = (text) =>
   Swal.fire({
-    title: "Success!",
-    text,
-    icon: "success",
-    position: "top-end",
-    toast: true,
-    showConfirmButton: false,
-    timer: 6000,
-    timerProgressBar: true,
-    background: "#35a542",
-    color: "#ffffff",
+    title: "Success!", text, icon: "success",
+    position: "top-end", toast: true, showConfirmButton: false,
+    timer: 6000, timerProgressBar: true,
+    background: "#35a542", color: "#ffffff",
   });
 
 const toastError = (text) =>
   Swal.fire({
-    title: "Error!",
-    text,
-    icon: "error",
-    position: "top-end",
-    toast: true,
-    showConfirmButton: false,
-    timer: 6000,
-    timerProgressBar: true,
-    background: "#dc3545",
-    color: "#ffffff",
+    title: "Error!", text, icon: "error",
+    position: "top-end", toast: true, showConfirmButton: false,
+    timer: 6000, timerProgressBar: true,
+    background: "#dc3545", color: "#ffffff",
   });
 
 /* ─── Modal Overlay wrapper ─────────────────────────────────────────────── */
-const Modal = ({ title, onClose, children }) => (
+const Modal = ({ title, onClose, children, maxWidth = "460px" }) => (
   <div style={{
     position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
     zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
   }}>
     <div style={{
       background: "#fff", borderRadius: "12px", padding: "28px 32px",
-      width: "100%", maxWidth: "460px", boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+      width: "100%", maxWidth, boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: "center", marginBottom: "20px",
+      }}>
         <h5 style={{ margin: 0, fontWeight: 700, color: "#1a1a1a" }}>{title}</h5>
         <button onClick={onClose} style={{
           background: "none", border: "none", fontSize: "20px",
@@ -99,11 +113,12 @@ function PaymentCycleProfile() {
   const [loading,  setLoading]  = useState(false);
 
   /* ── Modal states ────────────────────────────────────────────────────── */
-  const [showApproveModal,  setShowApproveModal]  = useState(false);
-  const [showRejectModal,   setShowRejectModal]   = useState(false);
-  const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
-  const [actionLoading,     setActionLoading]     = useState(false);
-  const [cycleLoading, setCycleLoading] = useState(true);
+  const [showApproveModal,    setShowApproveModal]    = useState(false);
+  const [showRejectModal,     setShowRejectModal]     = useState(false);
+  const [showMarkPaidModal,   setShowMarkPaidModal]   = useState(false);
+  const [showReinitiateModal, setShowReinitiateModal] = useState(false);
+  const [actionLoading,       setActionLoading]       = useState(false);
+  const [cycleLoading,        setCycleLoading]        = useState(true);
 
   /* Approve form */
   const [approveNote, setApproveNote] = useState("");
@@ -113,9 +128,14 @@ function PaymentCycleProfile() {
 
   /* Mark as Paid form */
   const [paidForm, setPaidForm] = useState({
-    paymentMethod:  "NEFT",
-    transactionRef: "",
-    note:           "",
+    paymentMethod: "NEFT", transactionRef: "", note: "",
+  });
+
+  /* Re-initiate form */
+  const today = toInputDate(new Date());
+  const [reinitiateForm, setReinitiateForm] = useState({
+    fromDate: today,
+    toDate:   today,
   });
 
   /* ── Get adminId from localStorage ──────────────────────────────────── */
@@ -129,38 +149,33 @@ function PaymentCycleProfile() {
 
   /* ── Fetch cycle details + earnings ─────────────────────────────────── */
   const fetchCycle = async () => {
-  if (!cycleId) return;
-  setLoading(true);
-  try {
-    const res          = await getPaymentCycleById(cycleId);
-    const cycleData    = res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? null;
-    const earningsData = res?.earnings ?? res?.data?.earnings ?? [];
-    if (cycleData)           setCycle(cycleData);
-    if (earningsData.length) setEarnings(earningsData);
-  } catch (err) {
-    console.error("Fetch Payment Cycle Error:", err);
-  } finally {
-    setLoading(false);
-  }
-};
+    if (!cycleId) return;
+    setLoading(true);
+    try {
+      const res          = await getPaymentCycleById(cycleId);
+      const cycleData    = res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? null;
+      const earningsData = res?.earnings ?? res?.data?.earnings ?? [];
+      if (cycleData)           setCycle(cycleData);
+      if (earningsData.length) setEarnings(earningsData);
+    } catch (err) {
+      console.error("Fetch Payment Cycle Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-  if (!cycleId) return;
-
-  // ✅ CASE 1: came from PaymentCycle list — data passed via navigate state
-  if (location.state?.cycle) {
-    setCycle(location.state.cycle);
+    if (!cycleId) return;
+    if (location.state?.cycle) {
+      setCycle(location.state.cycle);
+      setCycleLoading(false);
+      fetchCycle();
+      return;
+    }
     setCycleLoading(false);
-    // still fetch full details + earnings in background
     fetchCycle();
-    return;
-  }
-
-  // ✅ CASE 2: page refresh — fetch normally
-  setCycleLoading(false);
-  fetchCycle();
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [cycleId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycleId]);
 
   /* ══════════════════════════════════════════════════════════════════════
      ACTION HANDLERS
@@ -169,10 +184,7 @@ function PaymentCycleProfile() {
   /* ── 1. Approve ──────────────────────────────────────────────────────── */
   const handleApprove = async () => {
     const adminId = getAdminId();
-    if (!adminId) {
-      toastError("Admin ID not found. Please log in again.");
-      return;
-    }
+    if (!adminId) { toastError("Admin ID not found. Please log in again."); return; }
     setActionLoading(true);
     try {
       await approvePaymentCycle(cycleId, { adminId, note: approveNote });
@@ -181,65 +193,51 @@ function PaymentCycleProfile() {
       toastSuccess("Payment cycle approved successfully!");
       fetchCycle();
     } catch (err) {
-      const msg = err?.response?.data?.message || "Approve failed. Please try again.";
-      toastError(msg);
+      toastError(err?.response?.data?.message || "Approve failed. Please try again.");
     } finally {
       setActionLoading(false);
     }
   };
 
-/* ── 2. Reject ───────────────────────────────────────────────────────── */
-const handleReject = async () => {
-  const adminId = getAdminId();
-  if (!adminId) {
-    toastError("Admin ID not found. Please log in again.");
-    return;
-  }
-  if (!rejectReason.trim()) {
-    toastError("Please enter a reason for rejection.");
-    return;
-  }
+  /* ── 2. Reject ───────────────────────────────────────────────────────── */
+  const handleReject = async () => {
+    const adminId = getAdminId();
+    if (!adminId) { toastError("Admin ID not found. Please log in again."); return; }
+    if (!rejectReason.trim()) { toastError("Please enter a reason for rejection."); return; }
 
-  // ── Close modal FIRST, then show Swal on top ─────────────────────────
-  setShowRejectModal(false);
+    setShowRejectModal(false);
 
-  const result = await Swal.fire({
-    title: "Are you sure?",
-    text: "This payment cycle will be rejected.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#6c757d",
-    confirmButtonText: "Yes, reject it!",
-    cancelButtonText: "Cancel",
-    zIndex: 99999,           // ← ensure it's above everything
-  });
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This payment cycle will be rejected.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, reject it!",
+      cancelButtonText: "Cancel",
+      zIndex: 99999,
+    });
 
-  // ── If user cancels → reopen the modal ───────────────────────────────
-  if (!result.isConfirmed) {
-    setShowRejectModal(true); // reopen so they can edit reason
-    return;
-  }
+    if (!result.isConfirmed) { setShowRejectModal(true); return; }
 
-  setActionLoading(true);
-  try {
-    await rejectPaymentCycle(cycleId, { adminId, reason: rejectReason });
-    setRejectReason("");
-    toastSuccess("Payment cycle rejected successfully.");
-    fetchCycle();
-  } catch (err) {
-    const msg = err?.response?.data?.message || "Reject failed. Please try again.";
-    toastError(msg);
-  } finally {
-    setActionLoading(false);
-  }
-};
+    setActionLoading(true);
+    try {
+      await rejectPaymentCycle(cycleId, { adminId, reason: rejectReason });
+      setRejectReason("");
+      toastSuccess("Payment cycle rejected successfully.");
+      fetchCycle();
+    } catch (err) {
+      toastError(err?.response?.data?.message || "Reject failed. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   /* ── 3. Mark as Paid ─────────────────────────────────────────────────── */
   const handleMarkPaid = async () => {
     if (!paidForm.transactionRef.trim()) {
-      toastError("Please enter a transaction reference.");
-      return;
+      toastError("Please enter a transaction reference."); return;
     }
     setActionLoading(true);
     try {
@@ -253,32 +251,69 @@ const handleReject = async () => {
       toastSuccess("Payment cycle marked as paid!");
       fetchCycle();
     } catch (err) {
-      const msg = err?.response?.data?.message || "Mark as Paid failed. Please try again.";
-      toastError(msg);
+      toastError(err?.response?.data?.message || "Mark as Paid failed. Please try again.");
     } finally {
       setActionLoading(false);
     }
   };
 
-  /* ── Loading ─────────────────────────────────────────────────────────── */
-  if (cycleLoading || (!cycle && loading)) {
-  return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
-      <div className="table-spinner" />
-    </div>
-  );
-}
+  /* ── 4. Re-initiate Cycle ────────────────────────────────────────────── */
+  // ✅ Now calls reinitiatePaymentCycle() from authService (no direct api usage)
+  const handleReinitiate = async () => {
+    if (!reinitiateForm.fromDate || !reinitiateForm.toDate) {
+      toastError("Please select both From Date and To Date."); return;
+    }
+    if (reinitiateForm.fromDate > reinitiateForm.toDate) {
+      toastError("From Date cannot be after To Date."); return;
+    }
 
-if (!cycle) {
-  return (
-    <div style={{ textAlign: "center", padding: "60px", color: "#888" }}>
-      <h4>Payment cycle not found</h4>
-      <button className="btn btn-secondary mt-3" onClick={() => navigate("/paymentcycle")}>
-        ← Back to Payment Cycles
-      </button>
-    </div>
-  );
-}
+    const trainerId =
+      cycle?.trainerId        ||
+      cycle?.trainer?._id     ||
+      cycle?.trainer          ||
+      "";
+
+    if (!trainerId) {
+      toastError("Trainer ID not found in this cycle. Cannot re-initiate.");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await reinitiatePaymentCycle({
+        trainerId,
+        fromDate: reinitiateForm.fromDate,
+        toDate:   reinitiateForm.toDate,
+      });
+      setShowReinitiateModal(false);
+      toastSuccess("Payment cycle re-initiated successfully!");
+      fetchCycle();
+    } catch (err) {
+      toastError(err?.response?.data?.message || "Re-initiate failed. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /* ── Loading / Not Found ─────────────────────────────────────────────── */
+  if (cycleLoading || (!cycle && loading)) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
+        <div className="table-spinner" />
+      </div>
+    );
+  }
+
+  if (!cycle) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px", color: "#888" }}>
+        <h4>Payment cycle not found</h4>
+        <button className="btn btn-secondary mt-3" onClick={() => navigate("/paymentcycle")}>
+          ← Back to Payment Cycles
+        </button>
+      </div>
+    );
+  }
 
   const status = (cycle.status || "").toLowerCase();
 
@@ -336,12 +371,12 @@ if (!cycle) {
 
       {/* ══ APPROVE MODAL ══════════════════════════════════════════════════ */}
       {showApproveModal && (
-        <Modal title="✅ Approve Payment Cycle" onClose={() => !actionLoading && setShowApproveModal(false)}>
+        <Modal title="✅ Approve Payment Cycle"
+          onClose={() => !actionLoading && setShowApproveModal(false)}>
           <div style={{ marginBottom: "16px" }}>
             <label style={labelStyle}>Note (optional)</label>
             <textarea
-              rows={3}
-              placeholder="Enter approval note..."
+              rows={3} placeholder="Enter approval note..."
               value={approveNote}
               onChange={(e) => setApproveNote(e.target.value)}
               style={{ ...inputStyle, resize: "vertical" }}
@@ -352,11 +387,10 @@ if (!cycle) {
               onClick={() => setShowApproveModal(false)}
               disabled={actionLoading}
               style={{
-                padding: "8px 20px", borderRadius: "6px",
-                border: "1px solid #ccc", background: "#fff",
-                cursor: actionLoading ? "not-allowed" : "pointer", fontWeight: 600,
-              }}
-            >
+                padding: "8px 20px", borderRadius: "6px", border: "1px solid #ccc",
+                background: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
               Cancel
             </button>
             <button
@@ -365,10 +399,9 @@ if (!cycle) {
               style={{
                 padding: "8px 20px", borderRadius: "6px", border: "none",
                 background: actionLoading ? "#aaa" : "#28a745",
-                color: "#fff", cursor: actionLoading ? "not-allowed" : "pointer",
-                fontWeight: 600,
-              }}
-            >
+                color: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
               {actionLoading ? "Approving..." : "Approve"}
             </button>
           </div>
@@ -377,14 +410,14 @@ if (!cycle) {
 
       {/* ══ REJECT MODAL ═══════════════════════════════════════════════════ */}
       {showRejectModal && (
-        <Modal title="❌ Reject Payment Cycle" onClose={() => !actionLoading && setShowRejectModal(false)}>
+        <Modal title="❌ Reject Payment Cycle"
+          onClose={() => !actionLoading && setShowRejectModal(false)}>
           <div style={{ marginBottom: "16px" }}>
             <label style={labelStyle}>
               Reason for Rejection <span style={{ color: "red" }}>*</span>
             </label>
             <textarea
-              rows={3}
-              placeholder="Enter rejection reason..."
+              rows={3} placeholder="Enter rejection reason..."
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               style={{ ...inputStyle, resize: "vertical" }}
@@ -395,11 +428,10 @@ if (!cycle) {
               onClick={() => setShowRejectModal(false)}
               disabled={actionLoading}
               style={{
-                padding: "8px 20px", borderRadius: "6px",
-                border: "1px solid #ccc", background: "#fff",
-                cursor: actionLoading ? "not-allowed" : "pointer", fontWeight: 600,
-              }}
-            >
+                padding: "8px 20px", borderRadius: "6px", border: "1px solid #ccc",
+                background: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
               Cancel
             </button>
             <button
@@ -408,10 +440,9 @@ if (!cycle) {
               style={{
                 padding: "8px 20px", borderRadius: "6px", border: "none",
                 background: actionLoading ? "#aaa" : "#dc3545",
-                color: "#fff", cursor: actionLoading ? "not-allowed" : "pointer",
-                fontWeight: 600,
-              }}
-            >
+                color: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
               {actionLoading ? "Rejecting..." : "Reject"}
             </button>
           </div>
@@ -420,14 +451,14 @@ if (!cycle) {
 
       {/* ══ MARK AS PAID MODAL ═════════════════════════════════════════════ */}
       {showMarkPaidModal && (
-        <Modal title="💳 Mark as Paid" onClose={() => !actionLoading && setShowMarkPaidModal(false)}>
+        <Modal title="💳 Mark as Paid"
+          onClose={() => !actionLoading && setShowMarkPaidModal(false)}>
           <div style={{ marginBottom: "14px" }}>
             <label style={labelStyle}>Payment Method</label>
             <select
               value={paidForm.paymentMethod}
               onChange={(e) => setPaidForm((p) => ({ ...p, paymentMethod: e.target.value }))}
-              style={inputStyle}
-            >
+              style={inputStyle}>
               <option value="NEFT">NEFT</option>
               <option value="IMPS">IMPS</option>
               <option value="RTGS">RTGS</option>
@@ -440,8 +471,7 @@ if (!cycle) {
               Transaction Reference <span style={{ color: "red" }}>*</span>
             </label>
             <input
-              type="text"
-              placeholder="e.g. UTR123456"
+              type="text" placeholder="e.g. UTR123456"
               value={paidForm.transactionRef}
               onChange={(e) => setPaidForm((p) => ({ ...p, transactionRef: e.target.value }))}
               style={inputStyle}
@@ -450,8 +480,7 @@ if (!cycle) {
           <div style={{ marginBottom: "18px" }}>
             <label style={labelStyle}>Note (optional)</label>
             <textarea
-              rows={2}
-              placeholder="e.g. Paid via HDFC"
+              rows={2} placeholder="e.g. Paid via HDFC"
               value={paidForm.note}
               onChange={(e) => setPaidForm((p) => ({ ...p, note: e.target.value }))}
               style={{ ...inputStyle, resize: "vertical" }}
@@ -462,11 +491,10 @@ if (!cycle) {
               onClick={() => setShowMarkPaidModal(false)}
               disabled={actionLoading}
               style={{
-                padding: "8px 20px", borderRadius: "6px",
-                border: "1px solid #ccc", background: "#fff",
-                cursor: actionLoading ? "not-allowed" : "pointer", fontWeight: 600,
-              }}
-            >
+                padding: "8px 20px", borderRadius: "6px", border: "1px solid #ccc",
+                background: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
               Cancel
             </button>
             <button
@@ -475,11 +503,74 @@ if (!cycle) {
               style={{
                 padding: "8px 20px", borderRadius: "6px", border: "none",
                 background: actionLoading ? "#aaa" : "#0d6efd",
-                color: "#fff", cursor: actionLoading ? "not-allowed" : "pointer",
-                fontWeight: 600,
-              }}
-            >
+                color: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
               {actionLoading ? "Processing..." : "Mark as Paid"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* ══ RE-INITIATE CYCLE MODAL (rejected / failed) ════════════════════ */}
+      {showReinitiateModal && (
+        <Modal title="🔄 Re-initiate Payment Cycle"
+          onClose={() => !actionLoading && setShowReinitiateModal(false)}>
+          {/* Warning banner */}
+          <div style={{
+            background: "#fff3cd", border: "1px solid #ffc107", borderRadius: "8px",
+            padding: "10px 14px", marginBottom: "18px", fontSize: "13px", color: "#856404",
+          }}>
+            ⚠️ This will create a <strong>new</strong> payment cycle for trainer{" "}
+            <strong>{cycle.trainerName || "—"}</strong> for the selected date range.
+          </div>
+
+          <div style={{ display: "flex", gap: "16px", marginBottom: "18px" }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>
+                From Date <span style={{ color: "red" }}>*</span>
+              </label>
+              <input
+                type="date"
+                value={reinitiateForm.fromDate}
+                disabled
+                style={{ ...inputStyle, background: "#f5f5f5", cursor: "not-allowed", color: "#555" }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>
+                To Date <span style={{ color: "red" }}>*</span>
+              </label>
+              <input
+                  type="date"
+                  value={reinitiateForm.toDate}
+                  disabled
+                  style={{ ...inputStyle, background: "#f5f5f5", cursor: "not-allowed", color: "#555" }}
+                />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setShowReinitiateModal(false)}
+              disabled={actionLoading}
+              style={{
+                padding: "8px 20px", borderRadius: "6px", border: "1px solid #ccc",
+                background: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
+              Cancel
+            </button>
+            <button
+              onClick={handleReinitiate}
+              disabled={actionLoading}
+              style={{
+                padding: "8px 20px", borderRadius: "6px", border: "none",
+                background: actionLoading ? "#aaa" : "#6f42c1",
+                color: "#fff", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+              }}>
+              {actionLoading ? "Processing..." : "🔄 Re-initiate"}
             </button>
           </div>
         </Modal>
@@ -495,7 +586,7 @@ if (!cycle) {
         </button>
       </div>
 
-      {/* ── Cycle Status Banner + Action Buttons ─────────────────────────── */}
+      {/* ── Status Banner + Action Buttons ───────────────────────────────── */}
       <div style={{
         display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap",
         background: "#fafafa", border: "1px solid #e5e7eb",
@@ -511,7 +602,6 @@ if (!cycle) {
           {cycle.status || "-"}
         </span>
 
-        {/* ── Action Buttons based on status ── */}
         <div style={{ marginLeft: "auto", display: "flex", gap: "10px", flexWrap: "wrap" }}>
 
           {/* pending_review → Approve + Reject */}
@@ -521,20 +611,18 @@ if (!cycle) {
                 onClick={() => { setApproveNote(""); setShowApproveModal(true); }}
                 style={{
                   padding: "7px 18px", borderRadius: "6px", border: "none",
-                  background: "#28a745", color: "#fff",
-                  fontWeight: 600, cursor: "pointer", fontSize: "13px",
-                }}
-              >
+                  background: "#28a745", color: "#fff", fontWeight: 600,
+                  cursor: "pointer", fontSize: "13px",
+                }}>
                 ✅ Approve
               </button>
               <button
                 onClick={() => { setRejectReason(""); setShowRejectModal(true); }}
                 style={{
                   padding: "7px 18px", borderRadius: "6px", border: "none",
-                  background: "#dc3545", color: "#fff",
-                  fontWeight: 600, cursor: "pointer", fontSize: "13px",
-                }}
-              >
+                  background: "#dc3545", color: "#fff", fontWeight: 600,
+                  cursor: "pointer", fontSize: "13px",
+                }}>
                 ❌ Reject
               </button>
             </>
@@ -543,21 +631,42 @@ if (!cycle) {
           {/* approved → Mark as Paid */}
           {status === "approved" && (
             <button
-              onClick={() => { setPaidForm({ paymentMethod: "NEFT", transactionRef: "", note: "" }); setShowMarkPaidModal(true); }}
+              onClick={() => {
+                setPaidForm({ paymentMethod: "NEFT", transactionRef: "", note: "" });
+                setShowMarkPaidModal(true);
+              }}
               style={{
                 padding: "7px 18px", borderRadius: "6px", border: "none",
-                background: "#0d6efd", color: "#fff",
-                fontWeight: 600, cursor: "pointer", fontSize: "13px",
-              }}
-            >
+                background: "#0d6efd", color: "#fff", fontWeight: 600,
+                cursor: "pointer", fontSize: "13px",
+              }}>
               💳 Mark as Paid
+            </button>
+          )}
+
+          {/* rejected or failed → Re-initiate Cycle */}
+          {(status === "rejected" || status === "failed") && (
+            <button
+              onClick={() => {
+                  setReinitiateForm({
+                    fromDate: cycle.cycleStart ? toInputDate(parseDateSafe(cycle.cycleStart)) : today,
+                    toDate:   cycle.cycleEnd   ? toInputDate(parseDateSafe(cycle.cycleEnd))   : today,
+                  });
+                  setShowReinitiateModal(true);
+                }}
+              style={{
+                padding: "7px 18px", borderRadius: "6px", border: "none",
+                background: "#6f42c1", color: "#fff", fontWeight: 600,
+                cursor: "pointer", fontSize: "13px",
+              }}>
+              🔄 Re-initiate Cycle
             </button>
           )}
 
         </div>
       </div>
 
-      {/* ── Trainer Info ── */}
+      {/* ── Trainer Info ─────────────────────────────────────────────────── */}
       <div className="card p-3 shadow-sm mb-4">
         <h5 style={{ fontWeight: 700, color: "#ff7a00", marginBottom: "16px" }}>
           👤 Trainer Information
@@ -580,7 +689,7 @@ if (!cycle) {
         </div>
       </div>
 
-      {/* ── Cycle Details ── */}
+      {/* ── Cycle Details ────────────────────────────────────────────────── */}
       <div className="card p-3 shadow-sm mb-4">
         <h5 style={{ fontWeight: 700, color: "#ff7a00", marginBottom: "16px" }}>
           📅 Cycle Details
@@ -604,7 +713,7 @@ if (!cycle) {
         </div>
       </div>
 
-      {/* ── Payment / Payout Details ── */}
+      {/* ── Payment / Payout Details ──────────────────────────────────────── */}
       <div className="card p-3 shadow-sm mb-4">
         <h5 style={{ fontWeight: 700, color: "#ff7a00", marginBottom: "16px" }}>
           💳 Payment Details
@@ -621,12 +730,10 @@ if (!cycle) {
             <InfoRow label="Rejected At"    value={fmtDateTime(cycle.rejectedAt)} />
           </div>
         </div>
-
         {cycle.adminNote && (
           <div style={{
             marginTop: "12px", padding: "12px 16px",
-            background: "#fff8e1", border: "1px solid #ffd54f",
-            borderRadius: "8px",
+            background: "#fff8e1", border: "1px solid #ffd54f", borderRadius: "8px",
           }}>
             <b style={{ color: "#795548" }}>📝 Admin Note:</b>
             <p style={{ margin: "6px 0 0", color: "#333", fontSize: "14px" }}>
@@ -636,7 +743,7 @@ if (!cycle) {
         )}
       </div>
 
-      {/* ── Earnings Records ── */}
+      {/* ── Earnings Records ──────────────────────────────────────────────── */}
       <div className="card p-3 shadow-sm mb-4">
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h5 style={{ fontWeight: 700, color: "#ff7a00", margin: 0 }}>
@@ -648,15 +755,11 @@ if (!cycle) {
             record{earnings.length !== 1 ? "s" : ""}
           </span>
         </div>
-
         {earnings.length > 0 ? (
           <Table
-            columns={earningColumns}
-            data={earningTableData}
-            currentPage={1}
-            totalPages={1}
-            onPageChange={() => {}}
-            isLoading={false}
+            columns={earningColumns} data={earningTableData}
+            currentPage={1} totalPages={1}
+            onPageChange={() => {}} isLoading={false}
           />
         ) : (
           <p style={{ color: "#888", fontStyle: "italic" }}>No earnings records found.</p>

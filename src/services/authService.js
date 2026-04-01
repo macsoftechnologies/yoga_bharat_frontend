@@ -642,3 +642,16 @@ export const markPaymentCyclePaid = async (cycleId, payload) => {
     throw err;
   }
 };
+
+export const reinitiatePaymentCycle = async (payload) => {
+  try {
+    const res = await api.post(`/admin/payment-cycles/manual-cycle`, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Re-initiate Payment Cycle Error:", err);
+    throw err;
+  }
+};
+
