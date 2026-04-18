@@ -30,6 +30,7 @@ import TotalBookings   from "./pages/TotalBookings";
 import ActiveClients   from "./pages/ActiveClients";
 import ActiveTrainers  from "./pages/ActiveTrainers";
 import Sms from "./pages/Sms";
+import Category from "./pages/Category";
 
 
 
@@ -62,6 +63,7 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/feature-banners" element={<FeatureBanners />} />
           <Route path="/languages" element={<Languages />} />
+          <Route path="/category" element={<Category />}/>
           <Route path="/paymentcycle" element={<PaymentCycle />} />
           <Route path="/trainer/:userId" element={<TrainerProfile />} />
           <Route path="/client/:userId" element={<ClientProfile />} />

@@ -365,7 +365,7 @@ function Client() {
 
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
-          CLIENT LIST
+          LEARNER LIST
         </h2>
         <div className="d-flex align-items-center gap-2">
           <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>

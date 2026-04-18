@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Swal from "sweetalert2";
-import { addYoga, updateYoga } from "../services/authService";
+import { addYoga, updateYoga, getCategoryList } from "../services/authService";
 import "./form.css";
 
 // ✅ Compress image before upload to fix 413 error
@@ -35,6 +35,18 @@ const compressImage = (file, maxWidth = 800, quality = 0.7) => {
   });
 };
 
+// ✅ Helper: extract flat categoryId string and category_name from nested or flat object
+const extractCategory = (rawCategoryId) => {
+  if (!rawCategoryId) return { id: "", name: "" };
+  if (typeof rawCategoryId === "object") {
+    return {
+      id: rawCategoryId.categoryId || "",
+      name: rawCategoryId.category_name || "",
+    };
+  }
+  return { id: rawCategoryId, name: "" };
+};
+
 function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
   const [yogaName, setYogaName] = useState("");
   const [clientPrice, setClientPrice] = useState("");
@@ -42,23 +54,59 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
   const [yogaDesc, setYogaDesc] = useState("");
   const [durationValue, setDurationValue] = useState("");
   const [durationUnit, setDurationUnit] = useState("mins");
+  const [benefits, setBenefits] = useState("");
+  const [sessionIncludes, setSessionIncludes] = useState("");
   const [yogaImage, setYogaImage] = useState(null);
   const [yogaIcon, setYogaIcon] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [iconPreview, setIconPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // ✅ Category state
+  const [categoryId, setCategoryId] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryList, setCategoryList] = useState([]);
+
   const imageInputRef = useRef();
   const iconInputRef = useRef();
+
+  // ✅ Fetch all categories on mount
+  useEffect(() => {
+    const fetchAllCategories = async () => {
+      try {
+        const res = await getCategoryList(1, 100);
+        let data = [];
+        if (res && Array.isArray(res.data)) {
+          data = res.data;
+        } else if (Array.isArray(res)) {
+          data = res;
+        }
+        // Deduplicate by categoryId
+        const unique = [];
+        const seen = new Set();
+        for (const cat of data) {
+          if (!seen.has(cat.categoryId)) {
+            seen.add(cat.categoryId);
+            unique.push(cat);
+          }
+        }
+        setCategoryList(unique);
+      } catch (err) {
+        console.error("Failed to fetch categories", err);
+      }
+    };
+    fetchAllCategories();
+  }, []);
 
   /* ===== PREFILL FOR EDIT ===== */
   useEffect(() => {
     if (isEdit && initialData) {
-      console.log("=== EDIT initialData ===", JSON.stringify(initialData, null, 2));
-
       setYogaName(initialData.yoga_name || "");
       setClientPrice(initialData.client_price || "");
       setTrainerPrice(initialData.trainer_price || "");
       setYogaDesc(initialData.yoga_desc || "");
+      setBenefits(initialData.benefits || "");
+      setSessionIncludes(initialData.session_includes || "");
 
       if (initialData.duration) {
         const parts = initialData.duration.split(" ");
@@ -66,7 +114,11 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
         setDurationUnit(parts[1] || "mins");
       }
 
-      // ✅ Prefix with base URL so image renders correctly (same as LawForm)
+      // ✅ Handle categoryId as nested object OR plain string
+      const { id, name } = extractCategory(initialData.categoryId);
+      setCategoryId(id);
+      setCategoryName(name); // set immediately from nested object
+
       const base = process.env.REACT_APP_API_BASE_URL || "";
       const imgField = initialData.yoga_image || initialData.image || initialData.yogaImage || null;
       const iconField = initialData.yoga_icon || initialData.icon || initialData.yogaIcon || null;
@@ -77,6 +129,16 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
       setYogaIcon(null);
     }
   }, [initialData, isEdit]);
+
+  // ✅ Safety net: resolve category name from list if not set from nested object
+  useEffect(() => {
+    if (isEdit && categoryId && categoryList.length > 0 && !categoryName) {
+      const matched = categoryList.find(
+        (cat) => String(cat.categoryId).trim() === String(categoryId).trim()
+      );
+      if (matched) setCategoryName(matched.category_name);
+    }
+  }, [categoryList, categoryId, isEdit, categoryName]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
@@ -96,6 +158,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
     e.preventDefault();
     if (!yogaName) { Swal.fire("Validation Error", "Yoga Name is required", "warning"); return; }
     if (!durationValue) { Swal.fire("Validation Error", "Duration is required", "warning"); return; }
+    if (!categoryId) { Swal.fire("Validation Error", "Please select a category", "warning"); return; }
 
     const formData = new FormData();
     if (isEdit) formData.append("yogaId", initialData.yogaId);
@@ -104,6 +167,9 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
     formData.append("trainer_price", trainerPrice);
     formData.append("yoga_desc", yogaDesc);
     formData.append("duration", `${durationValue} ${durationUnit}`);
+    formData.append("categoryId", categoryId);
+    formData.append("benefits", benefits);
+    formData.append("session_includes", sessionIncludes);
     if (yogaImage) formData.append("yoga_image", yogaImage);
     if (yogaIcon) formData.append("yoga_icon", yogaIcon);
 
@@ -134,27 +200,60 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
 
-      <div className="mb-3">
-        <label className="form-label">Yoga Name</label>
-        <input
-          type="text"
-          className="form-control"
-          value={yogaName}
-          onChange={(e) => setYogaName(e.target.value)}
-          placeholder="Enter Yoga Name"
-          required
-        />
+      <div className="row">
+        {/* Yoga Name */}
+        <div className="col-md-6 mb-3">
+          <label className="form-label">Yoga Name</label>
+          <input
+            type="text"
+            className="form-control"
+            value={yogaName}
+            onChange={(e) => setYogaName(e.target.value)}
+            placeholder="Enter Yoga Name"
+            required
+          />
+        </div>
+
+        {/* Category */}
+        <div className="col-md-6 mb-3">
+          <label className="form-label">Category</label>
+          {isEdit ? (
+            // ✅ Edit: show resolved category_name as disabled input
+            <input
+              type="text"
+              className="form-control"
+              value={categoryName}
+              disabled
+              style={{ background: "#f5f5f5", cursor: "not-allowed", opacity: 1 }}
+            />
+          ) : (
+            // Add: show dropdown
+            <select
+              className="form-select"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              required
+            >
+              <option value="">Select Category</option>
+              {categoryList.map((cat) => (
+                <option key={cat.categoryId} value={cat.categoryId}>
+                  {cat.category_name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       <div className="row">
         <div className="col-md-6 mb-3">
-          <label className="form-label">Client Price</label>
+          <label className="form-label">Learner Price</label>
           <input
             type="number"
             className="form-control"
             value={clientPrice}
             onChange={(e) => setClientPrice(e.target.value)}
-            placeholder="500"
+            placeholder="Enter learner price (e.g. 500)"
             required
           />
         </div>
@@ -165,7 +264,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
             className="form-control"
             value={trainerPrice}
             onChange={(e) => setTrainerPrice(e.target.value)}
-            placeholder="400"
+            placeholder="Enter trainer price (e.g. 400)"
             required
           />
         </div>
@@ -179,7 +278,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
             className="form-control"
             value={durationValue}
             onChange={(e) => setDurationValue(e.target.value)}
-            placeholder="30"
+            placeholder="Enter duration (e.g. 30)"
             required
           />
         </div>
@@ -200,19 +299,43 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
         <label className="form-label">Description</label>
         <textarea
           className="form-control"
+          rows={3}
           value={yogaDesc}
           onChange={(e) => setYogaDesc(e.target.value)}
-          placeholder="Yoga description"
+          placeholder="Enter yoga description"
           required
         />
       </div>
 
+      {/* ✅ NEW: Benefits */}
+      <div className="mb-3">
+        <label className="form-label">Benefits</label>
+        <textarea
+          className="form-control"
+          rows={3}
+          value={benefits}
+          onChange={(e) => setBenefits(e.target.value)}
+          placeholder="Enter benefits (e.g. Improves flexibility, Reduces stress)"
+        />
+      </div>
+
+      {/* ✅ NEW: Session Includes */}
+      <div className="mb-3">
+        <label className="form-label">Session Includes</label>
+        <textarea
+          className="form-control"
+          rows={3}
+          value={sessionIncludes}
+          onChange={(e) => setSessionIncludes(e.target.value)}
+          placeholder="Enter what session includes (e.g. Warm-up, Breathing exercises)"
+        />
+      </div>
+
       <div className="row">
-        {/* ===== YOGA IMAGE ===== */}
+        {/* YOGA IMAGE */}
         <div className="col-md-6 mb-3">
           <label className="form-label">Yoga Image</label>
 
-          {/* ✅ Show current image ABOVE the file input when editing (same as LawForm) */}
           {isEdit && imagePreview && !yogaImage && (
             <div className="mb-2">
               <img
@@ -240,7 +363,6 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
             required={!isEdit}
           />
 
-          {/* Preview of newly selected image */}
           {yogaImage && imagePreview && (
             <div className="mt-2">
               <img
@@ -259,11 +381,10 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
           )}
         </div>
 
-        {/* ===== YOGA ICON ===== */}
+        {/* YOGA ICON */}
         <div className="col-md-6 mb-3">
           <label className="form-label">Yoga Icon</label>
 
-          {/* ✅ Show current icon ABOVE the file input when editing (same as LawForm) */}
           {isEdit && iconPreview && !yogaIcon && (
             <div className="mb-2 text-center">
               <img
@@ -291,7 +412,6 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
             required={!isEdit}
           />
 
-          {/* Preview of newly selected icon */}
           {yogaIcon && iconPreview && (
             <div className="mt-2 text-center">
               <img

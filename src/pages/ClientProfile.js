@@ -377,24 +377,45 @@ function ClientProfile() {
       )}
 
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>CLIENT PROFILE</h2>
+        <h2>LEARNER PROFILE</h2>
         <button className="btn btn-secondary" onClick={() => navigate("/client")}>← Back</button>
       </div>
 
       <div className="card p-3 shadow-sm mb-4">
         <h4 className="mb-3">{client.name}</h4>
+
         <div className="row">
           <div className="col-md-6">
-            <p><b>Email:</b>  {client.email}</p>
+            <p><b>Email:</b> {client.email}</p>
             <p><b>Mobile:</b> {client.mobileNumber}</p>
-            <p><b>Age:</b>    {client.age}</p>
+            <p><b>Age:</b> {client.age}</p>
           </div>
+
           <div className="col-md-6">
-            <p><b>Gender:</b>     {client.gender}</p>
-            <p><b>Status:</b>     {client.status}</p>
+            <p><b>Gender:</b> {client.gender}</p>
+            <p><b>Status:</b> {client.status}</p>
             <p><b>Created At:</b> {new Date(client.createdAt).toLocaleString()}</p>
           </div>
         </div>
+        <div className="row">
+            {client.health_preference && client.health_preference.length > 0 && (
+              <div className="mt-2">
+                <b>Health Preferences:</b>
+                <div className="d-flex flex-wrap gap-2 mt-1">
+                  {client.health_preference.map((item, index) => (
+                    <span
+                      key={index}
+                      className="badge bg-success"
+                      style={{ fontSize: "13px", padding: "6px 10px" }}
+                    >
+                      {item.preference_name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+        </div>
+        
       </div>
 
       <div className="card p-3 shadow-sm">

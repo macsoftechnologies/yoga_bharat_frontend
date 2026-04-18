@@ -569,6 +569,23 @@ export const getSmsList = async (page = 1, limit = 10) => {
 };
 
 
+export const addCategory = async (data) => {
+  const res = await api.post("/category/add", data, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data;
+};
+ 
+export const getCategoryList = async (page = 1, limit = 10) => {
+  const res = await api.get(`/category?page=${page}&limit=${limit}`);
+  return res.data;
+};
+ 
+export const CategoryById = async (categoryId) => {
+  const res = await api.get(`/category/${categoryId}`);
+  return res.data;
+};
+
 
 export const getPaymentCycles = async (page = 1, limit = 10, params = {}) => {
   try {

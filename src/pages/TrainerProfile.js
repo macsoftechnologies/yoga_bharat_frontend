@@ -12,6 +12,9 @@ import {
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+
 function TrainerProfile() {
   const { userId } = useParams();
   const navigate   = useNavigate();
@@ -21,6 +24,8 @@ function TrainerProfile() {
   const [certificates, setCertificates] = useState([]);
   const [loading,      setLoading]      = useState(false);
   const [exporting,    setExporting]    = useState(false);
+
+  const [selectedCertificates, setSelectedCertificates] = useState([]);
 
   // ── Active Tab ─────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("bookings"); // "bookings" | "earnings"
@@ -323,6 +328,9 @@ function TrainerProfile() {
     }
   };
 
+
+
+
   const buildBookingExportRows = (data) =>
     data.map((item, index) => ({
       "S.No":           index + 1,
@@ -548,6 +556,77 @@ function TrainerProfile() {
     }
   };
 
+  
+  // const handleSelectCertificate = (id) => {
+  // setSelectedCertificates((prev) =>
+  //   prev.includes(id)
+  //     ? prev.filter((item) => item !== id)
+  //     : [...prev, id]
+  // );
+  // };
+
+const downloadSingleCertificate = async (cert) => {
+  try {
+    const url = getImageUrl(cert.certificate);
+
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    const fileName = cert.headline
+      ? cert.headline.replace(/\s+/g, "_")
+      : "certificate";
+
+    link.download = `${fileName}.jpg`;
+    link.click();
+
+    URL.revokeObjectURL(link.href);
+  } catch (error) {
+    console.error("Single download error:", error);
+    alert("Download failed");
+  }
+};
+
+
+const downloadAllCertificates = async () => {
+  if (!selectedCertificates.length) {
+    alert("Please select at least one certificate");
+    return;
+  }
+
+  try {
+    const zip = new JSZip();
+
+    const selectedItems = certificates.filter((c) =>
+      selectedCertificates.includes(c._id)
+    );
+
+    for (let i = 0; i < selectedItems.length; i++) {
+      const cert = selectedItems[i];
+      const url = getImageUrl(cert.certificate);
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+
+      // Use headline if available
+      const fileName = cert.headline
+        ? cert.headline.replace(/\s+/g, "_")
+        : `certificate_${i + 1}`;
+
+      zip.file(`${fileName}.jpg`, blob);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    saveAs(zipBlob, "selected_certificates.zip");
+
+  } catch (error) {
+    console.error("Download error:", error);
+    alert("Failed to download certificates");
+  }
+};
+
   // ── Loading state ──────────────────────────────────────────────────────────
   if (loading) {
   return (
@@ -735,38 +814,134 @@ if (!trainer) {
 
       {/* ── Certificates ── */}
       <div className="card p-3 shadow-sm mb-4">
-        <h4>Certificates</h4>
+        {/* Header with button */}
+        <div className="d-flex justify-content-between align-items-center">
+
+          <h4 className="mb-0">Certificates</h4>
+
+          <div className="d-flex align-items-center gap-3">
+
+            <input
+              type="checkbox"
+              checked={
+                selectedCertificates.length === certificates.length &&
+                certificates.length > 0
+              }
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedCertificates(certificates.map(c => c._id));
+                } else {
+                  setSelectedCertificates([]);
+                }
+              }}
+              style={{
+                width: "18px",
+                height: "18px",
+                cursor: "pointer",
+                transform: "scale(1.4)",
+                border: "2px solid orange",
+                borderRadius: "4px",
+                position: "relative"
+              }}
+            />
+
+            <button
+              onClick={downloadAllCertificates}
+              className="btn"
+              style={{
+                backgroundColor: "#28a745",
+                color: "#fff",
+                fontWeight: "600",
+                borderRadius: "8px",
+                padding: "6px 16px",
+                border: "none"
+              }}
+              disabled={!selectedCertificates.length}
+            >
+              ⬇ Download ({selectedCertificates.length})
+            </button>
+
+          </div>
+
+        </div>
+
+        {/* Certificates List */}
         <div className="col-12 mt-3">
           {certificates.length > 0 ? (
             <div className="row">
               {certificates.map((c) => (
                 <div className="col-md-4 mb-3" key={c._id}>
-                  <div
-                    style={{
-                      display: "flex", alignItems: "center", gap: "16px",
-                      padding: "14px 16px", background: "rgb(255 172 45)",
-                      borderRadius: "16px", boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => openImageModal(getImageUrl(c.certificate))}
-                  >
-                    <img
-                      src={getImageUrl(c.certificate)}
-                      alt="Certificate"
-                      style={{
-                        width: "120px", height: "80px", objectFit: "cover",
-                        borderRadius: "12px", background: "#fff",
+                  
+                  {/* ✅ ADDED WRAPPER */}
+                  <div style={{ position: "relative" }}>
+
+                    {/* DOWNLOAD ICON */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent modal open
+                        downloadSingleCertificate(c);
                       }}
-                    />
-                    <div>
-                      <h6 style={{ margin: 0, fontWeight: "700" }}>
-                        {c.headline || "Yoga Certificate"}
-                      </h6>
-                      <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#000" }}>
-                        {c.description || "No description available"}
-                      </p>
+                      style={{
+                        position: "absolute",
+                        top: "13px",
+                        right: "10px",
+                        background: "#28a745",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "25px",
+                        height: "25px",
+                        color: "#fff",
+                        cursor: "pointer",
+                        zIndex: 10
+                      }}
+                    >
+                      ⬇
+                    </button>
+
+                    {/* YOUR ORIGINAL CARD (UNCHANGED) */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                        padding: "14px 16px",
+                        background: "rgb(255 172 45)",
+                        borderRadius: "16px",
+                        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => openImageModal(getImageUrl(c.certificate))}
+                    >
+                      <img
+                        src={getImageUrl(c.certificate)}
+                        alt="Certificate"
+                        style={{
+                          width: "120px",
+                          height: "80px",
+                          objectFit: "cover",
+                          borderRadius: "12px",
+                          background: "#fff",
+                        }}
+                      />
+
+                      <div>
+                        <h6 style={{ margin: 0, fontWeight: "700" }}>
+                          {c.headline || "Yoga Certificate"}
+                        </h6>
+                        <p
+                          style={{
+                            margin: "6px 0 0",
+                            fontSize: "13px",
+                            color: "#000",
+                          }}
+                        >
+                          {c.description || "No description available"}
+                        </p>
+                      </div>
                     </div>
+
                   </div>
+
                 </div>
               ))}
             </div>
@@ -784,30 +959,8 @@ if (!trainer) {
             <p><b>Recipient:</b>      {trainer.recipient_name || "N/A"}</p>
             <p><b>Account No:</b>     {trainer.account_no     || "N/A"}</p>
             <p><b>Account Branch:</b> {trainer.account_branch || "N/A"}</p>
-          </div>
-          <div className="col-md-6">
             <p><b>Branch Address:</b> {trainer.branch_address || "N/A"}</p>
             <p><b>IFSC Code:</b>      {trainer.ifsc_code      || "N/A"}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Professional Details + Yoga Video ── */}
-      <div className="card p-3 shadow-sm mb-4">
-        <div className="row">
-          <div className="col-md-6">
-            <h4>Professional Details</h4>
-            {trainer.professional_details?.length > 0 ? (
-              trainer.professional_details.map((item) => (
-                <div key={item._id} className="mb-2">
-                  <p className="mb-1"><b>Yoga:</b>          {item.yoga_name}</p>
-                  <p className="mb-1"><b>Client Price:</b>  ₹{item.client_price}</p>
-                  <p className="mb-1"><b>Trainer Price:</b> ₹{item.trainer_price}</p>
-                </div>
-              ))
-            ) : (
-              <p>N/A</p>
-            )}
           </div>
           <div className="col-md-6">
             <h4>Yoga Video</h4>
@@ -825,6 +978,38 @@ if (!trainer) {
           </div>
         </div>
       </div>
+
+      {/* ── Professional Details + Yoga Video ── */}
+    <div className="card p-3 shadow-sm mb-4">
+      <h4 className="mb-3">Professional Details</h4>
+
+      <div className="row">
+        {trainer.professional_details?.length > 0 ? (
+          trainer.professional_details.map((item) => (
+            <div key={item._id} className="col-md-3 mb-3">
+              <div
+                className="p-3 text-white"
+                style={{
+                  background: "linear-gradient(135deg, #28a745, #20c997)",
+                  borderRadius: "10px",
+                  height: "100px"
+                }}
+              >
+                <div style={{ fontSize: "13px",marginBottom: "15px" }}>
+                  <b>Type :</b> {item.yoga_name}
+                </div>
+
+                <div style={{ fontSize: "15px", fontWeight: "600" }}>
+                  <b>Price :</b> ₹{item.trainer_price}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-muted">N/A</p>
+        )}
+      </div>
+    </div>
 
       {/* ── Journey Images ── */}
       <div className="card p-3 shadow-sm mb-4">

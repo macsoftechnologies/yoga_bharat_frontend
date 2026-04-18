@@ -7,6 +7,18 @@ import YogaForm from "../forms/YogaForm";
 import { getYogaList, yogaById, deleteYoga } from "../services/authService";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
+// ✅ Helper: categoryId can be nested object or plain string
+const extractCategory = (rawCategoryId) => {
+  if (!rawCategoryId) return { id: "", name: "" };
+  if (typeof rawCategoryId === "object") {
+    return {
+      id: rawCategoryId.categoryId || "",
+      name: rawCategoryId.category_name || "",
+    };
+  }
+  return { id: rawCategoryId, name: "" };
+};
+
 function Yoga() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -21,26 +33,33 @@ function Yoga() {
 
   useEffect(() => {
     fetchData(currentPage, limit);
-  }, [currentPage, limit]); // ✅ FIXED HERE
+  }, [currentPage, limit]);
 
   const fetchData = async (page, activeLimit) => {
     setLoading(true);
     try {
       const res = await getYogaList(page, activeLimit);
-
       const yogaData = Array.isArray(res.data) ? res.data : [];
 
       setYogaList(
-        yogaData.map((item) => ({
-          yogaId: item.yogaId,
-          yoga_name: item.yoga_name,
-          client_price: item.client_price,
-          trainer_price: item.trainer_price,
-          yoga_desc: item.yoga_desc,
-          yoga_image: item.yoga_image,
-          yoga_icon: item.yoga_icon,
-          duration: item.duration,
-        }))
+        yogaData.map((item) => {
+          const { id: catId, name: catName } = extractCategory(item.categoryId);
+          return {
+            yogaId: item.yogaId,
+            yoga_name: item.yoga_name,
+            client_price: item.client_price,
+            trainer_price: item.trainer_price,
+            yoga_desc: item.yoga_desc,
+            yoga_image: item.yoga_image,
+            yoga_icon: item.yoga_icon,
+            duration: item.duration,
+            benefits: item.benefits || "",
+            session_includes: item.session_includes || "",
+            categoryId: item.categoryId, // keep original (nested or string)
+            _categoryId: catId,          // flat string for form
+            _categoryName: catName,      // resolved name for display
+          };
+        })
       );
 
       setTotalPages(res.totalPages || 1);
@@ -63,13 +82,14 @@ function Yoga() {
     const newLimit = Number(e.target.value);
     setLimit(newLimit);
     setCurrentPage(1);
-    fetchData(1, newLimit); // ✅ kept as it is (no deletion)
+    fetchData(1, newLimit);
   };
 
   const handleView = async (yogaId) => {
     try {
       const res = await yogaById(yogaId);
       const yoga = res.data;
+      const { id: catId, name: catName } = extractCategory(yoga.categoryId);
       setSelectedYoga({
         yogaId: yoga.yogaId,
         yoga_name: yoga.yoga_name,
@@ -79,14 +99,15 @@ function Yoga() {
         yoga_image: yoga.yoga_image,
         yoga_icon: yoga.yoga_icon,
         duration: yoga.duration,
+        benefits: yoga.benefits || "",
+        session_includes: yoga.session_includes || "",
+        categoryId: yoga.categoryId,
+        _categoryId: catId,
+        _categoryName: catName,
       });
       setViewOpen(true);
     } catch (err) {
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Failed to fetch Yoga details",
-        "error"
-      );
+      Swal.fire("Error", err.response?.data?.message || "Failed to fetch Yoga details", "error");
     }
   };
 
@@ -94,6 +115,7 @@ function Yoga() {
     try {
       const res = await yogaById(yogaId);
       const yoga = res.data;
+      const { id: catId, name: catName } = extractCategory(yoga.categoryId);
       setSelectedYoga({
         yogaId: yoga.yogaId,
         yoga_name: yoga.yoga_name,
@@ -103,14 +125,14 @@ function Yoga() {
         yoga_image: yoga.yoga_image,
         yoga_icon: yoga.yoga_icon,
         duration: yoga.duration,
+        benefits: yoga.benefits || "",
+        session_includes: yoga.session_includes || "",
+        categoryId: catId,        // ✅ pass flat string to form
+        category_name: catName,   // ✅ pass name directly so form shows it immediately
       });
       setEditOpen(true);
     } catch (err) {
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Failed to fetch Yoga details",
-        "error"
-      );
+      Swal.fire("Error", err.response?.data?.message || "Failed to fetch Yoga details", "error");
     }
   };
 
@@ -144,11 +166,7 @@ function Yoga() {
       });
       fetchData(currentPage, limit);
     } catch (err) {
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Delete failed",
-        "error"
-      );
+      Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
     }
   };
 
@@ -195,55 +213,27 @@ function Yoga() {
       <img
         src={`${process.env.REACT_APP_API_BASE_URL}/${item.yoga_image}`}
         alt="Yoga"
-        style={{
-          width: "42px",
-          height: "42px",
-          objectFit: "cover",
-          borderRadius: "6px",
-          display: "block",
-        }}
+        style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "6px", display: "block" }}
       />
-    ) : (
-      "N/A"
-    ),
+    ) : "N/A",
 
     yoga_icon: item.yoga_icon ? (
       <img
         src={`${process.env.REACT_APP_API_BASE_URL}/${item.yoga_icon}`}
         alt="Icon"
-        style={{
-          width: "38px",
-          height: "38px",
-          objectFit: "cover",
-          borderRadius: "8px",
-          display: "block",
-        }}
+        style={{ width: "38px", height: "38px", objectFit: "cover", borderRadius: "8px", display: "block" }}
       />
-    ) : (
-      "N/A"
-    ),
+    ) : "N/A",
 
     actions: (
       <div className="actions">
-        <button
-          className="icon-btn view"
-          title="View"
-          onClick={() => handleView(item.yogaId)}
-        >
+        <button className="icon-btn view" title="View" onClick={() => handleView(item.yogaId)}>
           <FaEye />
         </button>
-        <button
-          className="icon-btn edit"
-          title="Edit"
-          onClick={() => handleEdit(item.yogaId)}
-        >
+        <button className="icon-btn edit" title="Edit" onClick={() => handleEdit(item.yogaId)}>
           <FaEdit />
         </button>
-        <button
-          className="icon-btn delete"
-          title="Delete"
-          onClick={() => handleDelete(item.yogaId)}
-        >
+        <button className="icon-btn delete" title="Delete" onClick={() => handleDelete(item.yogaId)}>
           <FaTrash />
         </button>
       </div>
@@ -264,12 +254,7 @@ function Yoga() {
           </label>
           <select
             className="form-select form-select-sm"
-            style={{
-              border: "2px solid #ff7a00",
-              padding: "2px",
-              cursor: "pointer",
-              width: "75px",
-            }}
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
             value={limit}
             onChange={handleLimitChange}
           >
@@ -281,11 +266,8 @@ function Yoga() {
         </div>
 
         <span style={{ fontSize: "16px", color: "#000" }}>
-          Showing{" "}
-          <strong style={{ color: "#ff7a00" }}>{yogaList.length}</strong>{" "}
-          {totalCount > yogaList.length ? (
-            <>of <strong>{totalCount}</strong></>
-          ) : null}{" "}
+          Showing <strong style={{ color: "#ff7a00" }}>{yogaList.length}</strong>{" "}
+          {totalCount > yogaList.length ? (<>of <strong>{totalCount}</strong></>) : null}{" "}
           records
         </span>
       </div>
@@ -299,16 +281,13 @@ function Yoga() {
         isLoading={loading}
       />
 
+      {/* Add Modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Yoga" size="lg">
         <YogaForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      <Modal
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        title="Edit Yoga"
-        size="lg"
-      >
+      {/* Edit Modal */}
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Yoga" size="lg">
         <YogaForm
           onClose={() => setEditOpen(false)}
           initialData={selectedYoga}
@@ -317,12 +296,8 @@ function Yoga() {
         />
       </Modal>
 
-      <Modal
-        open={viewOpen}
-        onClose={() => setViewOpen(false)}
-        title="Yoga Details"
-        size="lg"
-      >
+      {/* View Modal */}
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Yoga Details" size="lg">
         {selectedYoga && (
           <div className="container" style={{ padding: "10px" }}>
             <div className="row mb-3">
@@ -330,16 +305,19 @@ function Yoga() {
                 <p><b>Yoga Name:</b> {selectedYoga.yoga_name}</p>
               </div>
               <div className="col-md-6">
-                <p><b>Client Price:</b> {selectedYoga.client_price}</p>
+                <p><b>Duration:</b> {selectedYoga.duration}</p>
               </div>
+              {/* <div className="col-md-6">
+                <p><b>Category:</b> {selectedYoga._categoryName || "-"}</p>
+              </div> */}
             </div>
 
             <div className="row mb-3">
               <div className="col-md-6">
-                <p><b>Trainer Price:</b> {selectedYoga.trainer_price}</p>
+                <p><b>Learner Price:</b> {selectedYoga.client_price}</p>
               </div>
               <div className="col-md-6">
-                <p><b>Duration:</b> {selectedYoga.duration}</p>
+                <p><b>Trainer Price:</b> {selectedYoga.trainer_price}</p>
               </div>
             </div>
 
@@ -349,6 +327,22 @@ function Yoga() {
               </div>
             </div>
 
+            {selectedYoga.benefits && (
+              <div className="row mb-3">
+                <div className="col-md-12">
+                  <p><b>Benefits:</b> {selectedYoga.benefits}</p>
+                </div>
+              </div>
+            )}
+
+            {selectedYoga.session_includes && (
+              <div className="row mb-3">
+                <div className="col-md-12">
+                  <p><b>Session Includes:</b> {selectedYoga.session_includes}</p>
+                </div>
+              </div>
+            )}
+
             <div className="row">
               <div className="col-md-6 text-center mb-3">
                 <b>Image:</b><br />
@@ -356,17 +350,9 @@ function Yoga() {
                   <img
                     src={`${process.env.REACT_APP_API_BASE_URL}/${selectedYoga.yoga_image}`}
                     alt="Yoga"
-                    style={{
-                      width: "150px",
-                      height: "150px",
-                      objectFit: "cover",
-                      borderRadius: "10px",
-                      marginTop: "8px",
-                    }}
+                    style={{ width: "150px", height: "150px", objectFit: "cover", borderRadius: "10px", marginTop: "8px" }}
                   />
-                ) : (
-                  "N/A"
-                )}
+                ) : "N/A"}
               </div>
 
               <div className="col-md-6 text-center mb-3">
@@ -375,25 +361,14 @@ function Yoga() {
                   <img
                     src={`${process.env.REACT_APP_API_BASE_URL}/${selectedYoga.yoga_icon}`}
                     alt="Icon"
-                    style={{
-                      width: "100px",
-                      height: "100px",
-                      objectFit: "cover",
-                      borderRadius: "12px",
-                      marginTop: "8px",
-                    }}
+                    style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "12px", marginTop: "8px" }}
                   />
-                ) : (
-                  "N/A"
-                )}
+                ) : "N/A"}
               </div>
             </div>
 
             <div className="text-end">
-              <button
-                className="btn btn-secondary mt-2"
-                onClick={() => setViewOpen(false)}
-              >
+              <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>
                 Close
               </button>
             </div>

@@ -17,6 +17,7 @@ import {
   FaImages,
   FaLanguage,
   FaExchangeAlt,
+  FaTags,
 } from "react-icons/fa";
 
 import { FaClipboardList } from "react-icons/fa6";
@@ -182,6 +183,14 @@ const Sidebar = ({ sidebarOpen }) => {
           <NavLink to="/callback-request" className={({ isActive }) => isActive ? "active" : ""}>
             <FaPhone className="menu-icon" />
             Callback Request
+          </NavLink>
+        </li>
+
+        {/* Callback Request */}
+        <li className="menu-item">
+          <NavLink to="/category" className={({ isActive }) => isActive ? "active" : ""}>
+            <FaTags className="menu-icon" />
+            Category
           </NavLink>
         </li>
 
