@@ -75,6 +75,13 @@ const Sidebar = ({ sidebarOpen }) => {
           </NavLink>
         </li>
 
+        <li className="menu-item">
+          <NavLink to="/category" className={({ isActive }) => isActive ? "active" : ""}>
+            <FaTags className="menu-icon" />
+            Category
+          </NavLink>
+        </li>
+
         {/* Users Dropdown */}
         <li className="menu-item dropdown">
           <div
@@ -186,13 +193,8 @@ const Sidebar = ({ sidebarOpen }) => {
           </NavLink>
         </li>
 
-        {/* Callback Request */}
-        <li className="menu-item">
-          <NavLink to="/category" className={({ isActive }) => isActive ? "active" : ""}>
-            <FaTags className="menu-icon" />
-            Category
-          </NavLink>
-        </li>
+
+
 
         {/* Notifications Dropdown (SMS only added, nothing removed) */}
         {/* <li className="menu-item dropdown">

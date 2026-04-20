@@ -528,7 +528,7 @@ function Trainer() {
 
       {/* ── Row 2: Hint + record count ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-        <span style={{ fontSize: "16px", color: "#ff7a00", marginTop: "15px", fontStyle: "italic" }}>
+        <span style={{ fontSize: "16px", color: "#ff7a00",background: "#000000", borderRadius:"15px",padding: "7px", marginTop: "15px", fontStyle: "italic" }}>
           💡 Click on any row to view profile →
         </span>
         <span style={{ fontSize: "14px", color: "#333" }}>

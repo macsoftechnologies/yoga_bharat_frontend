@@ -389,7 +389,7 @@ function Client() {
         className="d-flex align-items-center justify-content-between mb-3"
         style={{ fontSize: "16px", marginTop: "20px", color: "#000" }}
       >
-        <span style={{ color: "#ff7a00", fontSize: "16px", fontStyle: "italic" }}>
+        <span style={{ color: "#ff7a00", fontSize: "16px", background: "#000000", borderRadius:"15px",padding: "7px", fontStyle: "italic" }}>
           💡 Click on any row to view profile →
         </span>
         <span>
