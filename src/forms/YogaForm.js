@@ -3,7 +3,6 @@ import Swal from "sweetalert2";
 import { addYoga, updateYoga, getCategoryList } from "../services/authService";
 import "./form.css";
 
-// ✅ Compress image before upload to fix 413 error
 const compressImage = (file, maxWidth = 800, quality = 0.7) => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -35,7 +34,6 @@ const compressImage = (file, maxWidth = 800, quality = 0.7) => {
   });
 };
 
-// ✅ Helper: extract flat categoryId string and category_name from nested or flat object
 const extractCategory = (rawCategoryId) => {
   if (!rawCategoryId) return { id: "", name: "" };
   if (typeof rawCategoryId === "object") {
@@ -61,16 +59,12 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
   const [imagePreview, setImagePreview] = useState(null);
   const [iconPreview, setIconPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // ✅ Category state
   const [categoryId, setCategoryId] = useState("");
-  const [categoryName, setCategoryName] = useState("");
   const [categoryList, setCategoryList] = useState([]);
 
   const imageInputRef = useRef();
   const iconInputRef = useRef();
 
-  // ✅ Fetch all categories on mount
   useEffect(() => {
     const fetchAllCategories = async () => {
       try {
@@ -81,7 +75,6 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
         } else if (Array.isArray(res)) {
           data = res;
         }
-        // Deduplicate by categoryId
         const unique = [];
         const seen = new Set();
         for (const cat of data) {
@@ -98,7 +91,6 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
     fetchAllCategories();
   }, []);
 
-  /* ===== PREFILL FOR EDIT ===== */
   useEffect(() => {
     if (isEdit && initialData) {
       setYogaName(initialData.yoga_name || "");
@@ -114,10 +106,8 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
         setDurationUnit(parts[1] || "mins");
       }
 
-      // ✅ Handle categoryId as nested object OR plain string
-      const { id, name } = extractCategory(initialData.categoryId);
+      const { id } = extractCategory(initialData.categoryId);
       setCategoryId(id);
-      setCategoryName(name); // set immediately from nested object
 
       const base = process.env.REACT_APP_API_BASE_URL || "";
       const imgField = initialData.yoga_image || initialData.image || initialData.yogaImage || null;
@@ -129,16 +119,6 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
       setYogaIcon(null);
     }
   }, [initialData, isEdit]);
-
-  // ✅ Safety net: resolve category name from list if not set from nested object
-  useEffect(() => {
-    if (isEdit && categoryId && categoryList.length > 0 && !categoryName) {
-      const matched = categoryList.find(
-        (cat) => String(cat.categoryId).trim() === String(categoryId).trim()
-      );
-      if (matched) setCategoryName(matched.category_name);
-    }
-  }, [categoryList, categoryId, isEdit, categoryName]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
@@ -199,10 +179,8 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
-
       <div className="row">
-        {/* Yoga Name */}
-        <div className="col-md-6 mb-3">
+        <div className="col-md-6 mb-1">
           <label className="form-label">Yoga Name</label>
           <input
             type="text"
@@ -214,39 +192,26 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
           />
         </div>
 
-        {/* Category */}
-        <div className="col-md-6 mb-3">
+        <div className="col-md-6 mb-1">
           <label className="form-label">Category</label>
-          {isEdit ? (
-            // ✅ Edit: show resolved category_name as disabled input
-            <input
-              type="text"
-              className="form-control"
-              value={categoryName}
-              disabled
-              style={{ background: "#f5f5f5", cursor: "not-allowed", opacity: 1 }}
-            />
-          ) : (
-            // Add: show dropdown
-            <select
-              className="form-select"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              required
-            >
-              <option value="">Select Category</option>
-              {categoryList.map((cat) => (
-                <option key={cat.categoryId} value={cat.categoryId}>
-                  {cat.category_name}
-                </option>
-              ))}
-            </select>
-          )}
+          <select
+            className="form-select"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            required
+          >
+            <option value="">Select Category</option>
+            {categoryList.map((cat) => (
+              <option key={cat.categoryId} value={cat.categoryId}>
+                {cat.category_name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       <div className="row">
-        <div className="col-md-6 mb-3">
+        <div className="col-md-6 mb-1">
           <label className="form-label">Learner Price</label>
           <input
             type="number"
@@ -257,7 +222,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
             required
           />
         </div>
-        <div className="col-md-6 mb-3">
+        <div className="col-md-6 mb-1">
           <label className="form-label">Trainer Price</label>
           <input
             type="number"
@@ -271,7 +236,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="row">
-        <div className="col-md-6 mb-3">
+        <div className="col-md-6 mb-1">
           <label className="form-label">Duration</label>
           <input
             type="number"
@@ -282,7 +247,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
             required
           />
         </div>
-        <div className="col-md-6 mb-3">
+        <div className="col-md-6 mb-1">
           <label className="form-label">Unit</label>
           <select
             className="form-select"
@@ -295,7 +260,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
         </div>
       </div>
 
-      <div className="mb-3">
+      <div className="mb-1">
         <label className="form-label">Description</label>
         <textarea
           className="form-control"
@@ -307,8 +272,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
         />
       </div>
 
-      {/* ✅ NEW: Benefits */}
-      <div className="mb-3">
+      <div className="mb-1">
         <label className="form-label">Benefits</label>
         <textarea
           className="form-control"
@@ -319,8 +283,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
         />
       </div>
 
-      {/* ✅ NEW: Session Includes */}
-      <div className="mb-3">
+      <div className="mb-1">
         <label className="form-label">Session Includes</label>
         <textarea
           className="form-control"
@@ -332,8 +295,7 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="row">
-        {/* YOGA IMAGE */}
-        <div className="col-md-6 mb-3">
+        <div className="col-md-6 mb-1">
           <label className="form-label">Yoga Image</label>
 
           {isEdit && imagePreview && !yogaImage && (
@@ -381,7 +343,6 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
           )}
         </div>
 
-        {/* YOGA ICON */}
         <div className="col-md-6 mb-3">
           <label className="form-label">Yoga Icon</label>
 
@@ -439,7 +400,6 @@ function YogaForm({ onClose, initialData, isEdit, onSubmit }) {
           {loading ? "Saving..." : isEdit ? "Update Yoga" : "Save Yoga"}
         </button>
       </div>
-
     </form>
   );
 }

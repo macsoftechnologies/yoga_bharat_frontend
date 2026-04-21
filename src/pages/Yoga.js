@@ -7,7 +7,6 @@ import YogaForm from "../forms/YogaForm";
 import { getYogaList, yogaById, deleteYoga } from "../services/authService";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
-// ✅ Helper: categoryId can be nested object or plain string
 const extractCategory = (rawCategoryId) => {
   if (!rawCategoryId) return { id: "", name: "" };
   if (typeof rawCategoryId === "object") {
@@ -17,6 +16,12 @@ const extractCategory = (rawCategoryId) => {
     };
   }
   return { id: rawCategoryId, name: "" };
+};
+
+const parseNumberedPoints = (text) => {
+  if (!text) return [];
+  const parts = text.split(/(?=\d+\.)/).map((s) => s.trim()).filter(Boolean);
+  return parts;
 };
 
 function Yoga() {
@@ -55,9 +60,9 @@ function Yoga() {
             duration: item.duration,
             benefits: item.benefits || "",
             session_includes: item.session_includes || "",
-            categoryId: item.categoryId, // keep original (nested or string)
-            _categoryId: catId,          // flat string for form
-            _categoryName: catName,      // resolved name for display
+            categoryId: item.categoryId,
+            _categoryId: catId,
+            _categoryName: catName,
           };
         })
       );
@@ -88,7 +93,7 @@ function Yoga() {
   const handleView = async (yogaId) => {
     try {
       const res = await yogaById(yogaId);
-      const yoga = res.data;
+      const yoga = Array.isArray(res.data) ? res.data[0] : res.data;
       const { id: catId, name: catName } = extractCategory(yoga.categoryId);
       setSelectedYoga({
         yogaId: yoga.yogaId,
@@ -114,7 +119,7 @@ function Yoga() {
   const handleEdit = async (yogaId) => {
     try {
       const res = await yogaById(yogaId);
-      const yoga = res.data;
+      const yoga = Array.isArray(res.data) ? res.data[0] : res.data;
       const { id: catId, name: catName } = extractCategory(yoga.categoryId);
       setSelectedYoga({
         yogaId: yoga.yogaId,
@@ -127,8 +132,8 @@ function Yoga() {
         duration: yoga.duration,
         benefits: yoga.benefits || "",
         session_includes: yoga.session_includes || "",
-        categoryId: catId,        // ✅ pass flat string to form
-        category_name: catName,   // ✅ pass name directly so form shows it immediately
+        categoryId: catId,
+        category_name: catName,
       });
       setEditOpen(true);
     } catch (err) {
@@ -180,6 +185,7 @@ function Yoga() {
   const columns = [
     { header: "S.No", accessor: "srNo" },
     { header: "Yoga Name", accessor: "yoga_name" },
+    { header: "Category", accessor: "_categoryName" },
     { header: "Client Price", accessor: "client_price" },
     { header: "Trainer Price", accessor: "trainer_price" },
     { header: "Description", accessor: "yoga_desc" },
@@ -192,6 +198,23 @@ function Yoga() {
   const tableData = yogaList.map((item, index) => ({
     srNo: (currentPage - 1) * limit + index + 1,
     ...item,
+
+    _categoryName: (
+      <span
+        style={{
+          background: "#f0fdf4",
+          color: "#16a34a",
+          border: "1px solid #bbf7d0",
+          borderRadius: "6px",
+          padding: "2px 10px",
+          fontSize: "13px",
+          fontWeight: 500,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {item._categoryName || "-"}
+      </span>
+    ),
 
     yoga_desc: (
       <span
@@ -281,12 +304,10 @@ function Yoga() {
         isLoading={loading}
       />
 
-      {/* Add Modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Yoga" size="lg">
         <YogaForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* Edit Modal */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Yoga" size="lg">
         <YogaForm
           onClose={() => setEditOpen(false)}
@@ -296,7 +317,6 @@ function Yoga() {
         />
       </Modal>
 
-      {/* View Modal */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Yoga Details" size="lg">
         {selectedYoga && (
           <div className="container" style={{ padding: "10px" }}>
@@ -307,9 +327,27 @@ function Yoga() {
               <div className="col-md-6">
                 <p><b>Duration:</b> {selectedYoga.duration}</p>
               </div>
-              {/* <div className="col-md-6">
-                <p><b>Category:</b> {selectedYoga._categoryName || "-"}</p>
-              </div> */}
+            </div>
+
+            <div className="row mb-3">
+              <div className="col-md-6">
+                <p>
+                  <b>Category:</b>{" "}
+                  <span
+                    style={{
+                      background: "#f0fdf4",
+                      color: "#16a34a",
+                      border: "1px solid #bbf7d0",
+                      borderRadius: "6px",
+                      padding: "2px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {selectedYoga._categoryName || "-"}
+                  </span>
+                </p>
+              </div>
             </div>
 
             <div className="row mb-3">
@@ -330,7 +368,14 @@ function Yoga() {
             {selectedYoga.benefits && (
               <div className="row mb-3">
                 <div className="col-md-12">
-                  <p><b>Benefits:</b> {selectedYoga.benefits}</p>
+                  <b>Benefits:</b>
+                  <ol style={{ marginTop: "6px", paddingLeft: "20px" }}>
+                    {parseNumberedPoints(selectedYoga.benefits).map((point, i) => (
+                      <li key={i} style={{ marginBottom: "4px", fontSize: "14px" }}>
+                        {point.replace(/^\d+\./, "").trim()}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </div>
             )}
@@ -338,7 +383,14 @@ function Yoga() {
             {selectedYoga.session_includes && (
               <div className="row mb-3">
                 <div className="col-md-12">
-                  <p><b>Session Includes:</b> {selectedYoga.session_includes}</p>
+                  <b>Session Includes:</b>
+                  <ol style={{ marginTop: "6px", paddingLeft: "20px" }}>
+                    {parseNumberedPoints(selectedYoga.session_includes).map((point, i) => (
+                      <li key={i} style={{ marginBottom: "4px", fontSize: "14px" }}>
+                        {point.replace(/^\d+\./, "").trim()}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </div>
             )}
