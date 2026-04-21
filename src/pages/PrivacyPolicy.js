@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
-import Button from "../components/Button";
+// import Button from "../components/Button";
 import Swal from "sweetalert2";
 import {
   addPrivacy,
@@ -234,7 +234,7 @@ function PrivacyPolicy() {
     <div>
       <div className="d-flex justify-content-between mb-3">
         <h2>PRIVACY POLICY</h2>
-        <Button text="+ Add PRIVACY POLICY" color="orange" onClick={() => setOpen(true)} />
+        {/* <Button text="+ Add PRIVACY POLICY" color="orange" onClick={() => setOpen(true)} /> */}
       </div>
 
       {/* ✅ Records per page + Showing count */}
@@ -284,14 +284,48 @@ function PrivacyPolicy() {
         />
       </Modal>
 
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Policy" size="md">
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Policy" size="mc">
         {selectedItem && (
           <div style={{ padding: "10px" }}>
             <p><b>User Type:</b> {selectedItem.usertype}</p>
-            <p><b>Policy:</b> {selectedItem.privacy_policy}</p>
-            <button className="btn btn-secondary mt-2" onClick={() => setViewOpen(false)}>
-              Close
-            </button>
+
+            <b>Policy:</b>
+            <div
+              style={{
+                marginTop: "10px",
+                maxHeight: "500px",
+                overflowY: "auto",
+                paddingRight: "6px",
+              }}
+            >
+              {selectedItem.privacy_policy
+                .split(/\n+/)
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((para, i) => {
+                  const isNumbered = /^\d+(\.\d+)?[.)]/.test(para);
+                  return (
+                    <p
+                      key={i}
+                      style={{
+                        marginBottom: "8px",
+                        fontSize: "14px",
+                        lineHeight: "1.6",
+                        fontWeight: isNumbered ? "600" : "400",
+                        paddingLeft: /^\d+\.\d+/.test(para) ? "16px" : "0px",
+                      }}
+                    >
+                      {para}
+                    </p>
+                  );
+                })}
+            </div>
+
+            <div className="text-end mt-3">
+              <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
+                Close
+              </button>
+            </div>
           </div>
         )}
       </Modal>
