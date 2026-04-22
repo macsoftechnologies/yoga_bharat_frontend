@@ -325,17 +325,24 @@ export const addYoga = async (formData) => {
     throw err;
   }
 };
-export const getYogaList = async (page = 1, limit = 10) => {
+
+
+
+export const getYogaList = async (page = 1, limit = 10, params = {}) => {
   try {
-    const res = await api.get(`/yoga/list?page=${page}&limit=${limit}`, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return res.data; 
+    const queryParams = { ...params };
+    if (page  != null) queryParams.page  = page;
+    if (limit != null) queryParams.limit = limit;
+ 
+    const res = await api.get("/yoga/list", { params: queryParams });
+ 
+    return res.data;
   } catch (err) {
     console.error("Get Yoga List API Error:", err);
-    return { data: [], totalPages: 1, totalCount: 0 }; 
+    return { data: [], totalPages: 1, totalCount: 0 };
   }
 };
+
 
 export const updateYoga = async (formData) => {
   try {
@@ -430,11 +437,17 @@ export const disableTrainer = async (userId, isDisabled) => {
 };
 
 
-export const rejectTrainer = async (userId) => {
+
+export const rejectTrainer = async (userId, rejectReason = "", rejectType = "Ekyc") => {
   try {
     const res = await api.post(
       "/users/approvetrainer",
-      { userId, ekyc_status: "rejected" },
+      {
+        userId,
+        ekyc_status:   "rejected",
+        reject_reason: rejectReason,
+        reject_type:   rejectType,  
+      },
       { headers: { "Content-Type": "application/json" } }
     );
     return res.data;

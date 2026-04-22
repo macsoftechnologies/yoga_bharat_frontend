@@ -30,6 +30,12 @@ function Trainer() {
   const [loading,         setLoading]         = useState(false);
   const [exporting,       setExporting]       = useState(false);
 
+
+  const [rejectModalOpen,   setRejectModalOpen]   = useState(false);
+  const [rejectType,        setRejectType]        = useState("Ekyc");
+  const [rejectReason,      setRejectReason]      = useState("");
+  const [rejectReasonError, setRejectReasonError] = useState("");
+
   // ── Sort state ─────────────────────────────────────────────────────────────
   const [sortOrder,        setSortOrder]        = useState("");   // "" | "asc" | "desc"
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -275,30 +281,45 @@ function Trainer() {
     }
   };
 
-  const handleReject = async () => {
-    const result = await Swal.fire({
-      title: "Reject Trainer?",
-      text: "Are you sure you want to reject this trainer?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#6c757d",
-      confirmButtonText: "Yes, Reject",
-      cancelButtonText: "Cancel",
-    });
-    if (!result.isConfirmed) return;
-    try {
-      await rejectTrainer(selectedTrainer.userId);
-      Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "Trainer Rejected", showConfirmButton: false, timer: 6000, timerProgressBar: true, background: "#d33", color: "#ffffff" });
-      setTrainers((prev) =>
-        prev.map((t) => t.userId === selectedTrainer.userId ? { ...t, ekyc_status: "rejected" } : t)
-      );
-      setViewOpen(false);
-      setSelectedTrainer(null);
-    } catch {
-      Swal.fire("Error", "Rejection failed", "error");
-    }
+  // Opens the reject modal (called from the Approve/Reject buttons)
+  const handleReject = () => {
+    setRejectType("Ekyc");
+    setRejectReason("");
+    setRejectReasonError("");
+    setRejectModalOpen(true);
   };
+
+// Called when user confirms inside the reject modal
+const handleRejectConfirm = async () => {
+  if (!rejectReason.trim()) {
+    setRejectReasonError("Reject reason is required!");
+    return;
+  }
+  setRejectReasonError("");
+
+  try {
+    await rejectTrainer(selectedTrainer.userId, rejectReason.trim(), rejectType);
+
+    Swal.fire({
+      toast: true, position: "top-end", icon: "warning",
+      title: "Trainer Rejected",
+      showConfirmButton: false, timer: 6000, timerProgressBar: true,
+      background: "#d33", color: "#ffffff",
+    });
+
+    setTrainers((prev) =>
+      prev.map((t) =>
+        t.userId === selectedTrainer.userId ? { ...t, ekyc_status: "rejected" } : t
+      )
+    );
+
+    setRejectModalOpen(false);
+    setViewOpen(false);
+    setSelectedTrainer(null);
+  } catch {
+    Swal.fire("Error", "Rejection failed", "error");
+  }
+};
 
   const handleToggleDisable = async (item, e) => {
     e.stopPropagation();
@@ -758,6 +779,69 @@ function Trainer() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* ── Reject Modal ── */}
+      <Modal
+        open={rejectModalOpen}
+        onClose={() => setRejectModalOpen(false)}
+        title="Reject Trainer"
+        size="md"
+      >
+        <div className="container">
+
+          {/* Reject Type dropdown */}
+          <div className="mb-3">
+            <label className="form-label fw-semibold">
+              Reject Type <span style={{ color: "red" }}>*</span>
+            </label>
+            <select
+              className="form-select"
+              value={rejectType}
+              onChange={(e) => setRejectType(e.target.value)}
+            >
+              <option value="Ekyc">eKYC</option>
+              <option value="Bank Details">Bank Details</option>
+            </select>
+          </div>
+
+          {/* Reject Reason textarea */}
+          <div className="mb-3">
+            <label className="form-label fw-semibold">
+              Reject Reason <span style={{ color: "red" }}>*</span>
+            </label>
+            <textarea
+              className={`form-control ${rejectReasonError ? "is-invalid" : ""}`}
+              rows={4}
+              placeholder="Enter reject reason here..."
+              value={rejectReason}
+              onChange={(e) => {
+                setRejectReason(e.target.value);
+                if (e.target.value.trim()) setRejectReasonError("");
+              }}
+            />
+            {rejectReasonError && (
+              <div className="invalid-feedback">{rejectReasonError}</div>
+            )}
+          </div>
+
+          {/* Footer buttons */}
+          <div className="text-end d-flex justify-content-end gap-2">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setRejectModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={handleRejectConfirm}
+            >
+              Confirm Reject
+            </button>
+          </div>
+
+        </div>
       </Modal>
     </div>
   );
