@@ -755,6 +755,30 @@ if (!trainer) {
     cursor: disabled ? "not-allowed" : "pointer",
   });
 
+  const getStatusStyle = (status) => {
+  const s = status?.toLowerCase();
+
+  if (s === "approved") {
+    return {
+      background: "#f0fdf4",
+      color: "#16a34a",
+      border: "1px solid #bbf7d0",
+    };
+  } else if (s === "rejected") {
+    return {
+      background: "#fef2f2",
+      color: "#dc2626",
+      border: "1px solid #fecaca",
+    };
+  } else {
+    return {
+      background: "#fff7ed",
+      color: "#ea580c",
+      border: "1px solid #fed7aa",
+    };
+  }
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="container mt-3">
@@ -787,30 +811,70 @@ if (!trainer) {
 
       {/* ── Trainer Info ── */}
       <div className="card p-3 shadow-sm mb-4">
-        <div className="row align-items-start">
-          <div className="col-md-4 text-center mb-3">
-            <img
-              src={getImageUrl(trainer.profile_pic)}
-              alt="Trainer"
-              className="img-fluid"
-              style={{ borderRadius: "12px", maxWidth: "150px" }}
-            />
-          </div>
-          <div className="col-md-4 mb-3">
-            <p><b>Name:</b>   {trainer.name}</p>
-            <p><b>Email:</b>  {trainer.email}</p>
-            <p><b>Mobile:</b> {trainer.mobileNumber}</p>
-          </div>
-          <div className="col-md-4 mb-3">
-            <p><b>Gender:</b> {trainer.gender}</p>
-            <p><b>Age:</b>    {trainer.age}</p>
-            <p>
-              <b>eKYC Status:</b>{" "}
-              <span style={{ color: "green", fontWeight: 600 }}>{trainer.ekyc_status}</span>
-            </p>
-          </div>
-        </div>
-      </div>
+  <div className="row align-items-start">
+    
+    {/* Profile Image */}
+    <div className="col-md-4 text-center mb-3">
+      <img
+        src={getImageUrl(trainer.profile_pic)}
+        alt="Trainer"
+        className="img-fluid"
+        style={{ borderRadius: "12px", maxWidth: "150px" }}
+      />
+    </div>
+
+    {/* Basic Details */}
+    <div className="col-md-4 mb-3">
+      <p><b>Name:</b> {trainer.name}</p>
+      <p><b>Email:</b> {trainer.email}</p>
+      <p><b>Mobile:</b> {trainer.mobileNumber}</p>
+    </div>
+
+    {/* Additional Details */}
+    <div className="col-md-4 mb-3">
+      <p><b>Gender:</b> {trainer.gender}</p>
+      <p><b>Age:</b> {trainer.age}</p>
+
+      {/* eKYC Status Badge */}
+      <p>
+        <b>eKYC Status:</b>{" "}
+        <span
+          style={{
+            ...getStatusStyle(trainer.ekyc_status),
+            borderRadius: "6px",
+            padding: "2px 10px",
+            fontSize: "13px",
+            fontWeight: 500,
+            textTransform: "capitalize",
+            whiteSpace: "nowrap"
+          }}
+        >
+          {trainer.ekyc_status || "-"}
+        </span>
+      </p>
+
+      {/* Reject Details (ONLY when rejected) */}
+      {trainer.ekyc_status?.toLowerCase() === "rejected" && (
+        <>
+          <p>
+            <b>Reject Type:</b>{" "}
+            <span style={{ color: "#dc2626", fontWeight: 500 }}>
+              {trainer.reject_type || "-"}
+            </span>
+          </p>
+
+          <p>
+            <b>Reject Reason:</b>{" "}
+            <span style={{ color: "#dc2626" }}>
+              {trainer.reject_reason || "-"}
+            </span>
+          </p>
+        </>
+      )}
+    </div>
+
+  </div>
+</div>
 
       {/* ── Certificates ── */}
       <div className="card p-3 shadow-sm mb-4">

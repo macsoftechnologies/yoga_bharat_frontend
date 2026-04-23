@@ -7,20 +7,25 @@ import {
   addCategory,
   getCategoryList,
   CategoryById,
+  updateCategory,
+  deleteCategory,
+  DisbleEnableCategory,
 } from "../services/authService";
 import "../forms/form.css";
-import { FaEye } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 function Category() {
-  const [open, setOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [categoryList, setCategoryList] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [limit, setLimit] = useState(10);
-  const [loading, setLoading] = useState(false);
+  const [open,          setOpen]          = useState(false);
+  const [editOpen,      setEditOpen]      = useState(false);
+  const [viewOpen,      setViewOpen]      = useState(false);
+  const [selectedItem,  setSelectedItem]  = useState(null);
+  const [editItem,      setEditItem]      = useState(null);
+  const [categoryList,  setCategoryList]  = useState([]);
+  const [currentPage,   setCurrentPage]   = useState(1);
+  const [totalPages,    setTotalPages]    = useState(1);
+  const [totalCount,    setTotalCount]    = useState(0);
+  const [limit,         setLimit]         = useState(10);
+  const [loading,       setLoading]       = useState(false);
 
   useEffect(() => {
     fetchCategories(currentPage, limit);
@@ -30,19 +35,12 @@ function Category() {
     setLoading(true);
     try {
       const res = await getCategoryList(page, limitValue);
-      let data = [];
-      let pages = 1;
-      let total = 0;
-
+      let data = [], pages = 1, total = 0;
       if (res && Array.isArray(res.data)) {
-        data = res.data;
-        pages = res.totalPages || 1;
-        total = res.totalCount || data.length;
+        data = res.data; pages = res.totalPages || 1; total = res.totalCount || data.length;
       } else if (Array.isArray(res)) {
-        data = res;
-        total = data.length;
+        data = res; total = data.length;
       }
-
       setCategoryList(data);
       setTotalPages(pages);
       setTotalCount(total);
@@ -62,6 +60,7 @@ function Category() {
     setCurrentPage(1);
   };
 
+  // ── View ──────────────────────────────────────────────────────────────────
   const handleView = async (categoryId) => {
     try {
       const res = await CategoryById(categoryId);
@@ -72,55 +71,175 @@ function Category() {
     }
   };
 
+  // ── Add ───────────────────────────────────────────────────────────────────
   const handleSubmit = async (data) => {
     try {
       await addCategory({ category_name: data.category_name });
       setOpen(false);
       await fetchCategories(currentPage, limit);
       Swal.fire({
-        title: "Added!",
-        text: "Category added successfully",
-        icon: "success",
-        position: "top-end",
-        toast: true,
-        showConfirmButton: false,
-        timer: 6000,
-        timerProgressBar: true,
-        background: "#35a542",
-        color: "#ffffff",
+        title: "Added!", text: "Category added successfully", icon: "success",
+        position: "top-end", toast: true, showConfirmButton: false,
+        timer: 3000, timerProgressBar: true, background: "#35a542", color: "#ffffff",
       });
     } catch (err) {
       Swal.fire("Error", err.response?.data?.message || "Operation failed", "error");
     }
   };
 
+  // ── Edit (open modal) ─────────────────────────────────────────────────────
+  const handleEditOpen = (item) => {
+    setEditItem(item);
+    setEditOpen(true);
+  };
+
+  // ── Update ────────────────────────────────────────────────────────────────
+  const handleUpdate = async (data) => {
+  try {
+    const payload = {
+      categoryId: editItem.categoryId,
+      category_name: data.category_name,
+    };
+
+    await updateCategory(payload);
+
+    setEditOpen(false);
+    setEditItem(null);
+    await fetchCategories(currentPage, limit);
+
+    Swal.fire({
+      title: "Updated!",
+      text: "Category updated successfully",
+      icon: "success",
+      position: "top-end",
+      toast: true,
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      background: "#35a542",
+      color: "#ffffff",
+    });
+  } catch (err) {
+    Swal.fire("Error", err.response?.data?.message || "Update failed", "error");
+  }
+  };
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  const handleDelete = async (item) => {
+    const result = await Swal.fire({
+      title: "Delete Category?",
+      text: `Are you sure you want to delete "${item.category_name}"? This cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteCategory(item.categoryId);
+      await fetchCategories(currentPage, limit);
+      Swal.fire({
+        title: "Deleted!", text: "Category deleted successfully", icon: "success",
+        position: "top-end", toast: true, showConfirmButton: false,
+        timer: 3000, timerProgressBar: true, background: "#d33", color: "#ffffff",
+      });
+    } catch (err) {
+      Swal.fire("Error", err.response?.data?.message || "Delete failed", "error");
+    }
+  };
+
+  // ── Enable / Disable toggle ───────────────────────────────────────────────
+  const handleToggleStatus = async (item) => {
+    const isCurrentlyEnabled = item.category_status === "enable";
+    const newStatus          = isCurrentlyEnabled ? "disable" : "enable";
+    const actionText         = isCurrentlyEnabled ? "Disable" : "Enable";
+    const actionColor        = isCurrentlyEnabled ? "#d33"    : "#28a745";
+
+    const result = await Swal.fire({
+      title: `${actionText} Category?`,
+      text: `Are you sure you want to ${actionText.toLowerCase()} "${item.category_name}"?`,
+      icon: isCurrentlyEnabled ? "warning" : "question",
+      showCancelButton: true,
+      confirmButtonColor: actionColor,
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: `Yes, ${actionText}`,
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await DisbleEnableCategory(item.categoryId, newStatus);
+
+      // Optimistic update
+      setCategoryList((prev) =>
+        prev.map((c) =>
+          c.categoryId === item.categoryId
+            ? { ...c, category_status: newStatus }
+            : c
+        )
+      );
+
+      Swal.fire({
+        toast: true, position: "top-end",
+        icon: isCurrentlyEnabled ? "warning" : "success",
+        title: `Category ${actionText}d`,
+        showConfirmButton: false, timer: 3000, timerProgressBar: true,
+        background: actionColor, color: "#ffffff",
+      });
+    } catch (err) {
+      Swal.fire("Error", err.response?.data?.message || `${actionText} failed`, "error");
+    }
+  };
+
+  // ── Columns ───────────────────────────────────────────────────────────────
   const columns = [
-    { header: "S.No", accessor: "srNo" },
+    { header: "S.No",          accessor: "srNo" },
     { header: "Category Name", accessor: "category_name" },
-    { header: "Status", accessor: "statusBadge" },
-    { header: "Actions", accessor: "actions" },
+    { header: "Status",        accessor: "statusBadge" },
+    { header: "Actions",       accessor: "actions" },
   ];
 
   const tableData = Array.isArray(categoryList)
     ? categoryList.map((item, index) => ({
         srNo: (currentPage - 1) * limit + index + 1,
         ...item,
+
+        // ── Status: clickable toggle badge ──────────────────────────────────
         statusBadge: (
           <span
+            onClick={() => handleToggleStatus(item)}
+            title={`Click to ${item.category_status === "enable" ? "disable" : "enable"}`}
             style={{
               display: "inline-block",
               padding: "3px 12px",
               borderRadius: "12px",
               fontSize: "13px",
               fontWeight: 600,
+              cursor: "pointer",
+              userSelect: "none",
+              transition: "all 0.2s",
               background: item.category_status === "enable" ? "#d4edda" : "#f8d7da",
-              color: item.category_status === "enable" ? "#155724" : "#721c24",
+              color:      item.category_status === "enable" ? "#155724" : "#721c24",
+              border:     item.category_status === "enable"
+                ? "1px solid #c3e6cb"
+                : "1px solid #f5c6cb",
               textTransform: "capitalize",
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.75";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
           >
-            {item.category_status || "-"}
+            {item.category_status === "enable" ? "Enabled" : "Disabled"}
           </span>
         ),
+
+        // ── Actions: View, Edit, Delete ─────────────────────────────────────
         actions: (
           <div className="actions">
             <button
@@ -130,11 +249,28 @@ function Category() {
             >
               <FaEye />
             </button>
+
+            <button
+              className="icon-btn edit"
+              title="Edit"
+              onClick={() => handleEditOpen(item)}
+            >
+              <FaEdit />
+            </button>
+
+            <button
+              className="icon-btn delete"
+              title="Delete"
+              onClick={() => handleDelete(item)}
+            >
+              <FaTrash />
+            </button>
           </div>
         ),
       }))
     : [];
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
@@ -149,12 +285,7 @@ function Category() {
           </label>
           <select
             className="form-select form-select-sm"
-            style={{
-              border: "2px solid #ff7a00",
-              padding: "2px",
-              cursor: "pointer",
-              width: "75px",
-            }}
+            style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
             value={limit}
             onChange={handleLimitChange}
           >
@@ -164,7 +295,6 @@ function Category() {
             <option value={100}>100</option>
           </select>
         </div>
-
         <span style={{ fontSize: "16px" }}>
           Showing <strong style={{ color: "#ff7a00" }}>{categoryList.length}</strong>{" "}
           {totalCount > categoryList.length && (
@@ -183,59 +313,53 @@ function Category() {
         isLoading={loading}
       />
 
-      {/* Add Modal */}
+      {/* ── Add Modal ── */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Category" size="md">
         <CategoryForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
       </Modal>
 
-      {/* View Modal */}
+      {/* ── Edit Modal ── */}
+      <Modal open={editOpen} onClose={() => { setEditOpen(false); setEditItem(null); }} title="Edit Category" size="md">
+        {editItem && (
+          <CategoryForm
+            onClose={() => { setEditOpen(false); setEditItem(null); }}
+            onSubmit={handleUpdate}
+            initialValues={{ category_name: editItem.category_name }}
+          />
+        )}
+      </Modal>
+
+      {/* ── View Modal ── */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Category" size="lg">
         {selectedItem && (
           <div style={{ padding: "10px" }}>
-            {/* Category Info */}
-            <div
-              style={{
-                display: "flex",
-                gap: "16px",
-                flexWrap: "wrap",
-                marginBottom: "16px",
-                background: "#fff8f2",
-                borderRadius: "8px",
-                padding: "12px 16px",
-                border: "1px solid #ffe0c0",
-              }}
-            >
+            <div style={{
+              display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px",
+              background: "#fff8f2", borderRadius: "8px", padding: "12px 16px",
+              border: "1px solid #ffe0c0",
+            }}>
               <div>
                 <span style={{ fontWeight: 600, color: "#555" }}>Category Name: </span>
                 <span>{selectedItem.category_name || "-"}</span>
               </div>
               <div>
                 <span style={{ fontWeight: 600, color: "#555" }}>Status: </span>
-                <span
-                  style={{
-                    display: "inline-block",
-                    padding: "2px 10px",
-                    borderRadius: "12px",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    background:
-                      selectedItem.category_status === "enable" ? "#d4edda" : "#f8d7da",
-                    color:
-                      selectedItem.category_status === "enable" ? "#155724" : "#721c24",
-                    textTransform: "capitalize",
-                  }}
-                >
+                <span style={{
+                  display: "inline-block", padding: "2px 10px", borderRadius: "12px",
+                  fontSize: "13px", fontWeight: 600, textTransform: "capitalize",
+                  background: selectedItem.category_status === "enable" ? "#d4edda" : "#f8d7da",
+                  color:      selectedItem.category_status === "enable" ? "#155724" : "#721c24",
+                }}>
                   {selectedItem.category_status || "-"}
                 </span>
               </div>
             </div>
 
-            {/* Subcategories Table */}
             <h6 style={{ fontWeight: 700, marginBottom: "10px", color: "#ff7a00" }}>
               Subcategories ({selectedItem.subcategories?.length || 0})
             </h6>
 
-            {selectedItem.subcategories && selectedItem.subcategories.length > 0 ? (
+            {selectedItem.subcategories?.length > 0 ? (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
                   <thead>
@@ -250,28 +374,19 @@ function Category() {
                   </thead>
                   <tbody>
                     {selectedItem.subcategories.map((sub, idx) => (
-                      <tr
-                        key={sub.yogaId || idx}
-                        style={{
-                          background: idx % 2 === 0 ? "#fff" : "#fff8f2",
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
+                      <tr key={sub.yogaId || idx} style={{
+                        background: idx % 2 === 0 ? "#fff" : "#fff8f2",
+                        borderBottom: "1px solid #eee",
+                      }}>
                         <td style={tdStyle}>{idx + 1}</td>
                         <td style={{ ...tdStyle, fontWeight: 600 }}>{sub.yoga_name || "-"}</td>
                         <td style={tdStyle}>₹{sub.client_price || "-"}</td>
                         <td style={tdStyle}>₹{sub.trainer_price || "-"}</td>
                         <td style={tdStyle}>{sub.duration || "-"}</td>
-                        <td
-                          style={{
-                            ...tdStyle,
-                            maxWidth: "180px",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                          title={sub.yoga_desc}
-                        >
+                        <td style={{
+                          ...tdStyle, maxWidth: "180px",
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        }} title={sub.yoga_desc}>
                           {sub.yoga_desc || "-"}
                         </td>
                       </tr>
@@ -297,25 +412,17 @@ function Category() {
   );
 }
 
-const thStyle = {
-  padding: "10px 12px",
-  textAlign: "left",
-  fontWeight: 600,
-  whiteSpace: "nowrap",
-};
+const thStyle = { padding: "10px 12px", textAlign: "left", fontWeight: 600, whiteSpace: "nowrap" };
+const tdStyle = { padding: "9px 12px", textAlign: "left", verticalAlign: "middle" };
 
-const tdStyle = {
-  padding: "9px 12px",
-  textAlign: "left",
-  verticalAlign: "middle",
-};
-
-function CategoryForm({ onClose, onSubmit }) {
-  const [category_name, setCategoryName] = useState("");
+// ── Reusable form for Add + Edit ───────────────────────────────────────────
+function CategoryForm({ onClose, onSubmit, initialValues }) {
+  const [category_name, setCategoryName] = useState(initialValues?.category_name || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ category_name });
+    if (!category_name.trim()) return;
+    onSubmit({ category_name: category_name.trim() });
   };
 
   return (
@@ -331,13 +438,12 @@ function CategoryForm({ onClose, onSubmit }) {
           required
         />
       </div>
-
       <div className="text-end mt-3">
         <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
           Cancel
         </button>
         <button type="submit" className="btn btn-success">
-          Save
+          {initialValues ? "Update" : "Save"}
         </button>
       </div>
     </form>

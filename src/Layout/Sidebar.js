@@ -67,18 +67,18 @@ const Sidebar = ({ sidebarOpen }) => {
           </NavLink>
         </li>
 
+        <li className="menu-item">
+          <NavLink to="/category" className={({ isActive }) => isActive ? "active" : ""}>
+            <FaTags className="menu-icon" />
+            Category
+          </NavLink>
+        </li>
+
         {/* Yogas */}
         <li className="menu-item">
           <NavLink to="/yoga" className={({ isActive }) => isActive ? "active" : ""}>
             <MdCategory className="menu-icon" />
             Yoga Types
-          </NavLink>
-        </li>
-
-        <li className="menu-item">
-          <NavLink to="/category" className={({ isActive }) => isActive ? "active" : ""}>
-            <FaTags className="menu-icon" />
-            Category
           </NavLink>
         </li>
 

@@ -8,6 +8,7 @@ import {
   rejectTrainer,
   disableTrainer,
   getCertificatesByUser,
+  Activeuser,
 } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import {
@@ -36,6 +37,10 @@ function Trainer() {
   const [rejectReason,      setRejectReason]      = useState("");
   const [rejectReasonError, setRejectReasonError] = useState("");
 
+
+  const [activeModalOpen,  setActiveModalOpen]  = useState(false);
+  const [activeItem,       setActiveItem]       = useState(null);
+  const [activating,       setActivating]       = useState(false);
   // ── Sort state ─────────────────────────────────────────────────────────────
   const [sortOrder,        setSortOrder]        = useState("");   // "" | "asc" | "desc"
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -289,37 +294,37 @@ function Trainer() {
     setRejectModalOpen(true);
   };
 
-// Called when user confirms inside the reject modal
-const handleRejectConfirm = async () => {
-  if (!rejectReason.trim()) {
-    setRejectReasonError("Reject reason is required!");
-    return;
-  }
-  setRejectReasonError("");
+  // Called when user confirms inside the reject modal
+  const handleRejectConfirm = async () => {
+    if (!rejectReason.trim()) {
+      setRejectReasonError("Reject reason is required!");
+      return;
+    }
+    setRejectReasonError("");
 
-  try {
-    await rejectTrainer(selectedTrainer.userId, rejectReason.trim(), rejectType);
+    try {
+      await rejectTrainer(selectedTrainer.userId, rejectReason.trim(), rejectType);
 
-    Swal.fire({
-      toast: true, position: "top-end", icon: "warning",
-      title: "Trainer Rejected",
-      showConfirmButton: false, timer: 6000, timerProgressBar: true,
-      background: "#d33", color: "#ffffff",
-    });
+      Swal.fire({
+        toast: true, position: "top-end", icon: "warning",
+        title: "Trainer Rejected",
+        showConfirmButton: false, timer: 6000, timerProgressBar: true,
+        background: "#d33", color: "#ffffff",
+      });
 
-    setTrainers((prev) =>
-      prev.map((t) =>
-        t.userId === selectedTrainer.userId ? { ...t, ekyc_status: "rejected" } : t
-      )
-    );
+      setTrainers((prev) =>
+        prev.map((t) =>
+          t.userId === selectedTrainer.userId ? { ...t, ekyc_status: "rejected" } : t
+        )
+      );
 
-    setRejectModalOpen(false);
-    setViewOpen(false);
-    setSelectedTrainer(null);
-  } catch {
-    Swal.fire("Error", "Rejection failed", "error");
-  }
-};
+      setRejectModalOpen(false);
+      setViewOpen(false);
+      setSelectedTrainer(null);
+    } catch {
+      Swal.fire("Error", "Rejection failed", "error");
+    }
+  };
 
   const handleToggleDisable = async (item, e) => {
     e.stopPropagation();
@@ -419,63 +424,152 @@ const handleRejectConfirm = async () => {
     </div>
   );
 
+//   const handleInactiveClick = (item, e) => {
+//   e.stopPropagation();
+//   setActiveItem(item);
+//   setActiveModalOpen(true);
+// };
+
+const handleActivateConfirm = async () => {
+  setActivating(true);
+  try {
+    await Activeuser(activeItem.userId);
+    Swal.fire({
+      toast: true, position: "top-end", icon: "success",
+      title: "Trainer Activated", showConfirmButton: false,
+      timer: 3000, timerProgressBar: true,
+    });
+    setTrainers((prev) =>
+      prev.map((t) =>
+        t.userId === activeItem.userId ? { ...t, status: "active" } : t
+      )
+    );
+    setActiveModalOpen(false);
+    setActiveItem(null);
+  } catch {
+    Swal.fire("Error", "Activation failed", "error");
+  } finally {
+    setActivating(false);
+  }
+};
+
   // ── Table columns ──────────────────────────────────────────────────────────
   const columns = [
-    { header: "S.No",         accessor: "sno" },
-    { header: "Name",         accessor: "name" },
-    { header: "Mobile",       accessor: "mobileNumber" },
-    { header: "Email",        accessor: "email" },
-    { header: "Gender",       accessor: "gender" },
-    { header: "Age",          accessor: "age" },
-    { header: CreatedDateHeader, accessor: "createdDate" },   // ← sortable
-    { header: "eKYC",         accessor: "ekyc" },
-    { header: "Action",       accessor: "action" },
-  ];
-
-  const tableData = trainers.map((item, index) => ({
+  { header: "S.No",            accessor: "sno" },
+  { header: "Name",            accessor: "name" },
+  { header: "Mobile",          accessor: "mobileNumber" },
+  { header: "Email",           accessor: "email" },
+  { header: "Gender",          accessor: "gender" },
+  { header: "Age",             accessor: "age" },
+  { header: CreatedDateHeader, accessor: "createdDate" },
+  { header: "eKYC",            accessor: "ekyc" },
+  { header: "Action",          accessor: "action" },
+  { header: "Status",          accessor: "status" },
+];
+const tableData = trainers.map((item, index) => ({
   _rowonClick: () => goToProfile(item.userId, item),
-    sno:          index + 1 + (currentPage - 1) * limit,
-    name:         item.name,
-    mobileNumber: item.mobileNumber,
-    email:        item.email,
-    gender:       item.gender,
-    age:          item.age,
-    createdDate:  item.createdAt
-      ? new Date(item.createdAt).toLocaleDateString("en-IN", {
-          day:   "2-digit",
-          month: "2-digit",
-          year:  "numeric",
-        })
-      : "-",
+  sno:          index + 1 + (currentPage - 1) * limit,
+  name:         item.name,
+  mobileNumber: item.mobileNumber,
+  email:        item.email,
+  gender:       item.gender,
+  age:          item.age,
 
-    ekyc: (
-      <span
-        onClick={(e) => { e.stopPropagation(); if (item.ekyc_status === "pending") openModal(item); }}
-        style={{
-          padding: "4px 10px", borderRadius: "6px",
-          cursor: item.ekyc_status === "pending" ? "pointer" : "default",
-          ...getEkycStyle(item.ekyc_status),
-        }}
-      >
-        {item.ekyc_status}
-      </span>
-    ),
+  // ── STATUS column: clickable badge if inactive ──────────────────────────
+  status: item.status === "active" ? (
+    <span
+      style={{
+        background: "#f0fdf4",
+        color: "#16a34a",
+        border: "1px solid #bbf7d0",
+        borderRadius: "6px",
+        padding: "4px 12px",
+        fontSize: "13px",
+        fontWeight: 500,
+        whiteSpace: "nowrap",
+        textTransform: "capitalize",
+      }}
+    >
+      Active
+    </span>
+  ) : (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        setActiveItem(item);
+        setActiveModalOpen(true);
+      }}
+      title="Click to activate"
+      style={{
+        background: "#fef2f2",
+        color: "#dc2626",
+        border: "1px solid #fecaca",
+        borderRadius: "6px",
+        padding: "4px 12px",
+        fontSize: "13px",
+        fontWeight: 500,
+        whiteSpace: "nowrap",
+        textTransform: "capitalize",
+        cursor: "pointer",           // pointer shows it's clickable
+        transition: "all 0.2s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "#dc2626";
+        e.currentTarget.style.color = "#fff";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "#fef2f2";
+        e.currentTarget.style.color = "#dc2626";
+      }}
+    >
+      {item.status || "Inactive"}
+    </span>
+  ),
 
-    action: (
+  createdDate: item.createdAt
+    ? new Date(item.createdAt).toLocaleDateString("en-IN", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+      })
+    : "-",
+
+  ekyc: (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        if (item.ekyc_status === "pending") openModal(item);
+      }}
+      style={{
+        padding: "4px 10px", borderRadius: "6px",
+        cursor: item.ekyc_status === "pending" ? "pointer" : "default",
+        ...getEkycStyle(item.ekyc_status),
+      }}
+    >
+      {item.ekyc_status}
+    </span>
+  ),
+
+  // ── ACTION column: only Enabled/Disabled toggle, NO Inactive button ─────
+  action: (
+    <div style={{ display: "flex", gap: "6px" }}>
       <button
         onClick={(e) => handleToggleDisable(item, e)}
         style={{
           padding: "4px 12px", borderRadius: "6px", border: "none",
           cursor: "pointer", fontWeight: 600, fontSize: "13px",
-          background: (item.isDisabled === true || item.isDisabled === "true") ? "#dc3545" : "#28a745",
+          background:
+            item.isDisabled === true || item.isDisabled === "true"
+              ? "#dc3545"
+              : "#28a745",
           color: "#fff",
         }}
       >
-        {(item.isDisabled === true || item.isDisabled === "true") ? "Disabled" : "Enabled"}
+        {item.isDisabled === true || item.isDisabled === "true"
+          ? "Disabled"
+          : "Enabled"}
       </button>
-    ),
-  }));
-
+    </div>
+  ),
+}));
   // ── Shared button styles ───────────────────────────────────────────────────
   const btnFilter = {
     background: "linear-gradient(135deg, #000000, #fcd34d)",
@@ -843,6 +937,49 @@ const handleRejectConfirm = async () => {
 
         </div>
       </Modal>
+
+
+      {/* ── Activate Modal ── */}
+<Modal
+  open={activeModalOpen}
+  onClose={() => setActiveModalOpen(false)}
+  title="Activate Trainer"
+  size="md"
+>
+  <div className="container">
+    <p style={{ fontSize: "16px", marginBottom: "20px" }}>
+      Are you sure you want to <strong style={{ color: "#28a745" }}>activate</strong> this trainer?
+    </p>
+
+    {activeItem && (
+      <div style={{
+        background: "#f8f9fa", borderRadius: "8px",
+        padding: "12px 16px", marginBottom: "20px"
+      }}>
+        <p style={{ margin: 0 }}><b>Name:</b>   {activeItem.name}</p>
+        <p style={{ margin: 0 }}><b>Mobile:</b> {activeItem.mobileNumber}</p>
+        <p style={{ margin: 0 }}><b>Email:</b>  {activeItem.email}</p>
+      </div>
+    )}
+
+    <div className="text-end d-flex justify-content-end gap-2">
+      <button
+        className="btn btn-secondary"
+        onClick={() => setActiveModalOpen(false)}
+        disabled={activating}
+      >
+        Cancel
+      </button>
+      <button
+        className="btn btn-success"
+        onClick={handleActivateConfirm}
+        disabled={activating}
+      >
+        {activating ? "Activating..." : "Yes, Activate"}
+      </button>
+    </div>
+  </div>
+</Modal>
     </div>
   );
 }

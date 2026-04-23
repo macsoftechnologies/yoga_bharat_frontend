@@ -471,6 +471,20 @@ export const approveTrainer = async (userId) => {
   }
 };
 
+export const Activeuser = async (userId) => {
+  try {
+    const res = await api.post(
+      "/users/activateuser",
+      { userId, },
+      { headers: { "Content-Type": "application/json" } }
+    );
+    return res.data;
+  } catch (err) {
+    console.error("Approve Trainer API Error:", err);
+    throw err;
+  }
+};
+
 export const getCertificatesByUser = async (userId) => {
   const res = await api.post(
     "/users/certificatebyuser",
@@ -588,6 +602,7 @@ export const addCategory = async (data) => {
   });
   return res.data;
 };
+
  
 export const getCategoryList = async (page = 1, limit = 10) => {
   const res = await api.get(`/category?page=${page}&limit=${limit}`);
@@ -598,6 +613,34 @@ export const CategoryById = async (categoryId) => {
   const res = await api.get(`/category/${categoryId}`);
   return res.data;
 };
+
+export const updateCategory = async (data) => {
+  try {
+    const res = await api.post("/category/update", data); 
+    return res.data;
+  } catch (err) {
+    console.error("Update Category API Error:", err);
+    throw err;
+  }
+};
+
+export const deleteCategory = async (categoryId) => {
+  const res = await api.post("/category/delete", { categoryId }, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data;
+};
+
+export const DisbleEnableCategory = async (categoryId, category_status) => {
+  const res = await api.post(
+    "/category/status_change",
+    { categoryId, category_status },          // ✅ matches Postman body
+    { headers: { "Content-Type": "application/json" } }
+  );
+  return res.data;
+};
+
+
 
 
 export const getPaymentCycles = async (page = 1, limit = 10, params = {}) => {

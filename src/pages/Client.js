@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Table from "../components/Table";
-import { getClients } from "../services/authService";
+import Modal from "../components/Modal";
+import Swal from "sweetalert2";
+import { getClients, Activeuser } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import {
   FaFilter, FaFileCsv, FaFileExcel,
@@ -18,6 +20,11 @@ function Client() {
   const [limit,       setLimit]       = useState(10);
   const [loading,     setLoading]     = useState(false);
   const [exporting,   setExporting]   = useState(false);
+
+  // ── Activate Modal state ──────────────────────────────────────────────────
+  const [activeModalOpen, setActiveModalOpen] = useState(false);
+  const [activeItem,      setActiveItem]      = useState(null);
+  const [activating,      setActivating]      = useState(false);
 
   const [sortOrder,        setSortOrder]        = useState("");
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -116,7 +123,31 @@ function Client() {
     setCurrentPage(1);
   };
 
-  // ✅ FIXED — 2 step export, no 10000
+  // ── Activate confirm ───────────────────────────────────────────────────────
+  const handleActivateConfirm = async () => {
+    setActivating(true);
+    try {
+      await Activeuser(activeItem.userId);
+      Swal.fire({
+        toast: true, position: "top-end", icon: "success",
+        title: "Client Activated", showConfirmButton: false,
+        timer: 3000, timerProgressBar: true,
+      });
+      setClients((prev) =>
+        prev.map((c) =>
+          c.userId === activeItem.userId ? { ...c, status: "active" } : c
+        )
+      );
+      setActiveModalOpen(false);
+      setActiveItem(null);
+    } catch {
+      Swal.fire("Error", "Activation failed", "error");
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  // ── Export helpers ─────────────────────────────────────────────────────────
   const fetchAllClientsForExport = async () => {
     try {
       const params = {};
@@ -129,7 +160,6 @@ function Client() {
       if (sortOrder === "desc")        params.sortOrder    = "des";
       params.isExport                                      = true;
 
-      // Step 2 — fetch all using real total as limit
       const res = await getClients(null, null, { ...params });
       if (Array.isArray(res))       return res;
       if (Array.isArray(res?.data)) return res.data;
@@ -149,6 +179,7 @@ function Client() {
       "Gender":            item.gender       || "-",
       "Age":               item.age          || "-",
       "Role":              item.role         || "-",
+      "Status":            item.status       || "-",
       "Health Preference": item.health_preference?.length > 0
                              ? item.health_preference.map((p) => p.preference_name).join(", ")
                              : "-",
@@ -157,7 +188,7 @@ function Client() {
                                  day: "2-digit", month: "2-digit", year: "numeric",
                                })
                              : "-",
-    }));
+  }));
 
   const exportCSV = async () => {
     try {
@@ -215,6 +246,7 @@ function Client() {
   const goToProfile = (userId, clientData) =>
     navigate(`/client/${userId}`, { state: { client: clientData } });
 
+  // ── Created Date sortable header ───────────────────────────────────────────
   const CreatedDateHeader = (
     <div ref={sortDropdownRef} style={{ position: "relative", display: "inline-block" }}>
       <div
@@ -273,6 +305,7 @@ function Client() {
     </div>
   );
 
+  // ── Columns ────────────────────────────────────────────────────────────────
   const columns = [
     { header: "S.No",              accessor: "srNo" },
     { header: "Name",              accessor: "name" },
@@ -282,9 +315,11 @@ function Client() {
     { header: "Age",               accessor: "age" },
     { header: "Role",              accessor: "role" },
     { header: CreatedDateHeader,   accessor: "createdDate" },
+    { header: "Status",            accessor: "status" },
     { header: "Health Preference", accessor: "healthPrefNames" },
   ];
 
+  // ── Table rows ─────────────────────────────────────────────────────────────
   const tableData = clients.map((item, index) => ({
     _rowonClick: () => goToProfile(item.userId, item),
 
@@ -295,27 +330,70 @@ function Client() {
     gender:       item.gender,
     age:          item.age,
     role:         item.role,
-    createdDate:  item.createdAt
+
+    // ── STATUS: green badge if active, red clickable badge if inactive ──────
+    status: item.status === "active" ? (
+      <span
+        style={{
+          background: "#f0fdf4",
+          color: "#16a34a",
+          border: "1px solid #bbf7d0",
+          borderRadius: "6px",
+          padding: "4px 12px",
+          fontSize: "13px",
+          fontWeight: 500,
+          whiteSpace: "nowrap",
+          textTransform: "capitalize",
+        }}
+      >
+        Active
+      </span>
+    ) : (
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          setActiveItem(item);
+          setActiveModalOpen(true);
+        }}
+        title="Click to activate"
+        style={{
+          background: "#fef2f2",
+          color: "#dc2626",
+          border: "1px solid #fecaca",
+          borderRadius: "6px",
+          padding: "4px 12px",
+          fontSize: "13px",
+          fontWeight: 500,
+          whiteSpace: "nowrap",
+          textTransform: "capitalize",
+          cursor: "pointer",
+          transition: "all 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "#dc2626";
+          e.currentTarget.style.color = "#fff";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "#fef2f2";
+          e.currentTarget.style.color = "#dc2626";
+        }}
+      >
+        {item.status || "Inactive"}
+      </span>
+    ),
+
+    createdDate: item.createdAt
       ? new Date(item.createdAt).toLocaleDateString("en-IN", {
           day: "2-digit", month: "2-digit", year: "numeric",
         })
       : "-",
+
     healthPrefNames: item.health_preference?.length > 0
       ? item.health_preference.map((p) => p.preference_name).join(", ")
       : "N/A",
-    healthPrefIcons: item.health_preference?.length > 0
-      ? item.health_preference.map((pref) => (
-          <img
-            key={pref._id}
-            src={`${process.env.REACT_APP_API_BASE_URL}/${pref.preference_icon}`}
-            alt={pref.preference_name}
-            width="50"
-            className="me-1"
-          />
-        ))
-      : "N/A",
   }));
 
+  // ── Button styles ──────────────────────────────────────────────────────────
   const btnFilter = {
     background: "linear-gradient(135deg, #000000, #fcd34d)",
     color: "#fff", border: "none",
@@ -343,9 +421,11 @@ function Client() {
     cursor: disabled ? "not-allowed" : "pointer",
   });
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
 
+      {/* ── Export overlay ── */}
       {exporting && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)",
@@ -363,6 +443,7 @@ function Client() {
         </div>
       )}
 
+      {/* ── Row 1: Title + Records per page ── */}
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
           LEARNER LIST
@@ -385,11 +466,15 @@ function Client() {
         </div>
       </div>
 
+      {/* ── Row 2: Hint + record count ── */}
       <div
         className="d-flex align-items-center justify-content-between mb-3"
         style={{ fontSize: "16px", marginTop: "20px", color: "#000" }}
       >
-        <span style={{ color: "#ff7a00", fontSize: "16px", background: "#000000", borderRadius:"15px",padding: "7px", fontStyle: "italic" }}>
+        <span style={{
+          color: "#ff7a00", fontSize: "16px", background: "#000000",
+          borderRadius: "15px", padding: "7px", fontStyle: "italic",
+        }}>
           💡 Click on any row to view profile →
         </span>
         <span>
@@ -402,6 +487,7 @@ function Client() {
         </span>
       </div>
 
+      {/* ── Filter Card ── */}
       <div className="card p-3 mb-3 shadow-sm">
         <h5 className="mb-3">Filters</h5>
         <div className="row">
@@ -464,34 +550,19 @@ function Client() {
 
         <div className="text-end mt-3 d-flex justify-content-end gap-3 flex-wrap">
           <button onClick={handleApplyFilters} style={btnFilter}>
-            <FaFilter />
-            <span>Filter</span>
+            <FaFilter /><span>Filter</span>
           </button>
-
-          <button onClick={handleClearFilters} style={btnClear}>
-            Clear
-          </button>
-
-          <button
-            onClick={exportCSV}
-            disabled={exporting}
-            title="Export all filtered clients as CSV"
-            style={btnCSV(exporting)}
-          >
+          <button onClick={handleClearFilters} style={btnClear}>Clear</button>
+          <button onClick={exportCSV} disabled={exporting} style={btnCSV(exporting)}>
             CSV <FaFileCsv style={{ fontSize: "16px" }} />
           </button>
-
-          <button
-            onClick={exportExcel}
-            disabled={exporting}
-            title="Export all filtered clients as Excel"
-            style={btnExcel(exporting)}
-          >
+          <button onClick={exportExcel} disabled={exporting} style={btnExcel(exporting)}>
             Excel <FaFileExcel style={{ fontSize: "16px" }} />
           </button>
         </div>
       </div>
 
+      {/* ── Table ── */}
       <Table
         columns={columns}
         data={tableData}
@@ -500,6 +571,50 @@ function Client() {
         onPageChange={setCurrentPage}
         isLoading={loading}
       />
+
+      {/* ── Activate Modal ── */}
+      <Modal
+        open={activeModalOpen}
+        onClose={() => setActiveModalOpen(false)}
+        title="Activate Client"
+        size="md"
+      >
+        <div className="container">
+          <p style={{ fontSize: "16px", marginBottom: "20px" }}>
+            Are you sure you want to{" "}
+            <strong style={{ color: "#28a745" }}>activate</strong> this client?
+          </p>
+
+          {activeItem && (
+            <div style={{
+              background: "#f8f9fa", borderRadius: "8px",
+              padding: "12px 16px", marginBottom: "20px",
+            }}>
+              <p style={{ margin: 0 }}><b>Name:</b>   {activeItem.name}</p>
+              <p style={{ margin: 0 }}><b>Mobile:</b> {activeItem.mobileNumber}</p>
+              <p style={{ margin: 0 }}><b>Email:</b>  {activeItem.email}</p>
+            </div>
+          )}
+
+          <div className="text-end d-flex justify-content-end gap-2">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setActiveModalOpen(false)}
+              disabled={activating}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={handleActivateConfirm}
+              disabled={activating}
+            >
+              {activating ? "Activating..." : "Yes, Activate"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }
