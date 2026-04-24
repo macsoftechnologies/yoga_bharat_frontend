@@ -351,6 +351,83 @@ body {
   100% { background-position: 0% 0%; }
 }
 
+
+/* ================= CONTACT SECTION ================= */
+.contact-section {
+  padding: 70px 0;
+  /* background: #f8f4ef; */
+}
+
+.contact-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 40px 20px 30px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+  position: relative;
+  transition: transform 0.3s ease;
+  height: 210px;
+}
+
+.contact-card:hover {
+  transform: translateY(-5px);
+}
+
+.contact-icon-wrapper {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 2px solid #2f5d3b;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f5d3b;
+}
+
+.contact-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.contact-card h5 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #2f3e2f;
+  margin-top: 20px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.contact-card p {
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.contact-highlight {
+  color: #821e88 !important;
+  font-weight: 700 !important;
+}
+
+.contact-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #14ad53;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.contact-link:hover {
+  color: #821e88;
+}
+
 /* ================= FOOTER ================= */
 .footer {
   background: transparent;

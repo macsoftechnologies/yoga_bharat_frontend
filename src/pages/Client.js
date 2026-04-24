@@ -388,9 +388,26 @@ function Client() {
         })
       : "-",
 
-    healthPrefNames: item.health_preference?.length > 0
-      ? item.health_preference.map((p) => p.preference_name).join(", ")
-      : "N/A",
+    healthPrefNames: (
+      <div
+        title={
+          item.health_preference?.length > 0
+            ? item.health_preference.map((p) => p.preference_name).join(", ")
+            : "N/A"
+        }
+        style={{
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          maxWidth: "200px", // important
+          display: "block",
+        }}
+      >
+        {item.health_preference?.length > 0
+          ? item.health_preference.map((p) => p.preference_name).join(", ")
+          : "N/A"}
+      </div>
+    ),
   }));
 
   // ── Button styles ──────────────────────────────────────────────────────────

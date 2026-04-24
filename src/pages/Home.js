@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import "./Home.css";
 import WebBack from '../assets/web-back.png';
+import { FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=YOUR_APP_ID";
 
 
@@ -102,6 +103,9 @@ const Home = () => {
               </li>
               <li className="nav-item">
                 <a className="nav-link" href="#blog">Blog</a>
+              </li>
+              <li className="nav-item">
+                <a className="nav-link" href="#contact">Contact Us</a>
               </li>
             </ul>
           </div>
@@ -323,6 +327,67 @@ const Home = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* === CONTACT US === */}
+      <section id="contact" className="contact-section">
+        <div className="container text-center">
+          <h2 className="animated-underline">Contact Us</h2>
+          <p className="classes-description">
+            We'd love to hear from you. Reach out to us for any queries or support.
+          </p>
+
+          <div className="row mt-4 justify-content-center">
+
+            {/* Office Hours */}
+            {/* Address / Location */}
+            <div className="col-md-4 mb-4">
+              <div className="contact-card">
+                <div className="contact-icon-wrapper">
+                  <FaMapMarkerAlt size={26} color="#fdab2a" />
+                </div>
+                <h5>OUR LOCATION</h5>
+                <p>Door No 9-36-20, Flat No. 102,</p>
+                <p>Sivalayam Road, Pitapuram Colony,</p>
+                <p>Maddilapalem, Visakhapatnam,</p>                
+                  <a href="https://www.google.com/maps/search/?api=1&query=Sivalayam+Road+Pitapuram+Colony+Maddilapalem+Visakhapatnam+530003"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contact-link">
+             
+                  Get Directions
+                </a>
+              </div>
+            </div>
+
+            {/* Call Us */}
+            <div className="col-md-4 mb-4">
+              <div className="contact-card">
+                <div className="contact-icon-wrapper">
+                  <FaPhoneAlt size={24} color="#fdab2a" />
+                </div>
+                <h5>CALL US</h5>
+                <p>+91 81211 80099</p>
+                <p className="contact-highlight">&nbsp;</p>
+                <a href="tel:+918121180099" className="contact-link">Call Now</a>
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="col-md-4 mb-4">
+              <div className="contact-card">
+                <div className="contact-icon-wrapper">
+                  <FaEnvelope size={24} color="#fdab2a" />
+                </div>
+                <h5>EMAIL ADDRESS</h5>
+                <p>Yogabharatms@gmail.com</p>
+                <p className="contact-highlight">&nbsp;</p>
+                <a href="mailto:Yogabharatms@gmail.com" className="contact-link">Mail Us</a>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
