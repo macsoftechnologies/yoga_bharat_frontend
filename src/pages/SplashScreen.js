@@ -107,14 +107,12 @@ function SplashScreenPage() {
     }
   };
 
-  const handleSubmit = async (data) => {
+  // handleSubmit now receives a FormData object directly from the form
+  const handleSubmit = async (formData) => {
     try {
       let res;
       if (selectedItem && editOpen) {
-        res = await updateSplashScreen({
-          splashscreenId: selectedItem.splashscreenId,
-          ...data,
-        });
+        res = await updateSplashScreen(formData);
         Swal.fire({
           title: "Updated!",
           text: res.message || "Splash screen updated successfully",
@@ -128,7 +126,7 @@ function SplashScreenPage() {
           color: "#ffffff",
         });
       } else {
-        res = await addSplashScreen(data);
+        res = await addSplashScreen(formData);
         Swal.fire({
           title: "Added!",
           text: res.message || "Splash screen added successfully",
@@ -155,7 +153,7 @@ function SplashScreenPage() {
   const columns = [
     { header: "S.No", accessor: "srNo" },
     { header: "Screen Type", accessor: "screen_type" },
-    { header: "Text", accessor: "text" },
+    { header: "Screen Image", accessor: "screen_image" },
     { header: "Screen No", accessor: "screen_no" },
     { header: "Actions", accessor: "actions" },
   ];
@@ -163,20 +161,14 @@ function SplashScreenPage() {
   const tableData = splashList.map((item, index) => ({
     srNo: (currentPage - 1) * limit + index + 1,
     ...item,
-    text: (
-      <span
-        title={item.text || "-"}
-        style={{
-          display: "block",
-          maxWidth: "300px",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          cursor: "pointer",
-        }}
-      >
-        {item.text || "-"}
-      </span>
+    screen_image: item.screen_image ? (
+      <img
+        src={process.env.REACT_APP_API_BASE_URL + "/" + item.screen_image}
+        alt="splash"
+        style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }}
+      />
+    ) : (
+      "-"
     ),
     actions: (
       <div className="actions">
@@ -220,7 +212,12 @@ function SplashScreenPage() {
 
         <span style={{ fontSize: "16px" }}>
           Showing <strong style={{ color: "#ff7a00" }}>{splashList.length}</strong>{" "}
-          {totalCount > splashList.length && <>of <strong>{totalCount}</strong></>} records
+          {totalCount > splashList.length && (
+            <>
+              of <strong>{totalCount}</strong>
+            </>
+          )}{" "}
+          records
         </span>
       </div>
 
@@ -238,16 +235,34 @@ function SplashScreenPage() {
       </Modal>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Splash Screen" size="md">
-        <SplashScreenForm onClose={() => setEditOpen(false)} initialData={selectedItem} isEdit onSubmit={handleSubmit} />
+        <SplashScreenForm
+          onClose={() => setEditOpen(false)}
+          initialData={selectedItem}
+          isEdit
+          onSubmit={handleSubmit}
+        />
       </Modal>
 
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="View Splash Screen" size="md">
         {selectedItem && (
           <div style={{ padding: 10 }}>
-            <p><b>Text:</b> {selectedItem.text}</p>
+            <p>
+              <b>Screen Image:</b>
+            </p>
+            {selectedItem.screen_image ? (
+              <img
+                src={selectedItem.screen_image}
+                alt="Splash Screen"
+                style={{ width: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 8, marginBottom: 12 }}
+              />
+            ) : (
+              <p>No image available</p>
+            )}
             <p><b>Screen Type:</b> {selectedItem.screen_type}</p>
             <p><b>Screen No:</b> {selectedItem.screen_no}</p>
-            <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>Close</button>
+            <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
+              Close
+            </button>
           </div>
         )}
       </Modal>
@@ -256,34 +271,77 @@ function SplashScreenPage() {
 }
 
 function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
-  const [text, setText] = useState(initialData?.text || "");
   const [screenType, setScreenType] = useState(initialData?.screen_type || "");
   const [screenNo, setScreenNo] = useState(initialData?.screen_no || "");
+  const [screenImage, setScreenImage] = useState(null);        // File object
+  const [imagePreview, setImagePreview] = useState(initialData?.screen_image || null);
 
   useEffect(() => {
     if (isEdit && initialData) {
-      setText(initialData.text || "");
       setScreenType(initialData.screen_type || "");
       setScreenNo(initialData.screen_no || "");
+      setScreenImage(null);
+      setImagePreview(initialData.screen_image || null);
     }
   }, [initialData, isEdit]);
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setScreenImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ text, screen_type: screenType, screen_no: screenNo });
+
+    const formData = new FormData();
+    if (isEdit) {
+      formData.append("splashscreenId", initialData.splashscreenId);
+    }
+    formData.append("screen_type", screenType);
+    formData.append("screen_no", screenNo);
+    if (screenImage) {
+      formData.append("screen_image", screenImage);
+    }
+
+    onSubmit(formData);
     onClose();
   };
 
   return (
     <form className="custom-form" onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label className="form-label">Text</label>
-        <textarea className="form-control" value={text} onChange={(e) => setText(e.target.value)} required rows={4} />
+        <label className="form-label">Screen Image</label>
+        <input
+          type="file"
+          className="form-control"
+          accept="image/*"
+          onChange={handleImageChange}
+          // Required only when adding; on edit, existing image is retained if no new file picked
+          required={!isEdit}
+        />
+        {imagePreview && (
+          <div className="mt-2">
+            <img
+              src={imagePreview}
+              alt="Preview"
+              style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 6, border: "1px solid #ddd" }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="mb-3">
         <label className="form-label">Screen Type</label>
-        <select className="form-select" value={screenType} onChange={(e) => setScreenType(e.target.value)} disabled={isEdit} required>
+        <select
+          className="form-select"
+          value={screenType}
+          onChange={(e) => setScreenType(e.target.value)}
+          disabled={isEdit}
+          required
+        >
           <option value="">Select Screen Type</option>
           <option value="client">Client</option>
           <option value="trainer">Trainer</option>
@@ -292,7 +350,13 @@ function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
 
       <div className="mb-3">
         <label className="form-label">Screen No</label>
-        <select className="form-select" value={screenNo} onChange={(e) => setScreenNo(e.target.value)} disabled={isEdit} required>
+        <select
+          className="form-select"
+          value={screenNo}
+          onChange={(e) => setScreenNo(e.target.value)}
+          disabled={isEdit}
+          required
+        >
           <option value="">Select Screen No</option>
           <option value="1">1</option>
           <option value="2">2</option>
@@ -301,8 +365,12 @@ function SplashScreenForm({ onClose, initialData, isEdit, onSubmit }) {
       </div>
 
       <div className="text-end">
-        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>Cancel</button>
-        <button type="submit" className="btn btn-success">{isEdit ? "Update" : "Save"}</button>
+        <button type="button" className="btn btn-secondary me-2" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-success">
+          {isEdit ? "Update" : "Save"}
+        </button>
       </div>
     </form>
   );

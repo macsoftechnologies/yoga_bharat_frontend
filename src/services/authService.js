@@ -242,8 +242,9 @@ export const deleteTerms = async (termsId) => {
 // ---------------- SplashScreen APIs ----------------
 
 export const addSplashScreen = async (data) => {
+  // data is already FormData from the form — remove json header
   const res = await api.post("/splashscreen/add", data, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
@@ -259,8 +260,9 @@ export const getSplashScreenById = async (splashscreenId) => {
 };
 
 export const updateSplashScreen = async (data) => {
+  // data is already FormData from the form — remove json header
   const res = await api.post("/splashscreen/update", data, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
@@ -271,7 +273,6 @@ export const deleteSplashScreen = async (splashscreenId) => {
   });
   return res.data;
 };
-
 // ---------------- AppTutorial APIs ----------------
 
 export const addAppTutorial = async (formData) => {
