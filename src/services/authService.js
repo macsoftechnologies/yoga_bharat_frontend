@@ -242,7 +242,6 @@ export const deleteTerms = async (termsId) => {
 // ---------------- SplashScreen APIs ----------------
 
 export const addSplashScreen = async (data) => {
-  // data is already FormData from the form — remove json header
   const res = await api.post("/splashscreen/add", data, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -726,6 +725,24 @@ export const reinitiatePaymentCycle = async (payload) => {
   } catch (err) {
     console.error("Re-initiate Payment Cycle Error:", err);
     throw err;
+  }
+};
+
+
+
+
+export const getRatings = async (page = 1, limit = 10, params = {}) => {
+  try {
+    const queryParams = { ...params };
+    // const params = new URLSearchParams();
+    if (page  != null) queryParams.page = page;
+    if (limit != null) queryParams.limit = limit;
+
+    const res = await api.get("/ratings/trainerratings", { params: queryParams });
+    return res.data;
+  } catch (err) {
+    console.error("Get Payment Cycles API Error:", err);
+    return { data: [], totalPages: 1, totalCount: 0 };
   }
 };
 

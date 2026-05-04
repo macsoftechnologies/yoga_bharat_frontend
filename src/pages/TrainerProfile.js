@@ -6,6 +6,7 @@ import {
   getBookings,
   getCertificatesByUser,
   getTrainerEarning,
+  getRatings, 
 } from "../services/authService";
 import {
   FaFilter, FaFileCsv, FaFileExcel,
@@ -87,6 +88,18 @@ function TrainerProfile() {
 
   // ── yoga type options (earnings tab) ──────────────────────────────────────
   const [yogaTypeOptions, setYogaTypeOptions] = useState([]);
+
+
+  // ── Ratings state ──────────────────────────────────────────────────────────
+  const [ratings,           setRatings]           = useState([]);
+  const [ratingsPage,       setRatingsPage]       = useState(1);
+  const [ratingsTotalPages, setRatingsTotalPages] = useState(1);
+  const [ratingsTotalCount, setRatingsTotalCount] = useState(0);
+  const [ratingsLoading,    setRatingsLoading]    = useState(false);
+  const [averageRating,     setAverageRating]     = useState(0);
+  const [totalRatings,      setTotalRatings]      = useState(0);
+  const [totalReviews,      setTotalReviews]      = useState(0);
+  const [ratingsLimit,      setRatingsLimit]      = useState(10);
 
   // ─── Fetch Trainer Info ────────────────────────────────────────────────────
   useEffect(() => {
@@ -187,6 +200,36 @@ function TrainerProfile() {
   };
   fetchBookings();
 }, [currentPage, trainer, appliedBookingFilters, bookingLimit]);
+
+
+// ─── Fetch Ratings ─────────────────────────────────────────────────────────
+useEffect(() => {
+  if (!trainer?.userId || activeTab !== "ratings") return;
+  const fetchRatings = async () => {
+    try {
+      setRatingsLoading(true);
+      const res = await getRatings(ratingsPage, ratingsLimit, {
+        trainerId: trainer.userId,
+      });
+      if (res && Array.isArray(res.data)) {
+        setRatings(res.data);
+        setRatingsTotalPages(res.totalPages || 1);
+        setRatingsTotalCount(res.totalCount || 0);
+        setAverageRating(res.averageRating || 0);
+        setTotalRatings(res.totalRatings || 0);
+        setTotalReviews(res.totalReviews || 0);
+      } else {
+        setRatings([]);
+      }
+    } catch (err) {
+      console.error("Fetch Ratings Error:", err);
+      setRatings([]);
+    } finally {
+      setRatingsLoading(false);
+    }
+  };
+  fetchRatings();
+}, [trainer, activeTab, ratingsPage, ratingsLimit]);
 
   // ─── Fetch Earnings ────────────────────────────────────────────────────────
   const fetchEarnings = useCallback(
@@ -652,6 +695,22 @@ if (!trainer) {
     return `${process.env.REACT_APP_API_BASE_URL}/${filename}`;
   };
 
+  const renderStars = (rating) => {
+    const num = parseFloat(rating) || 0;
+    const fullStars = Math.floor(num);
+    const hasHalf = num % 1 >= 0.5;
+    return (
+      <span>
+        {Array.from({ length: 5 }, (_, i) => {
+          if (i < fullStars) return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>★</span>;
+          if (i === fullStars && hasHalf) return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>½</span>;
+          return <span key={i} style={{ color: "#d1d5db", fontSize: "16px" }}>★</span>;
+        })}
+        <span style={{ marginLeft: "6px", fontWeight: 700, color: "#f59e0b" }}>{num.toFixed(1)}</span>
+      </span>
+    );
+  };
+
   // ── Bookings columns ───────────────────────────────────────────────────────
   const columns = [
     { header: "S.No",           accessor: "srNo" },
@@ -1114,6 +1173,9 @@ if (!trainer) {
           <button style={tabStyle("earnings")} onClick={() => setActiveTab("earnings")}>
             💰 Trainer Earnings
           </button>
+          <button style={tabStyle("ratings")} onClick={() => setActiveTab("ratings")}>
+            ⭐ Trainer Ratings
+          </button>
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════
@@ -1431,6 +1493,206 @@ if (!trainer) {
             />
           </div>
         )}
+
+              {/* TAB: Ratings  ← PASTE STARTS HERE */}
+  
+        {activeTab === "ratings" && (
+          <div className="p-3">
+
+            <div className="d-flex flex-wrap gap-3 mb-4">
+              <div style={{
+                background: "linear-gradient(135deg, #f59e0b, #fcd34d)",
+                color: "#fff", borderRadius: "10px", padding: "10px 22px",
+                fontWeight: 700, fontSize: "15px", display: "flex", alignItems: "center", gap: "8px",
+              }}>
+                ⭐ Avg Rating: {Number(averageRating).toFixed(1)}
+              </div>
+              <div style={{
+                background: "linear-gradient(135deg, #6366f1, #a5b4fc)",
+                color: "#fff", borderRadius: "10px", padding: "10px 22px",
+                fontWeight: 700, fontSize: "15px",
+              }}>
+                Total Ratings: {totalRatings}
+              </div>
+              <div style={{
+                background: "linear-gradient(135deg, #16a34a, #4ade80)",
+                color: "#fff", borderRadius: "10px", padding: "10px 22px",
+                fontWeight: 700, fontSize: "15px",
+              }}>
+                Total Reviews: {totalReviews}
+              </div>
+            </div>
+
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <div className="d-flex align-items-center gap-2">
+                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
+                  Records per page:
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+                  value={ratingsLimit}
+                  onChange={(e) => { setRatingsLimit(Number(e.target.value)); setRatingsPage(1); }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <span style={{ fontSize: "16px", color: "#000" }}>
+                Showing <strong style={{ color: "#ff7a00" }}>{ratings.length}</strong>
+                {ratingsTotalCount > ratings.length
+                  ? <> of <strong>{ratingsTotalCount}</strong></> : null}{" "}records
+              </span>
+            </div>
+
+            {ratingsLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
+                <div className="table-spinner" />
+              </div>
+            ) : ratings.length === 0 ? (
+              <p className="text-muted text-center py-4">No ratings found.</p>
+            ) : (
+              <div className="row">
+                {ratings.map((item, index) => (
+                  <div className="col-md-6 mb-3" key={item._id || index}>
+                    <div style={{
+                      background:"rgb(234 228 228)",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "14px",
+                      padding: "16px 18px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      height: "100%",
+                    }}>
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <div className="d-flex align-items-center gap-2">
+                          {item.clientId?.profile_pic ? (
+                            <img
+                              src={getImageUrl(item.clientId.profile_pic)}
+                              alt="Client"
+                              style={{
+                                width: "42px", height: "42px", borderRadius: "50%",
+                                objectFit: "cover", border: "2px solid #ff7a00",
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "42px", height: "42px", borderRadius: "50%",
+                              background: "linear-gradient(135deg, #ff7a00, #fcd34d)",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              color: "#fff", fontWeight: 700, fontSize: "16px",
+                            }}>
+                              {(item.clientId?.name || "?")[0].toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "14px", color: "#111" }}>
+                              {item.clientId?.name || "Anonymous"}
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#000" }}>
+                              {item.clientId?.email || ""}
+                            </div>
+                          </div>
+                        </div>
+                        <div>{renderStars(item.rating)}</div>
+                      </div>
+
+                      {item.review ? (
+                        <p style={{
+                          margin: "10px 0",
+                          fontWeight:"bolder",
+                          fontSize: "13px", color: "#000000",
+                          background: "#fafafa",
+                          borderLeft: "5px solid #ff7a00",
+                          borderRadius: "4px",
+                          padding: "8px 12px",
+                          fontStyle: "italic",
+                        }}>
+                          "{item.review}"
+                        </p>
+                      ) : (
+                        <p style={{ margin: "10px 0", fontSize: "13px", color: "#bbb", fontStyle: "italic" }}>
+                          No review provided
+                        </p>
+                      )}
+
+                      <div className="d-flex flex-wrap gap-2 mt-2">
+                        {/* {item.yogaId?.yoga_name && (
+                          <span style={{
+                            background: "#fff7ed", color: "#ff7a00",
+                            border: "1px solid #fed7aa", borderRadius: "20px",
+                            padding: "2px 12px", fontSize: "12px", fontWeight: 600,
+                          }}>
+                            🧘 {item.yogaId.yoga_name}
+                          </span>
+                        )}
+                        {item.bookingId?.bookingType && (
+                          <span style={{
+                            background: "#eff6ff", color: "#1d4ed8",
+                            border: "1px solid #bfdbfe", borderRadius: "20px",
+                            padding: "2px 12px", fontSize: "12px", fontWeight: 600,
+                            textTransform: "capitalize",
+                          }}>
+                            📋 {item.bookingId.bookingType}
+                          </span>
+                        )} */}
+                        {item.createdAt && (
+                          <span style={{
+                            background: "#f0fdf4", color: "#16a34a",
+                            border: "1px solid #bbf7d0", borderRadius: "20px",
+                            padding: "2px 12px", fontSize: "12px", fontWeight: 500,
+                          }}>
+                            📅 {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                              day: "2-digit", month: "short", year: "numeric",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {ratingsTotalPages > 1 && (
+              <div className="d-flex justify-content-center gap-2 mt-4 flex-wrap">
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  disabled={ratingsPage === 1}
+                  onClick={() => setRatingsPage((p) => p - 1)}
+                >
+                  ← Prev
+                </button>
+                {Array.from({ length: ratingsTotalPages }, (_, i) => i + 1).map((pg) => (
+                  <button
+                    key={pg}
+                    className="btn btn-sm"
+                    style={{
+                      background: ratingsPage === pg ? "#ff7a00" : "transparent",
+                      color: ratingsPage === pg ? "#fff" : "#ff7a00",
+                      border: "1px solid #ff7a00",
+                    }}
+                    onClick={() => setRatingsPage(pg)}
+                  >
+                    {pg}
+                  </button>
+                ))}
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  disabled={ratingsPage === ratingsTotalPages}
+                  onClick={() => setRatingsPage((p) => p + 1)}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+
+          </div>
+        )}
+        {/* ═══════════════════════════════════════
+            TAB: Ratings  ← PASTE ENDS HERE
+        ════════════════════════════════════════ */}
       </div>
 
       {/* ── Full Image Modal ── */}
