@@ -256,8 +256,8 @@ function Trainer() {
 
   const getEkycStyle = (status) => {
     if (status === "approved") return { background: "#28a745", color: "#fff" };
-    if (status === "rejected") return { background: "#fd7e14", color: "#fff" };
-    return { background: "#dc3545", color: "#fff" };
+    if (status === "rejected") return { background: "#dc3545", color: "#fff" };
+    return { background: "#fd7e14", color: "#fff" };
   };
 
   // ── Approve / Reject / Toggle ──────────────────────────────────────────────

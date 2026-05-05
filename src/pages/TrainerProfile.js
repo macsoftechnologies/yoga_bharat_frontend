@@ -371,9 +371,6 @@ useEffect(() => {
     }
   };
 
-
-
-
   const buildBookingExportRows = (data) =>
     data.map((item, index) => ({
       "S.No":           index + 1,
@@ -527,6 +524,7 @@ useEffect(() => {
 };
 
   // ✅ FIXED: now reads from yogaDetails / bookingDetails (same as table display)
+
   const buildEarningExportRows = (data) =>
     data.map((item, index) => ({
       "S.No":          index + 1,
@@ -748,7 +746,7 @@ if (!trainer) {
     status: item.status || "-",
   }));
 
-  // ── Earnings columns ───────────────────────────────────────────────────────
+  // ── Earnings columns 
   const earningColumns = [
     { header: "S.No",          accessor: "srNo" },
     { header: "Yoga Type",     accessor: "yogaType" },
@@ -773,7 +771,7 @@ if (!trainer) {
     earned_amount: item.earned_amount ? `₹${item.earned_amount}` : "₹0",
   }));
 
-  // ── Tab styles ─────────────────────────────────────────────────────────────
+  // ── Tab styles
   const tabStyle = (tab) => ({
     padding: "10px 28px",
     border: "none",
@@ -786,7 +784,8 @@ if (!trainer) {
     transition: "all 0.2s",
   });
 
-  // ── Shared button styles ───────────────────────────────────────────────────
+  // ── Shared button styles 
+
   const btnFilter = {
     background: "linear-gradient(135deg, #000000, #fcd34d)",
     color: "#fff", border: "none",
@@ -870,70 +869,70 @@ if (!trainer) {
 
       {/* ── Trainer Info ── */}
       <div className="card p-3 shadow-sm mb-4">
-  <div className="row align-items-start">
-    
-    {/* Profile Image */}
-    <div className="col-md-4 text-center mb-3">
-      <img
-        src={getImageUrl(trainer.profile_pic)}
-        alt="Trainer"
-        className="img-fluid"
-        style={{ borderRadius: "12px", maxWidth: "150px" }}
-      />
-    </div>
+        <div className="row align-items-start">
+          
+          {/* Profile Image */}
+          <div className="col-md-4 text-center mb-3">
+            <img
+              src={getImageUrl(trainer.profile_pic)}
+              alt="Trainer"
+              className="img-fluid"
+              style={{ borderRadius: "12px", maxWidth: "150px" }}
+            />
+          </div>
 
-    {/* Basic Details */}
-    <div className="col-md-4 mb-3">
-      <p><b>Name:</b> {trainer.name}</p>
-      <p><b>Email:</b> {trainer.email}</p>
-      <p><b>Mobile:</b> {trainer.mobileNumber}</p>
-    </div>
+          {/* Basic Details */}
+          <div className="col-md-4 mb-3">
+            <p><b>Name:</b> {trainer.name}</p>
+            <p><b>Email:</b> {trainer.email}</p>
+            <p><b>Mobile:</b> {trainer.mobileNumber}</p>
+          </div>
 
-    {/* Additional Details */}
-    <div className="col-md-4 mb-3">
-      <p><b>Gender:</b> {trainer.gender}</p>
-      <p><b>Age:</b> {trainer.age}</p>
+          {/* Additional Details */}
+          <div className="col-md-4 mb-3">
+            <p><b>Gender:</b> {trainer.gender}</p>
+            <p><b>Age:</b> {trainer.age}</p>
 
-      {/* eKYC Status Badge */}
-      <p>
-        <b>eKYC Status:</b>{" "}
-        <span
-          style={{
-            ...getStatusStyle(trainer.ekyc_status),
-            borderRadius: "6px",
-            padding: "2px 10px",
-            fontSize: "13px",
-            fontWeight: 500,
-            textTransform: "capitalize",
-            whiteSpace: "nowrap"
-          }}
-        >
-          {trainer.ekyc_status || "-"}
-        </span>
-      </p>
+            {/* eKYC Status Badge */}
+            <p>
+              <b>eKYC Status:</b>{" "}
+              <span
+                style={{
+                  ...getStatusStyle(trainer.ekyc_status),
+                  borderRadius: "6px",
+                  padding: "2px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textTransform: "capitalize",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {trainer.ekyc_status || "-"}
+              </span>
+            </p>
 
-      {/* Reject Details (ONLY when rejected) */}
-      {trainer.ekyc_status?.toLowerCase() === "rejected" && (
-        <>
-          <p>
-            <b>Reject Type:</b>{" "}
-            <span style={{ color: "#dc2626", fontWeight: 500 }}>
-              {trainer.reject_type || "-"}
-            </span>
-          </p>
+            {/* Reject Details (ONLY when rejected) */}
+            {trainer.ekyc_status?.toLowerCase() === "rejected" && (
+              <>
+                <p>
+                  <b>Reject Type:</b>{" "}
+                  <span style={{ color: "#dc2626", fontWeight: 500 }}>
+                    {trainer.reject_type || "-"}
+                  </span>
+                </p>
 
-          <p>
-            <b>Reject Reason:</b>{" "}
-            <span style={{ color: "#dc2626" }}>
-              {trainer.reject_reason || "-"}
-            </span>
-          </p>
-        </>
-      )}
-    </div>
+                <p>
+                  <b>Reject Reason:</b>{" "}
+                  <span style={{ color: "#dc2626" }}>
+                    {trainer.reject_reason || "-"}
+                  </span>
+                </p>
+              </>
+            )}
+          </div>
 
-  </div>
-</div>
+        </div>
+      </div>
 
       {/* ── Certificates ── */}
       <div className="card p-3 shadow-sm mb-4">
@@ -1103,36 +1102,36 @@ if (!trainer) {
       </div>
 
       {/* ── Professional Details + Yoga Video ── */}
-    <div className="card p-3 shadow-sm mb-4">
-      <h4 className="mb-3">Professional Details</h4>
+      <div className="card p-3 shadow-sm mb-4">
+        <h4 className="mb-3">Professional Details</h4>
 
-      <div className="row">
-        {trainer.professional_details?.length > 0 ? (
-          trainer.professional_details.map((item) => (
-            <div key={item._id} className="col-md-3 mb-3">
-              <div
-                className="p-3 text-white"
-                style={{
-                  background: "linear-gradient(135deg, #28a745, #20c997)",
-                  borderRadius: "10px",
-                  height: "100px"
-                }}
-              >
-                <div style={{ fontSize: "13px",marginBottom: "15px" }}>
-                  <b>Type :</b> {item.yoga_name}
-                </div>
+        <div className="row">
+          {trainer.professional_details?.length > 0 ? (
+            trainer.professional_details.map((item) => (
+              <div key={item._id} className="col-md-3 mb-3">
+                <div
+                  className="p-3 text-white"
+                  style={{
+                    background: "linear-gradient(135deg, #28a745, #20c997)",
+                    borderRadius: "10px",
+                    height: "100px"
+                  }}
+                >
+                  <div style={{ fontSize: "13px",marginBottom: "15px" }}>
+                    <b>Type :</b> {item.yoga_name}
+                  </div>
 
-                <div style={{ fontSize: "15px", fontWeight: "600" }}>
-                  <b>Price :</b> ₹{item.trainer_price}
+                  <div style={{ fontSize: "15px", fontWeight: "600" }}>
+                    <b>Price :</b> ₹{item.trainer_price}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-muted">N/A</p>
-        )}
+            ))
+          ) : (
+            <p className="text-muted">N/A</p>
+          )}
+        </div>
       </div>
-    </div>
 
       {/* ── Journey Images ── */}
       <div className="card p-3 shadow-sm mb-4">
@@ -1155,9 +1154,8 @@ if (!trainer) {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ── TABS: Bookings | Earnings
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/* TABS: Bookings | Earnings | Ratings */}
+
       <div className="card shadow-sm mb-4" style={{ overflow: "hidden" }}>
 
         {/* Tab Header */}
@@ -1177,10 +1175,10 @@ if (!trainer) {
             ⭐ Trainer Ratings
           </button>
         </div>
+        {/* Tab Header */}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            TAB: Bookings
-        ══════════════════════════════════════════════════════════════════ */}
+        {/* Bookings */}
+
         {activeTab === "bookings" && (
           <div className="p-3">
 
@@ -1341,10 +1339,11 @@ if (!trainer) {
             />
           </div>
         )}
+        
+        {/* Bookings */}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            TAB: Earnings
-        ══════════════════════════════════════════════════════════════════ */}
+        {/* Earnings */}
+
         {activeTab === "earnings" && (
           <div className="p-3">
 
@@ -1494,11 +1493,12 @@ if (!trainer) {
           </div>
         )}
 
-              {/* TAB: Ratings  ← PASTE STARTS HERE */}
+        {/* Earnings */}
+
+        {/* Ratings */}
   
         {activeTab === "ratings" && (
           <div className="p-3">
-
             <div className="d-flex flex-wrap gap-3 mb-4">
               <div style={{
                 background: "linear-gradient(135deg, #f59e0b, #fcd34d)",
@@ -1690,10 +1690,10 @@ if (!trainer) {
 
           </div>
         )}
-        {/* ═══════════════════════════════════════
-            TAB: Ratings  ← PASTE ENDS HERE
-        ════════════════════════════════════════ */}
+        {/* Ratings */}
       </div>
+
+      {/* TABS: Bookings | Earnings | Ratings */}
 
       {/* ── Full Image Modal ── */}
       {modalOpen && (
