@@ -257,6 +257,7 @@ function Trainer() {
   const getEkycStyle = (status) => {
     if (status === "approved") return { background: "#28a745", color: "#fff" };
     if (status === "rejected") return { background: "#dc3545", color: "#fff" };
+    if (status === "incomplete") return { background: "#b8b50a", color: "#fff" };
     return { background: "#fd7e14", color: "#fff" };
   };
 
@@ -536,11 +537,11 @@ const tableData = trainers.map((item, index) => ({
     <span
       onClick={(e) => {
         e.stopPropagation();
-        if (item.ekyc_status === "pending") openModal(item);
+        if (item.ekyc_status === "pending" || item.ekyc_status === "incomplete") openModal(item);
       }}
       style={{
         padding: "4px 10px", borderRadius: "6px",
-        cursor: item.ekyc_status === "pending" ? "pointer" : "default",
+        cursor: item.ekyc_status === "pending" || item.ekyc_status === "incomplete" ? "pointer" : "default",
         ...getEkycStyle(item.ekyc_status),
       }}
     >
