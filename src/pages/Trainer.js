@@ -44,6 +44,12 @@ function Trainer() {
   // ── Sort state ─────────────────────────────────────────────────────────────
   const [sortOrder,        setSortOrder]        = useState("");   // "" | "asc" | "desc"
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+
+  const [modalOpen,  setModalOpen]  = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalType,  setModalType]  = useState("image");
+
+  
   const sortDropdownRef = useRef(null);
 
   // close sort dropdown on outside click
@@ -798,27 +804,66 @@ const tableData = trainers.map((item, index) => ({
                 <h5>Certificates</h5>
                 {certificates.length > 0 ? (
                   <div className="row">
-                    {certificates.map((c) => (
-                      <div className="col-md-6 mb-3" key={c._id}>
-                        <div style={{
-                          display: "flex", alignItems: "center", gap: "16px",
-                          padding: "14px 16px", background: "#eafaf2",
-                          borderRadius: "16px", boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-                        }}>
-                          <img
-                            src={`${process.env.REACT_APP_API_BASE_URL}/${c.certificate}`}
-                            alt="Certificate"
-                            style={{ width: "120px", height: "80px", objectFit: "cover", borderRadius: "12px", background: "#fff" }}
-                          />
-                          <div>
-                            <h6 style={{ margin: 0, fontWeight: "700" }}>{c.headline || "Hatha Yoga"}</h6>
-                            <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#666" }}>
-                              {c.description || "Lorem ipsum dolor sit amet"}
-                            </p>
-                          </div>
+                    {certificates.map((c) => {
+                    const fileUrl  = `${process.env.REACT_APP_API_BASE_URL}/${c.certificate}`;
+                    const ext      = c.certificate?.split("?")[0].split(".").pop().toLowerCase();
+                    const fileType = ext === "pdf" ? "pdf" : "image";
+
+                    return (
+                      <div className="col-md-4 mb-3" key={c._id}>
+                        <div
+                          onClick={() => {
+                            setModalImage(fileUrl);
+                            setModalType(fileType);
+                            setModalOpen(true);
+                          }}
+                          style={{
+                            padding: "14px 16px",
+                            background: "rgb(255 172 45)",
+                            borderRadius: "16px",
+                            boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                            cursor: "pointer",   // <-- shows clickable
+                          }}
+                        >
+                          {fileType === "pdf" ? (
+                            <iframe
+                              src={fileUrl}
+                              title={c.headline || "Certificate PDF"}
+                              style={{
+                                width: "100%", height: "160px",
+                                borderRadius: "10px", border: "1px solid #ccc",
+                                background: "#fff", display: "block",
+                                marginBottom: "10px", pointerEvents: "none",
+                              }}
+                            />
+                          ) : (
+                            <img
+                              src={fileUrl}
+                              alt="Certificate"
+                              style={{
+                                width: "100%", height: "160px",
+                                objectFit: "cover", borderRadius: "10px",
+                                background: "#fff", display: "block",
+                                marginBottom: "10px",
+                              }}
+                            />
+                          )}
+                          <h6 style={{ margin: 0, fontWeight: "700" }}>
+                            {c.headline || "Yoga Certificate"}
+                          </h6>
+                          <span style={{
+                            display: "inline-block", marginTop: "6px",
+                            padding: "2px 8px", borderRadius: "4px",
+                            fontSize: "11px", fontWeight: 600, textTransform: "uppercase",
+                            background: fileType === "pdf" ? "#fee2e2" : "#dbeafe",
+                            color:      fileType === "pdf" ? "#dc2626" : "#1d4ed8",
+                          }}>
+                            {fileType === "pdf" ? "📄 PDF" : "🖼️ Image"}
+                          </span>
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 ) : <p>N/A</p>}
               </div>
@@ -941,46 +986,102 @@ const tableData = trainers.map((item, index) => ({
 
 
       {/* ── Activate Modal ── */}
-<Modal
-  open={activeModalOpen}
-  onClose={() => setActiveModalOpen(false)}
-  title="Activate Trainer"
-  size="md"
->
-  <div className="container">
-    <p style={{ fontSize: "16px", marginBottom: "20px" }}>
-      Are you sure you want to <strong style={{ color: "#28a745" }}>activate</strong> this trainer?
-    </p>
-
-    {activeItem && (
-      <div style={{
-        background: "#f8f9fa", borderRadius: "8px",
-        padding: "12px 16px", marginBottom: "20px"
-      }}>
-        <p style={{ margin: 0 }}><b>Name:</b>   {activeItem.name}</p>
-        <p style={{ margin: 0 }}><b>Mobile:</b> {activeItem.mobileNumber}</p>
-        <p style={{ margin: 0 }}><b>Email:</b>  {activeItem.email}</p>
-      </div>
-    )}
-
-    <div className="text-end d-flex justify-content-end gap-2">
-      <button
-        className="btn btn-secondary"
-        onClick={() => setActiveModalOpen(false)}
-        disabled={activating}
+      <Modal
+        open={activeModalOpen}
+        onClose={() => setActiveModalOpen(false)}
+        title="Activate Trainer"
+        size="md"
       >
-        Cancel
-      </button>
-      <button
-        className="btn btn-success"
-        onClick={handleActivateConfirm}
-        disabled={activating}
-      >
-        {activating ? "Activating..." : "Yes, Activate"}
-      </button>
-    </div>
-  </div>
-</Modal>
+        <div className="container">
+          <p style={{ fontSize: "16px", marginBottom: "20px" }}>
+            Are you sure you want to <strong style={{ color: "#28a745" }}>activate</strong> this trainer?
+          </p>
+
+          {activeItem && (
+            <div style={{
+              background: "#f8f9fa", borderRadius: "8px",
+              padding: "12px 16px", marginBottom: "20px"
+            }}>
+              <p style={{ margin: 0 }}><b>Name:</b>   {activeItem.name}</p>
+              <p style={{ margin: 0 }}><b>Mobile:</b> {activeItem.mobileNumber}</p>
+              <p style={{ margin: 0 }}><b>Email:</b>  {activeItem.email}</p>
+            </div>
+          )}
+
+          <div className="text-end d-flex justify-content-end gap-2">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setActiveModalOpen(false)}
+              disabled={activating}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={handleActivateConfirm}
+              disabled={activating}
+            >
+              {activating ? "Activating..." : "Yes, Activate"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Fullscreen Certificate Modal ── */}
+      {modalOpen && (
+        <div
+          onClick={() => { setModalOpen(false); setModalImage(""); setModalType("image"); }}
+          style={{
+            position: "fixed", top: 0, left: 0,
+            width: "100vw", height: "100vh",
+            background: "rgba(0,0,0,0.75)",
+            display: "flex", justifyContent: "center", alignItems: "center",
+            zIndex: 99999, cursor: "pointer",
+          }}
+        >
+          {modalType === "pdf" ? (
+            <iframe
+              src={modalImage}
+              title="Certificate PDF"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "85vw", height: "90vh",
+                borderRadius: "12px", border: "none",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+                cursor: "default",
+              }}
+            />
+          ) : (
+            <img
+              src={modalImage}
+              alt="Full View"
+              style={{
+                maxWidth: "90%", maxHeight: "90%",
+                borderRadius: "12px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+              }}
+            />
+          )}
+          {/* Close button */}
+          <button
+            onClick={() => { setModalOpen(false); setModalImage(""); setModalType("image"); }}
+            style={{
+              position: "fixed", top: "20px", right: "24px",
+              background: "#fff", border: "none", borderRadius: "50%",
+              width: "36px", height: "36px", fontSize: "18px",
+              cursor: "pointer", fontWeight: 700, color: "#333",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 100000,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+
+
     </div>
   );
 }

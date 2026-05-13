@@ -769,6 +769,7 @@ function TrainerProfile() {
       {/* Trainer Info */}
       <div className="card p-3 shadow-sm mb-4">
         <div className="row align-items-start">
+          
           <div className="col-md-4 text-center mb-3">
             <img
               src={getImageUrl(trainer.profile_pic)}
@@ -777,39 +778,81 @@ function TrainerProfile() {
               style={{ borderRadius: "12px", maxWidth: "150px" }}
             />
           </div>
+
           <div className="col-md-4 mb-3">
-            <p><b>Name:</b>   {trainer.name}</p>
-            <p><b>Email:</b>  {trainer.email}</p>
+            <p><b>Name:</b> {trainer.name}</p>
+            <p><b>Email:</b> {trainer.email}</p>
             <p><b>Mobile:</b> {trainer.mobileNumber}</p>
           </div>
+
           <div className="col-md-4 mb-3">
             <p><b>Gender:</b> {trainer.gender}</p>
-            <p><b>Age:</b>    {trainer.age}</p>
+            <p><b>Age:</b> {trainer.age}</p>
+
             <p>
               <b>eKYC Status:</b>{" "}
-              <span style={{
-                ...getStatusStyle(trainer.ekyc_status),
-                borderRadius: "6px", padding: "2px 10px",
-                fontSize: "13px", fontWeight: 500,
-                textTransform: "capitalize", whiteSpace: "nowrap",
-              }}>
+              <span
+                style={{
+                  ...getStatusStyle(trainer.ekyc_status),
+                  borderRadius: "6px",
+                  padding: "2px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textTransform: "capitalize",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {trainer.ekyc_status || "-"}
               </span>
             </p>
+
             {trainer.ekyc_status?.toLowerCase() === "rejected" && (
               <>
                 <p>
                   <b>Reject Type:</b>{" "}
-                  <span style={{ color: "#dc2626", fontWeight: 500 }}>{trainer.reject_type || "-"}</span>
+                  <span style={{ color: "#dc2626", fontWeight: 500 }}>
+                    {trainer.reject_type || "-"}
+                  </span>
                 </p>
+
                 <p>
                   <b>Reject Reason:</b>{" "}
-                  <span style={{ color: "#dc2626" }}>{trainer.reject_reason || "-"}</span>
+                  <span style={{ color: "#dc2626" }}>
+                    {trainer.reject_reason || "-"}
+                  </span>
                 </p>
               </>
             )}
           </div>
         </div>
+
+        {/* Separate Languages Row */}
+        {trainer.languageDetails && trainer.languageDetails.length > 0 && (
+          <div className="row mt-2">
+            <div className="col-12">
+              <b>Languages:</b>
+
+              <div className="d-flex flex-wrap gap-2 mt-2">
+                {trainer.languageDetails.map((lang, index) => (
+                  <span
+                    key={lang._id || index}
+                    className="badge"
+                    style={{
+                      background: "linear-gradient(135deg, #ff7a00, #f59e0b)",
+                      color: "#fff",
+                      fontSize: "13px",
+                      padding: "7px 12px",
+                      borderRadius: "20px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {lang.special_character} - {lang.language_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -852,7 +895,7 @@ function TrainerProfile() {
         </div>
 
         {/* Certificate Cards */}
-        <div className="col-12 mt-3">
+      <div className="col-12 mt-3">
           {certificates.length > 0 ? (
             <div className="row">
               {certificates.map((c) => {
@@ -862,25 +905,6 @@ function TrainerProfile() {
                 return (
                   <div className="col-md-4 mb-3" key={c._id}>
                     <div style={{ position: "relative" }}>
-
-                      {/* Select checkbox */}
-                      {/* <input
-                        type="checkbox"
-                        checked={selectedCertificates.includes(c._id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setSelectedCertificates((prev) =>
-                            prev.includes(c._id)
-                              ? prev.filter((id) => id !== c._id)
-                              : [...prev, c._id]
-                          );
-                        }}
-                        style={{
-                          position: "absolute", top: "10px", left: "10px",
-                          width: "18px", height: "18px", cursor: "pointer", zIndex: 10,
-                        }}
-                      /> */}
-
                       {/* Download icon button */}
                       <button
                         onClick={(e) => { e.stopPropagation(); downloadSingleCertificate(c); }}
@@ -937,9 +961,6 @@ function TrainerProfile() {
                         <h6 style={{ margin: 0, fontWeight: "700" }}>
                           {c.headline || "Yoga Certificate"}
                         </h6>
-                        <p style={{ margin: "4px 0 6px", fontSize: "13px", color: "#000" }}>
-                          {c.description || "No description available"}
-                        </p>
                         <span style={{
                           display: "inline-block",
                           padding: "2px 8px", borderRadius: "4px",
@@ -950,7 +971,6 @@ function TrainerProfile() {
                           {fileType === "pdf" ? "📄 PDF" : "🖼️ Image"}
                         </span>
                       </div>
-
                     </div>
                   </div>
                 );
