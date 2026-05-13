@@ -584,10 +584,6 @@ function TrainerProfile() {
     const selectedItems = certificates.filter((c, i) =>
       selectedCertificates.includes(c._id || `cert-${i}`)
     );
-
-    // Track name counts to avoid overwriting duplicates
-    const nameCount = {};
-
     for (let i = 0; i < selectedItems.length; i++) {
       const cert = selectedItems[i];
       const url = getImageUrl(cert.certificate);
