@@ -16,6 +16,16 @@ import * as XLSX from "xlsx";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
+// ── Helper: detect file type by extension ─────────────────────────────────────
+const getFileType = (filePath) => {
+  if (!filePath) return "unknown";
+  // strip query strings, get extension
+  const ext = filePath.split("?")[0].split(".").pop().toLowerCase();
+  if (ext === "pdf") return "pdf";
+  if (["jpg", "jpeg", "png", "webp", "gif", "bmp"].includes(ext)) return "image";
+  return "unknown";
+};
+
 function TrainerProfile() {
   const { userId } = useParams();
   const navigate   = useNavigate();
@@ -29,20 +39,25 @@ function TrainerProfile() {
   const [selectedCertificates, setSelectedCertificates] = useState([]);
 
   // ── Active Tab ─────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState("bookings"); // "bookings" | "earnings"
+  const [activeTab, setActiveTab] = useState("bookings");
 
   // ── Modal ──────────────────────────────────────────────────────────────────
   const [modalOpen,  setModalOpen]  = useState(false);
   const [modalImage, setModalImage] = useState("");
-  const openImageModal  = (url) => { setModalImage(url); setModalOpen(true); };
-  const closeImageModal = ()    => { setModalOpen(false); setModalImage(""); };
+  const [modalType,  setModalType]  = useState("image"); // "image" | "pdf"
+
+  const openImageModal = (url) => {
+    setModalImage(url);
+    setModalType(getFileType(url));
+    setModalOpen(true);
+  };
+  const closeImageModal = () => { setModalOpen(false); setModalImage(""); setModalType("image"); };
 
   // ── Bookings state ─────────────────────────────────────────────────────────
   const [ordersList,  setOrdersList]  = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages,  setTotalPages]  = useState(1);
 
-  // ── Booking yoga name options ──────────────────────────────────────────────
   const [bookingYogaOptions, setBookingYogaOptions] = useState([]);
   const [bookingLimit,      setBookingLimit]      = useState(10);
   const [bookingTotalCount, setBookingTotalCount] = useState(0);
@@ -72,13 +87,12 @@ function TrainerProfile() {
   const [earningsLoading,    setEarningsLoading]    = useState(false);
   const [earningsTotal,      setEarningsTotal]      = useState(0);
   const [appliedEarningFilters, setAppliedEarningFilters] = useState({
-  yogaType:    "",
-  bookingType: "",
-  fromDate:    "",
-  toDate:      "",
-});
+    yogaType:    "",
+    bookingType: "",
+    fromDate:    "",
+    toDate:      "",
+  });
 
-  // ── Earnings filters ───────────────────────────────────────────────────────
   const [earningFilters, setEarningFilters] = useState({
     yogaType:    "",
     bookingType: "",
@@ -86,9 +100,7 @@ function TrainerProfile() {
     toDate:      "",
   });
 
-  // ── yoga type options (earnings tab) ──────────────────────────────────────
   const [yogaTypeOptions, setYogaTypeOptions] = useState([]);
-
 
   // ── Ratings state ──────────────────────────────────────────────────────────
   const [ratings,           setRatings]           = useState([]);
@@ -103,45 +115,39 @@ function TrainerProfile() {
 
   // ─── Fetch Trainer Info ────────────────────────────────────────────────────
   useEffect(() => {
-  if (!userId) return;
-  const fetchTrainer = async () => {
-    setLoading(true);
-    try {
-      // ✅ CASE 1: came from Trainer list — data passed via navigate state
-      if (location.state?.trainer) {
-        setTrainer(location.state.trainer);
-        // still fetch certificates
-        const certRes = await getCertificatesByUser(userId);
-        setCertificates(certRes?.data || []);
+    if (!userId) return;
+    const fetchTrainer = async () => {
+      setLoading(true);
+      try {
+        if (location.state?.trainer) {
+          setTrainer(location.state.trainer);
+          const certRes = await getCertificatesByUser(userId);
+          setCertificates(certRes?.data || []);
+          setLoading(false);
+          return;
+        }
+        let found = null;
+        for (let page = 1; page <= 50; page++) {
+          const res = await getTrainers(page, 10);
+          const arr = Array.isArray(res.data) ? res.data
+                    : Array.isArray(res)      ? res : [];
+          found = arr.find((t) => t.userId === userId);
+          if (found) break;
+          if (arr.length < 10) break;
+        }
+        setTrainer(found || null);
+        if (found?.userId) {
+          const certRes = await getCertificatesByUser(found.userId);
+          setCertificates(certRes?.data || []);
+        }
+      } catch (error) {
+        console.error("Fetch Trainer Error:", error);
+        setTrainer(null);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // ✅ CASE 2: page refresh — loop pages with limit:10 only
-      let found = null;
-      for (let page = 1; page <= 50; page++) {
-        const res = await getTrainers(page, 10);
-        const arr = Array.isArray(res.data) ? res.data
-                  : Array.isArray(res)      ? res : [];
-
-        found = arr.find((t) => t.userId === userId);
-        if (found) break;
-        if (arr.length < 10) break; // no more pages
-      }
-      setTrainer(found || null);
-
-      if (found?.userId) {
-        const certRes = await getCertificatesByUser(found.userId);
-        setCertificates(certRes?.data || []);
-      }
-    } catch (error) {
-      console.error("Fetch Trainer Error:", error);
-      setTrainer(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchTrainer();
+    };
+    fetchTrainer();
   }, [userId]); // eslint-disable-line
 
   // ─── Fetch yoga name options for Bookings tab filter ──────────────────────
@@ -149,9 +155,7 @@ function TrainerProfile() {
     if (!trainer?.userId) return;
     const fetchBookingYogaNames = async () => {
       try {
-        const res = await getBookings(1, 10, {
-          accepted_trainerId: trainer.userId,
-        });
+        const res = await getBookings(1, 10, { accepted_trainerId: trainer.userId });
         if (res && Array.isArray(res.data)) {
           const names = res.data
             .map((item) =>
@@ -171,65 +175,62 @@ function TrainerProfile() {
 
   // ─── Fetch Bookings ────────────────────────────────────────────────────────
   useEffect(() => {
-  if (!trainer?.userId) return;
-  const fetchBookings = async () => {
-    try {
-      const filters = {};
-      if (appliedBookingFilters.bookingType) filters.bookingType = appliedBookingFilters.bookingType;
-      if (appliedBookingFilters.status)      filters.status      = appliedBookingFilters.status;
-      if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
-      if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
-      if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
+    if (!trainer?.userId) return;
+    const fetchBookings = async () => {
+      try {
+        const filters = {};
+        if (appliedBookingFilters.bookingType) filters.bookingType = appliedBookingFilters.bookingType;
+        if (appliedBookingFilters.status)      filters.status      = appliedBookingFilters.status;
+        if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
+        if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
+        if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
 
-      const res = await getBookings(currentPage, bookingLimit, { 
-        accepted_trainerId: trainer.userId,
-        ...filters,
-      });
-      if (res && Array.isArray(res.data)) {
-        setOrdersList(res.data);
-        setTotalPages(res.totalPages || 1);
-        setBookingTotalCount(res.totalCount || 0); 
-      } else {
-        setOrdersList([]);
-        setTotalPages(1);
-        setBookingTotalCount(0);
+        const res = await getBookings(currentPage, bookingLimit, {
+          accepted_trainerId: trainer.userId,
+          ...filters,
+        });
+        if (res && Array.isArray(res.data)) {
+          setOrdersList(res.data);
+          setTotalPages(res.totalPages || 1);
+          setBookingTotalCount(res.totalCount || 0);
+        } else {
+          setOrdersList([]);
+          setTotalPages(1);
+          setBookingTotalCount(0);
+        }
+      } catch (error) {
+        console.error("Fetch Bookings Error:", error);
       }
-    } catch (error) {
-      console.error("Fetch Bookings Error:", error);
-    }
-  };
-  fetchBookings();
-}, [currentPage, trainer, appliedBookingFilters, bookingLimit]);
+    };
+    fetchBookings();
+  }, [currentPage, trainer, appliedBookingFilters, bookingLimit]);
 
-
-// ─── Fetch Ratings ─────────────────────────────────────────────────────────
-useEffect(() => {
-  if (!trainer?.userId || activeTab !== "ratings") return;
-  const fetchRatings = async () => {
-    try {
-      setRatingsLoading(true);
-      const res = await getRatings(ratingsPage, ratingsLimit, {
-        trainerId: trainer.userId,
-      });
-      if (res && Array.isArray(res.data)) {
-        setRatings(res.data);
-        setRatingsTotalPages(res.totalPages || 1);
-        setRatingsTotalCount(res.totalCount || 0);
-        setAverageRating(res.averageRating || 0);
-        setTotalRatings(res.totalRatings || 0);
-        setTotalReviews(res.totalReviews || 0);
-      } else {
+  // ─── Fetch Ratings ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!trainer?.userId || activeTab !== "ratings") return;
+    const fetchRatings = async () => {
+      try {
+        setRatingsLoading(true);
+        const res = await getRatings(ratingsPage, ratingsLimit, { trainerId: trainer.userId });
+        if (res && Array.isArray(res.data)) {
+          setRatings(res.data);
+          setRatingsTotalPages(res.totalPages || 1);
+          setRatingsTotalCount(res.totalCount || 0);
+          setAverageRating(res.averageRating || 0);
+          setTotalRatings(res.totalRatings || 0);
+          setTotalReviews(res.totalReviews || 0);
+        } else {
+          setRatings([]);
+        }
+      } catch (err) {
+        console.error("Fetch Ratings Error:", err);
         setRatings([]);
+      } finally {
+        setRatingsLoading(false);
       }
-    } catch (err) {
-      console.error("Fetch Ratings Error:", err);
-      setRatings([]);
-    } finally {
-      setRatingsLoading(false);
-    }
-  };
-  fetchRatings();
-}, [trainer, activeTab, ratingsPage, ratingsLimit]);
+    };
+    fetchRatings();
+  }, [trainer, activeTab, ratingsPage, ratingsLimit]);
 
   // ─── Fetch Earnings ────────────────────────────────────────────────────────
   const fetchEarnings = useCallback(
@@ -237,7 +238,6 @@ useEffect(() => {
       if (!trainer?.userId) return;
       try {
         setEarningsLoading(true);
-
         const activeFilters = overrideFilters !== undefined ? overrideFilters : earningFilters;
         const activeLimit   = overrideLimit   !== undefined ? overrideLimit   : earningsLimit;
 
@@ -256,7 +256,6 @@ useEffect(() => {
         else if (res && Array.isArray(res.data)) data = res.data;
 
         let filteredData = [...data];
-
         if (activeFilters.bookingType) {
           filteredData = filteredData.filter(
             (item) => item.bookingDetails?.bookingType === activeFilters.bookingType
@@ -326,7 +325,7 @@ useEffect(() => {
 
   const handleApplyEarningFilters = () => {
     setEarningsPage(1);
-    setAppliedEarningFilters({ ...earningFilters }); 
+    setAppliedEarningFilters({ ...earningFilters });
     fetchEarnings(1, earningFilters, earningsLimit);
   };
 
@@ -345,10 +344,7 @@ useEffect(() => {
     fetchEarnings(1, earningFilters, newLimit);
   };
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── BOOKINGS EXPORT ───────────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-
+  // ── Bookings Export ────────────────────────────────────────────────────────
   const fetchAllBookingsForExport = async () => {
     if (!trainer?.userId) return [];
     try {
@@ -358,11 +354,9 @@ useEffect(() => {
       if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
       if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
       if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
-            filters.isExport                                      = true;
+      filters.isExport = true;
 
-      const res = await getBookings(1, 10, {accepted_trainerId: trainer.userId,
-        ...filters,
-      });
+      const res = await getBookings(1, 10, { accepted_trainerId: trainer.userId, ...filters });
       if (res && Array.isArray(res.data)) return res.data;
       return [];
     } catch (err) {
@@ -374,25 +368,15 @@ useEffect(() => {
   const buildBookingExportRows = (data) =>
     data.map((item, index) => ({
       "S.No":           index + 1,
-      "Client Name":    item.clientId?.name              || "-",
-      "Booking Type":   item.bookingType                 || "-",
-      "Yoga Name":      (Array.isArray(item.yogaId)
-        ? item.yogaId?.[0]?.yoga_name
-        : item.yogaId?.yoga_name)                        || "-",
-      "Language":       (Array.isArray(item.languageId)
-        ? item.languageId?.[0]?.language_name
-        : item.languageId?.language_name)                || "-",
-      "Client Price":   (Array.isArray(item.yogaId)
-        ? item.yogaId?.[0]?.trainer_price
-        : item.yogaId?.trainer_price)
-          ? `₹${Array.isArray(item.yogaId) ? item.yogaId[0].trainer_price : item.yogaId.trainer_price}`
-          : "-",
+      "Client Name":    item.clientId?.name || "-",
+      "Booking Type":   item.bookingType    || "-",
+      "Yoga Name":      (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.yoga_name : item.yogaId?.yoga_name) || "-",
+      "Language":       (Array.isArray(item.languageId) ? item.languageId?.[0]?.language_name : item.languageId?.language_name) || "-",
+      "Client Price":   (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.trainer_price : item.yogaId?.trainer_price)
+                          ? `₹${Array.isArray(item.yogaId) ? item.yogaId[0].trainer_price : item.yogaId.trainer_price}`
+                          : "-",
       "Scheduled Date": item.scheduledDate
-                          ? new Date(item.scheduledDate).toLocaleDateString("en-IN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            })
+                          ? new Date(item.scheduledDate).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
                           : "-",
       "Time":           item.time   || "-",
       "Status":         item.status || "-",
@@ -451,79 +435,50 @@ useEffect(() => {
     }
   };
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── EARNINGS EXPORT ───────────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-
-  // const fetchAllEarningsForExport = async () => {
-  //   if (!trainer?.userId) return [];
-  //   try {
-  //     const payload = {
-  //       trainerId:   trainer.userId,
-  //       yogaType:    earningFilters.yogaType    || "",
-  //       bookingType: earningFilters.bookingType || "",
-  //       fromDate:    earningFilters.fromDate    || "",
-  //       toDate:      earningFilters.toDate      || "",
-  //     };
-  //     const res = await getTrainerEarning(trainer.userId, payload);
-  //     if (Array.isArray(res))        return res;
-  //     if (Array.isArray(res?.data))  return res.data;
-  //     return [];
-  //   } catch (err) {
-  //     console.error("Export fetch error:", err);
-  //     return [];
-  //   }
-  // };
-
+  // ── Earnings Export ────────────────────────────────────────────────────────
   const fetchAllEarningsForExport = async () => {
-  if (!trainer?.userId) return [];
-  try {
-    const payload = {
-      trainerId:   trainer.userId,
-      yogaType:    appliedEarningFilters.yogaType    || "",
-      bookingType: appliedEarningFilters.bookingType || "",
-      fromDate:    appliedEarningFilters.fromDate    || "",
-      toDate:      appliedEarningFilters.toDate      || "",
-    };
+    if (!trainer?.userId) return [];
+    try {
+      const payload = {
+        trainerId:   trainer.userId,
+        yogaType:    appliedEarningFilters.yogaType    || "",
+        bookingType: appliedEarningFilters.bookingType || "",
+        fromDate:    appliedEarningFilters.fromDate    || "",
+        toDate:      appliedEarningFilters.toDate      || "",
+      };
 
-    const res = await getTrainerEarning(trainer.userId, payload);
+      const res = await getTrainerEarning(trainer.userId, payload);
+      let data = [];
+      if (Array.isArray(res))                  data = res;
+      else if (res && Array.isArray(res.data)) data = res.data;
 
-    let data = [];
-    if (Array.isArray(res))                  data = res;
-    else if (res && Array.isArray(res.data)) data = res.data;
-
-    // ✅ Apply same client-side filters using appliedEarningFilters
-    let filteredData = [...data];
-
-    if (appliedEarningFilters.bookingType) {
-      filteredData = filteredData.filter(
-        (item) => item.bookingDetails?.bookingType === appliedEarningFilters.bookingType
-      );
+      let filteredData = [...data];
+      if (appliedEarningFilters.bookingType) {
+        filteredData = filteredData.filter(
+          (item) => item.bookingDetails?.bookingType === appliedEarningFilters.bookingType
+        );
+      }
+      if (appliedEarningFilters.yogaType) {
+        filteredData = filteredData.filter(
+          (item) => item.yogaDetails?.yoga_name === appliedEarningFilters.yogaType
+        );
+      }
+      if (appliedEarningFilters.fromDate) {
+        filteredData = filteredData.filter(
+          (item) => new Date(item.date) >= new Date(appliedEarningFilters.fromDate)
+        );
+      }
+      if (appliedEarningFilters.toDate) {
+        filteredData = filteredData.filter(
+          (item) => new Date(item.date) <= new Date(appliedEarningFilters.toDate)
+        );
+      }
+      return filteredData;
+    } catch (err) {
+      console.error("Export fetch error:", err);
+      return [];
     }
-    if (appliedEarningFilters.yogaType) {
-      filteredData = filteredData.filter(
-        (item) => item.yogaDetails?.yoga_name === appliedEarningFilters.yogaType
-      );
-    }
-    if (appliedEarningFilters.fromDate) {
-      filteredData = filteredData.filter(
-        (item) => new Date(item.date) >= new Date(appliedEarningFilters.fromDate)
-      );
-    }
-    if (appliedEarningFilters.toDate) {
-      filteredData = filteredData.filter(
-        (item) => new Date(item.date) <= new Date(appliedEarningFilters.toDate)
-      );
-    }
-
-    return filteredData;
-  } catch (err) {
-    console.error("Export fetch error:", err);
-    return [];
-  }
-};
-
-  // ✅ FIXED: now reads from yogaDetails / bookingDetails (same as table display)
+  };
 
   const buildEarningExportRows = (data) =>
     data.map((item, index) => ({
@@ -531,12 +486,8 @@ useEffect(() => {
       "Yoga Type":     item.yogaDetails?.yoga_name     || item.yogaId?.[0]?.yoga_name || "-",
       "Booking Type":  item.bookingDetails?.bookingType || item.bookingType            || "-",
       "Date":          item.date
-                    ? new Date(item.date).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })
-                    : "-",
+                         ? new Date(item.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+                         : "-",
       "Trainer Price": item.yogaDetails?.trainer_price
                          ? `₹${item.yogaDetails.trainer_price}`
                          : item.yogaId?.[0]?.trainer_price
@@ -597,71 +548,68 @@ useEffect(() => {
     }
   };
 
-  
-  // const handleSelectCertificate = (id) => {
-  // setSelectedCertificates((prev) =>
-  //   prev.includes(id)
-  //     ? prev.filter((item) => item !== id)
-  //     : [...prev, id]
-  // );
-  // };
+  // ── CHANGE 1: Single certificate download — correct extension for PDF ──────
+  const downloadSingleCertificate = async (cert) => {
+    try {
+      const url      = getImageUrl(cert.certificate);
+      const fileType = getFileType(cert.certificate);
+      const ext      = fileType === "pdf" ? "pdf" : "jpg";
 
-const downloadSingleCertificate = async (cert) => {
-  try {
-    const url = getImageUrl(cert.certificate);
+      const response = await fetch(url);
+      const blob     = await response.blob();
 
-    const response = await fetch(url);
-    const blob = await response.blob();
+      const link     = document.createElement("a");
+      link.href      = URL.createObjectURL(blob);
+      const fileName = cert.headline
+        ? cert.headline.replace(/\s+/g, "_")
+        : "certificate";
+      link.download  = `${fileName}.${ext}`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error("Single download error:", error);
+      alert("Download failed");
+    }
+  };
 
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-
-    const fileName = cert.headline
-      ? cert.headline.replace(/\s+/g, "_")
-      : "certificate";
-
-    link.download = `${fileName}.jpg`;
-    link.click();
-
-    URL.revokeObjectURL(link.href);
-  } catch (error) {
-    console.error("Single download error:", error);
-    alert("Download failed");
-  }
-};
-
-
-const downloadAllCertificates = async () => {
+  // ── CHANGE 2: Download all — correct extension per file ───────────────────
+  const downloadAllCertificates = async () => {
   if (!selectedCertificates.length) {
     alert("Please select at least one certificate");
     return;
   }
-
   try {
     const zip = new JSZip();
 
-    const selectedItems = certificates.filter((c) =>
-      selectedCertificates.includes(c._id)
+    const selectedItems = certificates.filter((c, i) =>
+      selectedCertificates.includes(c._id || `cert-${i}`)
     );
+
+    // Track name counts to avoid overwriting duplicates
+    const nameCount = {};
 
     for (let i = 0; i < selectedItems.length; i++) {
       const cert = selectedItems[i];
       const url = getImageUrl(cert.certificate);
+      const fileType = getFileType(cert.certificate);
+      const ext = fileType === "pdf" ? "pdf" : "jpg";
 
       const response = await fetch(url);
       const blob = await response.blob();
 
-      // Use headline if available
-      const fileName = cert.headline
+      // Build unique filename using index to guarantee uniqueness
+      const baseName = cert.headline
         ? cert.headline.replace(/\s+/g, "_")
-        : `certificate_${i + 1}`;
+        : `certificate`;
 
-      zip.file(`${fileName}.jpg`, blob);
+      // Always append index so duplicates never clash
+      const fileName = `${baseName}_${i + 1}.${ext}`;
+
+      zip.file(fileName, blob);
     }
 
     const zipBlob = await zip.generateAsync({ type: "blob" });
     saveAs(zipBlob, "selected_certificates.zip");
-
   } catch (error) {
     console.error("Download error:", error);
     alert("Failed to download certificates");
@@ -670,23 +618,23 @@ const downloadAllCertificates = async () => {
 
   // ── Loading state ──────────────────────────────────────────────────────────
   if (loading) {
-  return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
-      <div className="table-spinner" />
-    </div>
-  );
-}
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
+        <div className="table-spinner" />
+      </div>
+    );
+  }
 
-if (!trainer) {
-  return (
-    <div style={{ textAlign: "center", padding: "60px", color: "#888" }}>
-      <h4>Trainer not found</h4>
-      <button className="btn btn-secondary mt-3" onClick={() => navigate("/trainer")}>
-        ← Back to Trainer List
-      </button>
-    </div>
-  );
-}
+  if (!trainer) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px", color: "#888" }}>
+        <h4>Trainer not found</h4>
+        <button className="btn btn-secondary mt-3" onClick={() => navigate("/trainer")}>
+          ← Back to Trainer List
+        </button>
+      </div>
+    );
+  }
 
   const getImageUrl = (filename) => {
     if (!filename) return "";
@@ -696,11 +644,11 @@ if (!trainer) {
   const renderStars = (rating) => {
     const num = parseFloat(rating) || 0;
     const fullStars = Math.floor(num);
-    const hasHalf = num % 1 >= 0.5;
+    const hasHalf   = num % 1 >= 0.5;
     return (
       <span>
         {Array.from({ length: 5 }, (_, i) => {
-          if (i < fullStars) return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>★</span>;
+          if (i < fullStars)              return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>★</span>;
           if (i === fullStars && hasHalf) return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>½</span>;
           return <span key={i} style={{ color: "#d1d5db", fontSize: "16px" }}>★</span>;
         })}
@@ -723,125 +671,84 @@ if (!trainer) {
   ];
 
   const tableData = ordersList.map((item, index) => ({
-    srNo:          (currentPage - 1) * 10 + index + 1,
-    clientName:    item.clientId?.name || "-",
-    bookingType:   item.bookingType || "-",
-    yogaName: (Array.isArray(item.yogaId)
-      ? item.yogaId?.[0]?.yoga_name
-      : item.yogaId?.yoga_name) || "-",
-    language: (Array.isArray(item.languageId)
-      ? item.languageId?.[0]?.language_name
-      : item.languageId?.language_name) || "-",
-    clientPrice: `₹${(Array.isArray(item.yogaId)
-      ? item.yogaId?.[0]?.trainer_price
-      : item.yogaId?.trainer_price) || 0}`,
+    srNo:         (currentPage - 1) * 10 + index + 1,
+    clientName:   item.clientId?.name || "-",
+    bookingType:  item.bookingType    || "-",
+    yogaName:     (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.yoga_name : item.yogaId?.yoga_name) || "-",
+    language:     (Array.isArray(item.languageId) ? item.languageId?.[0]?.language_name : item.languageId?.language_name) || "-",
+    clientPrice:  `₹${(Array.isArray(item.yogaId) ? item.yogaId?.[0]?.trainer_price : item.yogaId?.trainer_price) || 0}`,
     scheduledDate: item.scheduledDate
-      ? new Date(item.scheduledDate).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+      ? new Date(item.scheduledDate).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "-",
     time:   item.time   || "-",
     status: item.status || "-",
   }));
 
-  // ── Earnings columns 
+  // ── Earnings columns ───────────────────────────────────────────────────────
   const earningColumns = [
-    { header: "S.No",          accessor: "srNo" },
-    { header: "Yoga Type",     accessor: "yogaType" },
-    { header: "Booking Type",  accessor: "bookingType" },
+    { header: "S.No",           accessor: "srNo" },
+    { header: "Yoga Type",      accessor: "yogaType" },
+    { header: "Booking Type",   accessor: "bookingType" },
     { header: "Scheduled Date", accessor: "date" },
-    { header: "Trainer Price", accessor: "trainer_price" },
-    { header: "Earned Amount", accessor: "earned_amount" },
+    { header: "Trainer Price",  accessor: "trainer_price" },
+    { header: "Earned Amount",  accessor: "earned_amount" },
   ];
 
   const earningTableData = earnings.map((item, index) => ({
     srNo:          (earningsPage - 1) * earningsLimit + index + 1,
-    yogaType:      item.yogaDetails?.yoga_name || "-",
-    bookingType:   item.bookingDetails?.bookingType || "-",
-    date: item.date
-      ? new Date(item.date).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+    yogaType:      item.yogaDetails?.yoga_name           || "-",
+    bookingType:   item.bookingDetails?.bookingType      || "-",
+    date:          item.date
+      ? new Date(item.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "-",
     trainer_price: item.yogaDetails?.trainer_price ? `₹${item.yogaDetails.trainer_price}` : "-",
-    earned_amount: item.earned_amount ? `₹${item.earned_amount}` : "₹0",
+    earned_amount: item.earned_amount               ? `₹${item.earned_amount}` : "₹0",
   }));
 
-  // ── Tab styles
+  // ── Tab styles ─────────────────────────────────────────────────────────────
   const tabStyle = (tab) => ({
-    padding: "10px 28px",
-    border: "none",
+    padding: "10px 28px", border: "none",
     borderBottom: activeTab === tab ? "3px solid #ff7a00" : "3px solid transparent",
     background: "transparent",
     fontWeight: activeTab === tab ? 700 : 500,
     color: activeTab === tab ? "#ff7a00" : "#555",
-    fontSize: "15px",
-    cursor: "pointer",
-    transition: "all 0.2s",
+    fontSize: "15px", cursor: "pointer", transition: "all 0.2s",
   });
-
-  // ── Shared button styles 
 
   const btnFilter = {
     background: "linear-gradient(135deg, #000000, #fcd34d)",
-    color: "#fff", border: "none",
-    padding: "8px 16px", borderRadius: "4px",
-    display: "flex", alignItems: "center", gap: "6px",
-    cursor: "pointer",
+    color: "#fff", border: "none", padding: "8px 16px", borderRadius: "4px",
+    display: "flex", alignItems: "center", gap: "6px", cursor: "pointer",
   };
   const btnClear = {
     background: "#7d6c6c", color: "#fff",
-    border: "none", padding: "8px 16px", borderRadius: "4px",
-    cursor: "pointer",
+    border: "none", padding: "8px 16px", borderRadius: "4px", cursor: "pointer",
   };
   const btnCSV = (disabled) => ({
     background: disabled ? "#aaa" : "linear-gradient(135deg, #16a34a, #4ade80)",
-    color: "#fff", border: "none",
-    padding: "8px 16px", borderRadius: "4px",
+    color: "#fff", border: "none", padding: "8px 16px", borderRadius: "4px",
     display: "flex", alignItems: "center", gap: "6px",
     cursor: disabled ? "not-allowed" : "pointer",
   });
   const btnExcel = (disabled) => ({
     background: disabled ? "#aaa" : "linear-gradient(135deg, #1d4ed8, #60a5fa)",
-    color: "#fff", border: "none",
-    padding: "8px 16px", borderRadius: "4px",
+    color: "#fff", border: "none", padding: "8px 16px", borderRadius: "4px",
     display: "flex", alignItems: "center", gap: "6px",
     cursor: disabled ? "not-allowed" : "pointer",
   });
 
   const getStatusStyle = (status) => {
-  const s = status?.toLowerCase();
-
-  if (s === "approved") {
-    return {
-      background: "#f0fdf4",
-      color: "#16a34a",
-      border: "1px solid #bbf7d0",
-    };
-  } else if (s === "rejected") {
-    return {
-      background: "#fef2f2",
-      color: "#dc2626",
-      border: "1px solid #fecaca",
-    };
-  } else {
-    return {
-      background: "#fff7ed",
-      color: "#ea580c",
-      border: "1px solid #fed7aa",
-    };
-  }
+    const s = status?.toLowerCase();
+    if (s === "approved") return { background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" };
+    if (s === "rejected") return { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" };
+    return { background: "#fff7ed", color: "#ea580c", border: "1px solid #fed7aa" };
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="container mt-3">
 
-      {/* ── Export overlay ── */}
+      {/* Export overlay */}
       {exporting && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)",
@@ -852,26 +759,20 @@ if (!trainer) {
             textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
           }}>
             <div className="spinner-border text-warning mb-3" role="status" />
-            <p style={{ margin: 0, fontWeight: 600, color: "#333" }}>
-              Preparing export… please wait
-            </p>
+            <p style={{ margin: 0, fontWeight: 600, color: "#333" }}>Preparing export… please wait</p>
           </div>
         </div>
       )}
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>TRAINER PROFILE</h2>
-        <button className="btn btn-secondary" onClick={() => navigate("/trainer")}>
-          ← Back
-        </button>
+        <button className="btn btn-secondary" onClick={() => navigate("/trainer")}>← Back</button>
       </div>
 
-      {/* ── Trainer Info ── */}
+      {/* Trainer Info */}
       <div className="card p-3 shadow-sm mb-4">
         <div className="row align-items-start">
-          
-          {/* Profile Image */}
           <div className="col-md-4 text-center mb-3">
             <img
               src={getImageUrl(trainer.profile_pic)}
@@ -880,192 +781,184 @@ if (!trainer) {
               style={{ borderRadius: "12px", maxWidth: "150px" }}
             />
           </div>
-
-          {/* Basic Details */}
           <div className="col-md-4 mb-3">
-            <p><b>Name:</b> {trainer.name}</p>
-            <p><b>Email:</b> {trainer.email}</p>
+            <p><b>Name:</b>   {trainer.name}</p>
+            <p><b>Email:</b>  {trainer.email}</p>
             <p><b>Mobile:</b> {trainer.mobileNumber}</p>
           </div>
-
-          {/* Additional Details */}
           <div className="col-md-4 mb-3">
             <p><b>Gender:</b> {trainer.gender}</p>
-            <p><b>Age:</b> {trainer.age}</p>
-
-            {/* eKYC Status Badge */}
+            <p><b>Age:</b>    {trainer.age}</p>
             <p>
               <b>eKYC Status:</b>{" "}
-              <span
-                style={{
-                  ...getStatusStyle(trainer.ekyc_status),
-                  borderRadius: "6px",
-                  padding: "2px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  textTransform: "capitalize",
-                  whiteSpace: "nowrap"
-                }}
-              >
+              <span style={{
+                ...getStatusStyle(trainer.ekyc_status),
+                borderRadius: "6px", padding: "2px 10px",
+                fontSize: "13px", fontWeight: 500,
+                textTransform: "capitalize", whiteSpace: "nowrap",
+              }}>
                 {trainer.ekyc_status || "-"}
               </span>
             </p>
-
-            {/* Reject Details (ONLY when rejected) */}
             {trainer.ekyc_status?.toLowerCase() === "rejected" && (
               <>
                 <p>
                   <b>Reject Type:</b>{" "}
-                  <span style={{ color: "#dc2626", fontWeight: 500 }}>
-                    {trainer.reject_type || "-"}
-                  </span>
+                  <span style={{ color: "#dc2626", fontWeight: 500 }}>{trainer.reject_type || "-"}</span>
                 </p>
-
                 <p>
                   <b>Reject Reason:</b>{" "}
-                  <span style={{ color: "#dc2626" }}>
-                    {trainer.reject_reason || "-"}
-                  </span>
+                  <span style={{ color: "#dc2626" }}>{trainer.reject_reason || "-"}</span>
                 </p>
               </>
             )}
           </div>
-
         </div>
       </div>
 
-      {/* ── Certificates ── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          CHANGE 3 — Certificates card: PDF iframe + image preview + badges
+      ══════════════════════════════════════════════════════════════════════ */}
       <div className="card p-3 shadow-sm mb-4">
-        {/* Header with button */}
+        {/* Header */}
         <div className="d-flex justify-content-between align-items-center">
-
           <h4 className="mb-0">Certificates</h4>
-
           <div className="d-flex align-items-center gap-3">
-
             <input
               type="checkbox"
-              checked={
-                selectedCertificates.length === certificates.length &&
-                certificates.length > 0
-              }
+              checked={selectedCertificates.length === certificates.length && certificates.length > 0}
               onChange={(e) => {
                 if (e.target.checked) {
-                  setSelectedCertificates(certificates.map(c => c._id));
+                  // Use index-based key to handle duplicates
+                  setSelectedCertificates(certificates.map((c, i) => c._id || `cert-${i}`));
                 } else {
                   setSelectedCertificates([]);
                 }
               }}
               style={{
-                width: "18px",
-                height: "18px",
-                cursor: "pointer",
-                transform: "scale(1.4)",
-                border: "2px solid orange",
-                borderRadius: "4px",
-                position: "relative"
+                width: "18px", height: "18px", cursor: "pointer",
+                transform: "scale(1.4)", border: "2px solid orange", borderRadius: "4px",
               }}
             />
-
             <button
               onClick={downloadAllCertificates}
               className="btn"
               style={{
-                backgroundColor: "#28a745",
-                color: "#fff",
-                fontWeight: "600",
-                borderRadius: "8px",
-                padding: "6px 16px",
-                border: "none"
+                backgroundColor: "#28a745", color: "#fff",
+                fontWeight: "600", borderRadius: "8px",
+                padding: "6px 16px", border: "none",
               }}
               disabled={!selectedCertificates.length}
             >
               ⬇ Download ({selectedCertificates.length})
             </button>
-
           </div>
-
         </div>
 
-        {/* Certificates List */}
+        {/* Certificate Cards */}
         <div className="col-12 mt-3">
           {certificates.length > 0 ? (
             <div className="row">
-              {certificates.map((c) => (
-                <div className="col-md-4 mb-3" key={c._id}>
-                  
-                  {/* ✅ ADDED WRAPPER */}
-                  <div style={{ position: "relative" }}>
+              {certificates.map((c) => {
+                const fileUrl  = getImageUrl(c.certificate);
+                const fileType = getFileType(c.certificate);
 
-                    {/* DOWNLOAD ICON */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // prevent modal open
-                        downloadSingleCertificate(c);
-                      }}
-                      style={{
-                        position: "absolute",
-                        top: "13px",
-                        right: "10px",
-                        background: "#28a745",
-                        border: "none",
-                        borderRadius: "50%",
-                        width: "25px",
-                        height: "25px",
-                        color: "#fff",
-                        cursor: "pointer",
-                        zIndex: 10
-                      }}
-                    >
-                      ⬇
-                    </button>
+                return (
+                  <div className="col-md-4 mb-3" key={c._id}>
+                    <div style={{ position: "relative" }}>
 
-                    {/* YOUR ORIGINAL CARD (UNCHANGED) */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "16px",
-                        padding: "14px 16px",
-                        background: "rgb(255 172 45)",
-                        borderRadius: "16px",
-                        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => openImageModal(getImageUrl(c.certificate))}
-                    >
-                      <img
-                        src={getImageUrl(c.certificate)}
-                        alt="Certificate"
-                        style={{
-                          width: "120px",
-                          height: "80px",
-                          objectFit: "cover",
-                          borderRadius: "12px",
-                          background: "#fff",
+                      {/* Select checkbox */}
+                      {/* <input
+                        type="checkbox"
+                        checked={selectedCertificates.includes(c._id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setSelectedCertificates((prev) =>
+                            prev.includes(c._id)
+                              ? prev.filter((id) => id !== c._id)
+                              : [...prev, c._id]
+                          );
                         }}
-                      />
+                        style={{
+                          position: "absolute", top: "10px", left: "10px",
+                          width: "18px", height: "18px", cursor: "pointer", zIndex: 10,
+                        }}
+                      /> */}
 
-                      <div>
+                      {/* Download icon button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); downloadSingleCertificate(c); }}
+                        style={{
+                          position: "absolute", top: "10px", right: "10px",
+                          background: "#28a745", border: "none", borderRadius: "50%",
+                          width: "28px", height: "28px", color: "#fff",
+                          cursor: "pointer", zIndex: 10, fontSize: "13px",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                        title="Download"
+                      >
+                        ⬇
+                      </button>
+
+                      {/* Card */}
+                      <div
+                        style={{
+                          padding: "14px 16px",
+                          background: "rgb(255 172 45)",
+                          borderRadius: "16px",
+                          boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => openImageModal(fileUrl)}
+                      >
+
+                        {/* ── CHANGE: show iframe for PDF, img for image ── */}
+                        {fileType === "pdf" ? (
+                          <iframe
+                            src={fileUrl}
+                            title={c.headline || "Certificate PDF"}
+                            style={{
+                              width: "100%", height: "160px",
+                              borderRadius: "10px", border: "1px solid #ccc",
+                              background: "#fff", display: "block",
+                              marginBottom: "10px", pointerEvents: "none",
+                            }}
+                          />
+                        ) : (
+                          <img
+                            src={fileUrl}
+                            alt="Certificate"
+                            style={{
+                              width: "100%", height: "160px",
+                              objectFit: "cover", borderRadius: "10px",
+                              background: "#fff", display: "block",
+                              marginBottom: "10px",
+                            }}
+                          />
+                        )}
+
+                        {/* Title + description + type badge */}
                         <h6 style={{ margin: 0, fontWeight: "700" }}>
                           {c.headline || "Yoga Certificate"}
                         </h6>
-                        <p
-                          style={{
-                            margin: "6px 0 0",
-                            fontSize: "13px",
-                            color: "#000",
-                          }}
-                        >
+                        <p style={{ margin: "4px 0 6px", fontSize: "13px", color: "#000" }}>
                           {c.description || "No description available"}
                         </p>
+                        <span style={{
+                          display: "inline-block",
+                          padding: "2px 8px", borderRadius: "4px",
+                          fontSize: "11px", fontWeight: 600, textTransform: "uppercase",
+                          background: fileType === "pdf" ? "#fee2e2" : "#dbeafe",
+                          color:      fileType === "pdf" ? "#dc2626" : "#1d4ed8",
+                        }}>
+                          {fileType === "pdf" ? "📄 PDF" : "🖼️ Image"}
+                        </span>
                       </div>
+
                     </div>
-
                   </div>
-
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p>N/A</p>
@@ -1073,7 +966,7 @@ if (!trainer) {
         </div>
       </div>
 
-      {/* ── Payment Details ── */}
+      {/* Payment Details */}
       <div className="card p-3 shadow-sm mb-4">
         <h4>Payment Details</h4>
         <div className="row mt-3">
@@ -1094,17 +987,14 @@ if (!trainer) {
               >
                 Your browser does not support the video tag.
               </video>
-            ) : (
-              <p>N/A</p>
-            )}
+            ) : <p>N/A</p>}
           </div>
         </div>
       </div>
 
-      {/* ── Professional Details + Yoga Video ── */}
+      {/* Professional Details */}
       <div className="card p-3 shadow-sm mb-4">
         <h4 className="mb-3">Professional Details</h4>
-
         <div className="row">
           {trainer.professional_details?.length > 0 ? (
             trainer.professional_details.map((item) => (
@@ -1113,14 +1003,12 @@ if (!trainer) {
                   className="p-3 text-white"
                   style={{
                     background: "linear-gradient(135deg, #28a745, #20c997)",
-                    borderRadius: "10px",
-                    height: "100px"
+                    borderRadius: "10px", height: "100px",
                   }}
                 >
-                  <div style={{ fontSize: "13px",marginBottom: "15px" }}>
+                  <div style={{ fontSize: "13px", marginBottom: "15px" }}>
                     <b>Type :</b> {item.yoga_name}
                   </div>
-
                   <div style={{ fontSize: "15px", fontWeight: "600" }}>
                     <b>Price :</b> ₹{item.trainer_price}
                   </div>
@@ -1133,7 +1021,7 @@ if (!trainer) {
         </div>
       </div>
 
-      {/* ── Journey Images ── */}
+      {/* Journey Images */}
       <div className="card p-3 shadow-sm mb-4">
         <h4>Journey Images</h4>
         <div className="row">
@@ -1154,200 +1042,101 @@ if (!trainer) {
         </div>
       </div>
 
-      {/* TABS: Bookings | Earnings | Ratings */}
-
+      {/* TABS */}
       <div className="card shadow-sm mb-4" style={{ overflow: "hidden" }}>
-
-        {/* Tab Header */}
         <div style={{
-          display: "flex",
-          borderBottom: "1px solid #e5e7eb",
-          background: "#fafafa",
-          paddingLeft: "16px",
+          display: "flex", borderBottom: "1px solid #e5e7eb",
+          background: "#fafafa", paddingLeft: "16px",
         }}>
-          <button style={tabStyle("bookings")} onClick={() => setActiveTab("bookings")}>
-            📋 Trainer Bookings
-          </button>
-          <button style={tabStyle("earnings")} onClick={() => setActiveTab("earnings")}>
-            💰 Trainer Earnings
-          </button>
-          <button style={tabStyle("ratings")} onClick={() => setActiveTab("ratings")}>
-            ⭐ Trainer Ratings
-          </button>
+          <button style={tabStyle("bookings")} onClick={() => setActiveTab("bookings")}>📋 Trainer Bookings</button>
+          <button style={tabStyle("earnings")} onClick={() => setActiveTab("earnings")}>💰 Trainer Earnings</button>
+          <button style={tabStyle("ratings")}  onClick={() => setActiveTab("ratings")}>⭐ Trainer Ratings</button>
         </div>
-        {/* Tab Header */}
 
-        {/* Bookings */}
-
+        {/* Bookings Tab */}
         {activeTab === "bookings" && (
           <div className="p-3">
-
-            {/* Booking Filters */}
             <div className="card p-3 mb-3">
               <h5 className="mb-3">Filters</h5>
               <div className="row">
-
-                {/* Booking Type */}
                 <div className="col-md-4">
                   <label>Booking Type</label>
-                  <select
-                    className="form-select"
-                    value={bookingFilters.bookingType}
-                    onChange={(e) => handleBookingFilterChange("bookingType", e.target.value)}
-                  >
+                  <select className="form-select" value={bookingFilters.bookingType}
+                    onChange={(e) => handleBookingFilterChange("bookingType", e.target.value)}>
                     <option value="">All</option>
                     <option value="instant">Instant</option>
                     <option value="scheduled">Scheduled</option>
                     <option value="package">Package</option>
                   </select>
                 </div>
-
-                {/* Status */}
                 <div className="col-md-4">
                   <label>Status</label>
-                  <select
-                    className="form-select"
-                    value={bookingFilters.status}
-                    onChange={(e) => handleBookingFilterChange("status", e.target.value)}
-                  >
+                  <select className="form-select" value={bookingFilters.status}
+                    onChange={(e) => handleBookingFilterChange("status", e.target.value)}>
                     <option value="">All</option>
-                    <option value="ongoing" style={{ background: "#F3E8FF", color: "#6B21A8", fontWeight: "600" }}>🟣 On Going</option>
+                    <option value="ongoing">🟣 On Going</option>
                     <option value="accepted">Accepted</option>
                     <option value="opened">Opened</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
-
-                {/* From Date */}
                 <div className="col-md-4">
                   <label>From Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={bookingFilters.fromDate}
-                    onChange={(e) => handleBookingFilterChange("fromDate", e.target.value)}
-                  />
+                  <input type="date" className="form-control" value={bookingFilters.fromDate}
+                    onChange={(e) => handleBookingFilterChange("fromDate", e.target.value)} />
                 </div>
-
-                {/* To Date */}
                 <div className="col-md-4 mt-3">
                   <label>To Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={bookingFilters.toDate}
-                    onChange={(e) => handleBookingFilterChange("toDate", e.target.value)}
-                  />
+                  <input type="date" className="form-control" value={bookingFilters.toDate}
+                    onChange={(e) => handleBookingFilterChange("toDate", e.target.value)} />
                 </div>
-
-                {/* ── Yoga Name filter — populated from API ── */}
                 <div className="col-md-4 mt-3">
                   <label>Yoga Name</label>
-                  <select
-                    className="form-select"
-                    value={bookingFilters.yogaName}
-                    onChange={(e) => handleBookingFilterChange("yogaName", e.target.value)}
-                  >
+                  <select className="form-select" value={bookingFilters.yogaName}
+                    onChange={(e) => handleBookingFilterChange("yogaName", e.target.value)}>
                     <option value="">All</option>
                     {bookingYogaOptions.map((name, i) => (
                       <option key={i} value={name}>{name}</option>
                     ))}
                   </select>
                 </div>
-
               </div>
-
-              {/* Bookings Action Buttons */}
               <div className="text-end mt-3 d-flex justify-content-end gap-3 flex-wrap">
-                <button onClick={handleApplyBookingFilters} style={btnFilter}>
-                  <FaFilter />
-                  <span>Filter</span>
-                </button>
-
-                <button onClick={handleClearBookingFilters} style={btnClear}>
-                  Clear
-                </button>
-
-                {/* Bookings CSV */}
-                <button
-                  onClick={exportBookingsCSV}
-                  disabled={exporting}
-                  title="Export all filtered bookings as CSV"
-                  style={btnCSV(exporting)}
-                >
-                  CSV <FaFileCsv style={{ fontSize: "16px" }} />
-                </button>
-
-                {/* Bookings Excel */}
-                <button
-                  onClick={exportBookingsExcel}
-                  disabled={exporting}
-                  title="Export all filtered bookings as Excel"
-                  style={btnExcel(exporting)}
-                >
-                  Excel <FaFileExcel style={{ fontSize: "16px" }} />
-                </button>
+                <button onClick={handleApplyBookingFilters} style={btnFilter}><FaFilter /><span>Filter</span></button>
+                <button onClick={handleClearBookingFilters} style={btnClear}>Clear</button>
+                <button onClick={exportBookingsCSV}   disabled={exporting} style={btnCSV(exporting)}>CSV <FaFileCsv style={{ fontSize: "16px" }} /></button>
+                <button onClick={exportBookingsExcel} disabled={exporting} style={btnExcel(exporting)}>Excel <FaFileExcel style={{ fontSize: "16px" }} /></button>
               </div>
             </div>
 
-
-            {/* Records per page + count — BOOKINGS TAB ✅ */}
             <div className="d-flex align-items-center justify-content-between mb-2">
               <div className="d-flex align-items-center gap-2">
-                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
-                  Records per page:
-                </label>
-                <select
-                  className="form-select form-select-sm"
-                  style={{
-                    border: "2px solid #ff7a00", padding: "2px",
-                    cursor: "pointer", width: "75px",
-                  }}
-                  value={bookingLimit}                      
-                  onChange={(e) => {
-                    setBookingLimit(Number(e.target.value));   
-                    setCurrentPage(1);
-                  }}
-                >
+                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>Records per page:</label>
+                <select className="form-select form-select-sm"
+                  style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+                  value={bookingLimit}
+                  onChange={(e) => { setBookingLimit(Number(e.target.value)); setCurrentPage(1); }}>
                   <option value={10}>10</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                 </select>
               </div>
-
               <span style={{ fontSize: "16px", color: "#000" }}>
-                Showing{" "}
-                <strong style={{ color: "#ff7a00" }}>{ordersList.length}</strong>  
-                {bookingTotalCount > ordersList.length
-                  ? <> of <strong>{bookingTotalCount}</strong></>            
-                  : null}{" "}
-                records
+                Showing <strong style={{ color: "#ff7a00" }}>{ordersList.length}</strong>
+                {bookingTotalCount > ordersList.length ? <> of <strong>{bookingTotalCount}</strong></> : null} records
               </span>
             </div>
-            
 
-            {/* Bookings Table */}
-            <Table
-              columns={columns}
-              data={tableData}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              isLoading={loading}
-            />
+            <Table columns={columns} data={tableData} currentPage={currentPage}
+              totalPages={totalPages} onPageChange={setCurrentPage} isLoading={loading} />
           </div>
         )}
-        
-        {/* Bookings */}
 
-        {/* Earnings */}
-
+        {/* Earnings Tab */}
         {activeTab === "earnings" && (
           <div className="p-3">
-
-            {/* Total Earned badge */}
             {earningsTotal > 0 && (
               <div style={{
                 display: "inline-block", marginBottom: "12px",
@@ -1358,182 +1147,91 @@ if (!trainer) {
                 Total Earned: ₹{earningsTotal}
               </div>
             )}
-
-            {/* Earnings Filter Card */}
             <div className="card p-3 mb-3">
               <h5 className="mb-3">Filters</h5>
               <div className="row">
-
-                {/* Yoga Type */}
                 <div className="col-md-4">
                   <label>Yoga Type</label>
-                  <select
-                    className="form-select"
-                    value={earningFilters.yogaType}
-                    onChange={(e) => handleEarningFilterChange("yogaType", e.target.value)}
-                  >
+                  <select className="form-select" value={earningFilters.yogaType}
+                    onChange={(e) => handleEarningFilterChange("yogaType", e.target.value)}>
                     <option value="">All</option>
-                    {yogaTypeOptions.map((name, i) => (
-                      <option key={i} value={name}>{name}</option>
-                    ))}
+                    {yogaTypeOptions.map((name, i) => <option key={i} value={name}>{name}</option>)}
                   </select>
                 </div>
-
-                {/* Booking Type */}
                 <div className="col-md-4">
                   <label>Booking Type</label>
-                  <select
-                    className="form-select"
-                    value={earningFilters.bookingType}
-                    onChange={(e) => handleEarningFilterChange("bookingType", e.target.value)}
-                  >
+                  <select className="form-select" value={earningFilters.bookingType}
+                    onChange={(e) => handleEarningFilterChange("bookingType", e.target.value)}>
                     <option value="">All</option>
                     <option value="instant">Instant</option>
                     <option value="scheduled">Scheduled</option>
                     <option value="package">Package</option>
                   </select>
                 </div>
-
-                {/* From Date */}
                 <div className="col-md-4">
                   <label>From Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={earningFilters.fromDate}
-                    onChange={(e) => handleEarningFilterChange("fromDate", e.target.value)}
-                  />
+                  <input type="date" className="form-control" value={earningFilters.fromDate}
+                    onChange={(e) => handleEarningFilterChange("fromDate", e.target.value)} />
                 </div>
-
-                {/* To Date */}
                 <div className="col-md-4 mt-3">
                   <label>To Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={earningFilters.toDate}
-                    onChange={(e) => handleEarningFilterChange("toDate", e.target.value)}
-                  />
+                  <input type="date" className="form-control" value={earningFilters.toDate}
+                    onChange={(e) => handleEarningFilterChange("toDate", e.target.value)} />
                 </div>
               </div>
-
-              {/* Earnings Action Buttons */}
               <div className="text-end mt-3 d-flex justify-content-end gap-3 flex-wrap">
-                <button onClick={handleApplyEarningFilters} style={btnFilter}>
-                  <FaFilter />
-                  <span>Filter</span>
-                </button>
-
-                <button onClick={handleClearEarningFilters} style={btnClear}>
-                  Clear
-                </button>
-
-                {/* Earnings CSV */}
-                <button
-                  onClick={exportCSV}
-                  disabled={exporting}
-                  title="Export all filtered earnings as CSV"
-                  style={btnCSV(exporting)}
-                >
-                  CSV <FaFileCsv style={{ fontSize: "16px" }} />
-                </button>
-
-                {/* Earnings Excel */}
-                <button
-                  onClick={exportExcel}
-                  disabled={exporting}
-                  title="Export all filtered earnings as Excel"
-                  style={btnExcel(exporting)}
-                >
-                  Excel <FaFileExcel style={{ fontSize: "16px" }} />
-                </button>
+                <button onClick={handleApplyEarningFilters} style={btnFilter}><FaFilter /><span>Filter</span></button>
+                <button onClick={handleClearEarningFilters} style={btnClear}>Clear</button>
+                <button onClick={exportCSV}   disabled={exporting} style={btnCSV(exporting)}>CSV <FaFileCsv style={{ fontSize: "16px" }} /></button>
+                <button onClick={exportExcel} disabled={exporting} style={btnExcel(exporting)}>Excel <FaFileExcel style={{ fontSize: "16px" }} /></button>
               </div>
             </div>
 
-            {/* Records per page + count */}
             <div className="d-flex align-items-center justify-content-between mb-2">
               <div className="d-flex align-items-center gap-2">
-                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
-                  Records per page:
-                </label>
-                <select
-                  className="form-select form-select-sm"
-                  style={{
-                    border: "2px solid #ff7a00", padding: "2px",
-                    cursor: "pointer", width: "75px",
-                  }}
-                  value={earningsLimit}
-                  onChange={handleEarningsLimitChange}
-                >
+                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>Records per page:</label>
+                <select className="form-select form-select-sm"
+                  style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
+                  value={earningsLimit} onChange={handleEarningsLimitChange}>
                   <option value={10}>10</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                 </select>
               </div>
-
               <span style={{ fontSize: "16px", color: "#000" }}>
-                Showing{" "}
-                <strong style={{ color: "#ff7a00" }}>{earnings.length}</strong>
-                {earningsTotalCount > earnings.length
-                  ? <> of <strong>{earningsTotalCount}</strong></>
-                  : null}{" "}
-                records
+                Showing <strong style={{ color: "#ff7a00" }}>{earnings.length}</strong>
+                {earningsTotalCount > earnings.length ? <> of <strong>{earningsTotalCount}</strong></> : null} records
               </span>
             </div>
 
-            <Table
-              columns={earningColumns}
-              data={earningTableData}
-              currentPage={earningsPage}
-              totalPages={earningsTotalPages}
-              onPageChange={setEarningsPage}
-              isLoading={earningsLoading}
-            />
+            <Table columns={earningColumns} data={earningTableData} currentPage={earningsPage}
+              totalPages={earningsTotalPages} onPageChange={setEarningsPage} isLoading={earningsLoading} />
           </div>
         )}
 
-        {/* Earnings */}
-
-        {/* Ratings */}
-  
+        {/* Ratings Tab */}
         {activeTab === "ratings" && (
           <div className="p-3">
             <div className="d-flex flex-wrap gap-3 mb-4">
-              <div style={{
-                background: "linear-gradient(135deg, #f59e0b, #fcd34d)",
-                color: "#fff", borderRadius: "10px", padding: "10px 22px",
-                fontWeight: 700, fontSize: "15px", display: "flex", alignItems: "center", gap: "8px",
-              }}>
+              <div style={{ background: "linear-gradient(135deg, #f59e0b, #fcd34d)", color: "#fff", borderRadius: "10px", padding: "10px 22px", fontWeight: 700, fontSize: "15px" }}>
                 ⭐ Avg Rating: {Number(averageRating).toFixed(1)}
               </div>
-              <div style={{
-                background: "linear-gradient(135deg, #6366f1, #a5b4fc)",
-                color: "#fff", borderRadius: "10px", padding: "10px 22px",
-                fontWeight: 700, fontSize: "15px",
-              }}>
+              <div style={{ background: "linear-gradient(135deg, #6366f1, #a5b4fc)", color: "#fff", borderRadius: "10px", padding: "10px 22px", fontWeight: 700, fontSize: "15px" }}>
                 Total Ratings: {totalRatings}
               </div>
-              <div style={{
-                background: "linear-gradient(135deg, #16a34a, #4ade80)",
-                color: "#fff", borderRadius: "10px", padding: "10px 22px",
-                fontWeight: 700, fontSize: "15px",
-              }}>
+              <div style={{ background: "linear-gradient(135deg, #16a34a, #4ade80)", color: "#fff", borderRadius: "10px", padding: "10px 22px", fontWeight: 700, fontSize: "15px" }}>
                 Total Reviews: {totalReviews}
               </div>
             </div>
 
             <div className="d-flex align-items-center justify-content-between mb-3">
               <div className="d-flex align-items-center gap-2">
-                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>
-                  Records per page:
-                </label>
-                <select
-                  className="form-select form-select-sm"
+                <label style={{ fontSize: "15px", color: "#666", whiteSpace: "nowrap" }}>Records per page:</label>
+                <select className="form-select form-select-sm"
                   style={{ border: "2px solid #ff7a00", padding: "2px", cursor: "pointer", width: "75px" }}
                   value={ratingsLimit}
-                  onChange={(e) => { setRatingsLimit(Number(e.target.value)); setRatingsPage(1); }}
-                >
+                  onChange={(e) => { setRatingsLimit(Number(e.target.value)); setRatingsPage(1); }}>
                   <option value={10}>10</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
@@ -1542,8 +1240,7 @@ if (!trainer) {
               </div>
               <span style={{ fontSize: "16px", color: "#000" }}>
                 Showing <strong style={{ color: "#ff7a00" }}>{ratings.length}</strong>
-                {ratingsTotalCount > ratings.length
-                  ? <> of <strong>{ratingsTotalCount}</strong></> : null}{" "}records
+                {ratingsTotalCount > ratings.length ? <> of <strong>{ratingsTotalCount}</strong></> : null} records
               </span>
             </div>
 
@@ -1558,12 +1255,9 @@ if (!trainer) {
                 {ratings.map((item, index) => (
                   <div className="col-md-6 mb-3" key={item._id || index}>
                     <div style={{
-                      background:"rgb(234 228 228)",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "14px",
-                      padding: "16px 18px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                      height: "100%",
+                      background: "rgb(234 228 228)", border: "1px solid #e5e7eb",
+                      borderRadius: "14px", padding: "16px 18px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)", height: "100%",
                     }}>
                       <div className="d-flex justify-content-between align-items-start mb-2">
                         <div className="d-flex align-items-center gap-2">
@@ -1571,10 +1265,7 @@ if (!trainer) {
                             <img
                               src={getImageUrl(item.clientId.profile_pic)}
                               alt="Client"
-                              style={{
-                                width: "42px", height: "42px", borderRadius: "50%",
-                                objectFit: "cover", border: "2px solid #ff7a00",
-                              }}
+                              style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", border: "2px solid #ff7a00" }}
                             />
                           ) : (
                             <div style={{
@@ -1600,14 +1291,9 @@ if (!trainer) {
 
                       {item.review ? (
                         <p style={{
-                          margin: "10px 0",
-                          fontWeight:"bolder",
-                          fontSize: "13px", color: "#000000",
-                          background: "#fafafa",
-                          borderLeft: "5px solid #ff7a00",
-                          borderRadius: "4px",
-                          padding: "8px 12px",
-                          fontStyle: "italic",
+                          margin: "10px 0", fontWeight: "bolder", fontSize: "13px", color: "#000000",
+                          background: "#fafafa", borderLeft: "5px solid #ff7a00",
+                          borderRadius: "4px", padding: "8px 12px", fontStyle: "italic",
                         }}>
                           "{item.review}"
                         </p>
@@ -1618,25 +1304,6 @@ if (!trainer) {
                       )}
 
                       <div className="d-flex flex-wrap gap-2 mt-2">
-                        {/* {item.yogaId?.yoga_name && (
-                          <span style={{
-                            background: "#fff7ed", color: "#ff7a00",
-                            border: "1px solid #fed7aa", borderRadius: "20px",
-                            padding: "2px 12px", fontSize: "12px", fontWeight: 600,
-                          }}>
-                            🧘 {item.yogaId.yoga_name}
-                          </span>
-                        )}
-                        {item.bookingId?.bookingType && (
-                          <span style={{
-                            background: "#eff6ff", color: "#1d4ed8",
-                            border: "1px solid #bfdbfe", borderRadius: "20px",
-                            padding: "2px 12px", fontSize: "12px", fontWeight: 600,
-                            textTransform: "capitalize",
-                          }}>
-                            📋 {item.bookingId.bookingType}
-                          </span>
-                        )} */}
                         {item.createdAt && (
                           <span style={{
                             background: "#f0fdf4", color: "#16a34a",
@@ -1657,66 +1324,81 @@ if (!trainer) {
 
             {ratingsTotalPages > 1 && (
               <div className="d-flex justify-content-center gap-2 mt-4 flex-wrap">
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  disabled={ratingsPage === 1}
-                  onClick={() => setRatingsPage((p) => p - 1)}
-                >
-                  ← Prev
-                </button>
+                <button className="btn btn-sm btn-outline-secondary"
+                  disabled={ratingsPage === 1} onClick={() => setRatingsPage((p) => p - 1)}>← Prev</button>
                 {Array.from({ length: ratingsTotalPages }, (_, i) => i + 1).map((pg) => (
-                  <button
-                    key={pg}
-                    className="btn btn-sm"
+                  <button key={pg} className="btn btn-sm"
                     style={{
                       background: ratingsPage === pg ? "#ff7a00" : "transparent",
                       color: ratingsPage === pg ? "#fff" : "#ff7a00",
                       border: "1px solid #ff7a00",
                     }}
-                    onClick={() => setRatingsPage(pg)}
-                  >
+                    onClick={() => setRatingsPage(pg)}>
                     {pg}
                   </button>
                 ))}
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  disabled={ratingsPage === ratingsTotalPages}
-                  onClick={() => setRatingsPage((p) => p + 1)}
-                >
-                  Next →
-                </button>
+                <button className="btn btn-sm btn-outline-secondary"
+                  disabled={ratingsPage === ratingsTotalPages} onClick={() => setRatingsPage((p) => p + 1)}>Next →</button>
               </div>
             )}
-
           </div>
         )}
-        {/* Ratings */}
       </div>
 
-      {/* TABS: Bookings | Earnings | Ratings */}
-
-      {/* ── Full Image Modal ── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          CHANGE 4 — Full-screen modal: shows PDF in iframe OR image in <img>
+      ══════════════════════════════════════════════════════════════════════ */}
       {modalOpen && (
         <div
           onClick={closeImageModal}
           style={{
             position: "fixed", top: 0, left: 0,
             width: "100vw", height: "100vh",
-            background: "rgba(0,0,0,0.7)",
+            background: "rgba(0,0,0,0.75)",
             display: "flex", justifyContent: "center", alignItems: "center",
             zIndex: 9999, cursor: "pointer",
           }}
         >
-          <img
-            src={modalImage}
-            alt="Full View"
+          {modalType === "pdf" ? (
+            <iframe
+              src={modalImage}
+              title="Certificate PDF"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "85vw", height: "90vh",
+                borderRadius: "12px", border: "none",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+                cursor: "default",
+              }}
+            />
+            
+          ) : (
+            <img
+              src={modalImage}
+              alt="Full View"
+              style={{
+                maxWidth: "90%", maxHeight: "90%",
+                borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+              }}
+            />
+          )}
+          {/* Close button */}
+          <button
+            onClick={closeImageModal}
             style={{
-              maxWidth: "90%", maxHeight: "90%",
-              borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+              position: "fixed", top: "20px", right: "24px",
+              background: "#fff", border: "none", borderRadius: "50%",
+              width: "36px", height: "36px", fontSize: "18px",
+              cursor: "pointer", fontWeight: 700, color: "#333",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}
-          />
+          >
+            ✕
+          </button>
         </div>
       )}
+
     </div>
   );
 }
