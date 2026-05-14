@@ -729,7 +729,6 @@ export const reinitiatePaymentCycle = async (payload) => {
 };
 
 
-
 export const getRatings = async (page = 1, limit = 10, params = {}) => {
   try {
     const queryParams = { ...params };
@@ -743,5 +742,12 @@ export const getRatings = async (page = 1, limit = 10, params = {}) => {
     console.error("Get Payment Cycles API Error:", err);
     return { data: [], totalPages: 1, totalCount: 0 };
   }
+};
+
+export const deleteTrainer = async (userId) => {
+  const res = await api.post("/users/harddelete", { userId }, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data;
 };
 
