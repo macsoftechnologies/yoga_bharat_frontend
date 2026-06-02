@@ -1,56 +1,19 @@
 import React, { useState, useEffect } from "react";
-import Table from "../components/Table";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Swal from "sweetalert2";
 import "../forms/form.css";
-import { addBulksms, getSmsList, getClients, getTrainers } from "../services/authService";
-import { FaEye } from "react-icons/fa";
+import { addPushNotification, getClients, getTrainers } from "../services/authService";
 
 function Sms() {
   const [open, setOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [smsList, setSmsList] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
-
-  const fetchSmsList = async (page) => {
-    setLoading(true);
-    try {
-      const res = await getSmsList(page, 10);
-      if (res && Array.isArray(res.data)) {
-        setSmsList(res.data);
-        setTotalPages(res.totalPages || 1);
-      } else {
-        setSmsList([]);
-        setTotalPages(1);
-      }
-    } catch (err) {
-      Swal.fire("Error", "Failed to fetch SMS list", "error");
-      setSmsList([]);
-      setTotalPages(1);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSmsList(currentPage);
-  }, [currentPage]);
-
-  const handleView = (item) => {
-    setSelectedItem(item);
-    setViewOpen(true);
-  };
 
   const handleSubmit = async (data) => {
     try {
-      const res = await addBulksms(data);
+      const res = await addPushNotification(data);
       Swal.fire({
         title: "Sent!",
-        text: res.message || "SMS sent successfully",
+        text: res.message || "Push Notification  sent successfully",
         icon: "success",
         position: "top-end",
         toast: true,
@@ -61,145 +24,21 @@ function Sms() {
         color: "#ffffff",
       });
       setOpen(false);
-      fetchSmsList(currentPage);
     } catch {
       Swal.fire("Error", "Failed to send SMS", "error");
     }
   };
 
-  const columns = [
-    { header: "S.No",       accessor: "srNo" },
-    { header: "Message",    accessor: "message" },
-    { header: "Recipients", accessor: "recipients" },
-    { header: "Sent At",    accessor: "createdAt" },
-    { header: "Actions",    accessor: "actions" },
-  ];
-
-  const tableData = smsList.map((item, index) => ({
-    srNo: (currentPage - 1) * 10 + index + 1,
-    message: (
-      <span
-        title={item.message || "-"}
-        style={{
-          display: "block",
-          maxWidth: "350px",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          cursor: "pointer",
-        }}
-      >
-        {item.message || "-"}
-      </span>
-    ),
-    recipients: (
-      <span className="badge bg-primary" style={{ fontSize: "13px" }}>
-        {Array.isArray(item.userId) ? item.userId.length : 0} Users
-      </span>
-    ),
-    createdAt: item.createdAt
-      ? new Date(item.createdAt).toLocaleString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "-",
-    actions: (
-      <div className="actions">
-        <button
-          className="icon-btn view"
-          title="View"
-          onClick={() => handleView(item)}
-        >
-          <FaEye />
-        </button>
-      </div>
-    ),
-  }));
-
   return (
     <div>
       <div className="d-flex justify-content-between mb-3">
-        <h2>BULK SMS</h2>
-        <Button text="+ Send SMS" color="orange" onClick={() => setOpen(true)} />
+        <h2>PUSH NOTIFICATIONS</h2>
+        <Button text="+ Send Notifications" color="orange" onClick={() => setOpen(true)} />
       </div>
 
-      <Table
-        columns={columns}
-        data={tableData}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        isLoading={loading}
-      />
-
-      {/* Send SMS Modal */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Send Bulk SMS" size="md">
+      {/* Send Notification Modal */}
+      <Modal open={open} onClose={() => setOpen(false)} title="Send Push Notifications" size="md">
         <SmsForm onClose={() => setOpen(false)} onSubmit={handleSubmit} />
-      </Modal>
-
-      {/* View SMS Modal */}
-      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="SMS Details" size="lg">
-        {selectedItem && (
-          <div style={{ padding: 10 }}>
-            <p><b>Message:</b> {selectedItem.message}</p>
-            <p>
-              <b>Sent At:</b>{" "}
-              {selectedItem.createdAt
-                ? new Date(selectedItem.createdAt).toLocaleString("en-IN")
-                : "-"}
-            </p>
-            <p>
-              <b>
-                Recipients (
-                {Array.isArray(selectedItem.userId) ? selectedItem.userId.length : 0}
-                ):
-              </b>
-            </p>
-            <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-              <table className="table table-sm table-bordered">
-                <thead style={{ background: "#f5f5f5" }}>
-                  <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                    <th>Mobile</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.isArray(selectedItem.userId) &&
-                    selectedItem.userId.map((user, i) => (
-                      <tr key={user._id || i}>
-                        <td>{i + 1}</td>
-                        <td>{user.name || "-"}</td>
-                        <td>{user.mobileNumber || "-"}</td>
-                        <td>{user.email || "-"}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              user.role === "trainer"
-                                ? "bg-warning text-dark"
-                                : "bg-info text-dark"
-                            }`}
-                          >
-                            {user.role || "-"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="text-end mt-3">
-              <button className="btn btn-secondary" onClick={() => setViewOpen(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        )}
       </Modal>
     </div>
   );
@@ -207,6 +46,7 @@ function Sms() {
 
 // ─── SMS Form ────────────────────────────────────────────────────────────────
 function SmsForm({ onClose, onSubmit }) {
+  const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [role, setRole] = useState("");
   const [userList, setUserList] = useState([]);
@@ -236,14 +76,13 @@ function SmsForm({ onClose, onSubmit }) {
           ? await getClients(page, limit)
           : await getTrainers(page, limit);
 
-        const records   = Array.isArray(res.data) ? res.data : [];
-        const totalPgs  = res.totalPages || 1;
+        const records  = Array.isArray(res.data) ? res.data : [];
+        const totalPgs = res.totalPages || 1;
 
         if (records.length === 0) break;
 
         allUsers = [...allUsers, ...records];
 
-        // Stop if we've fetched all pages
         if (page >= totalPgs) break;
         page++;
       }
@@ -286,12 +125,16 @@ function SmsForm({ onClose, onSubmit }) {
       Swal.fire("Validation", "Please select at least one user", "warning");
       return;
     }
+    if (!title.trim()) {
+      Swal.fire("Validation", "Please enter a title", "warning");
+      return;
+    }
     if (!message.trim()) {
       Swal.fire("Validation", "Please enter a message", "warning");
       return;
     }
 
-    onSubmit({ userId: selectedUserIds, message });
+    onSubmit({ userIds: selectedUserIds, title, message });
   };
 
   return (
@@ -417,8 +260,7 @@ function SmsForm({ onClose, onSubmit }) {
                             width: 30,
                             height: 30,
                             borderRadius: "50%",
-                            background:
-                              role === "trainer" ? "#ff7a00" : "#0dcaf0",
+                            background: role === "trainer" ? "#ff7a00" : "#0dcaf0",
                             color: "#fff",
                             display: "inline-flex",
                             alignItems: "center",
@@ -454,6 +296,19 @@ function SmsForm({ onClose, onSubmit }) {
         </div>
       )}
 
+      {/* Title */}
+      <div className="mb-3">
+        <label className="form-label">Title</label>
+        <input
+          type="text"
+          className="form-control"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter notification title"
+          required
+        />
+      </div>
+
       {/* Message */}
       <div className="mb-3">
         <label className="form-label">Message</label>
@@ -481,7 +336,7 @@ function SmsForm({ onClose, onSubmit }) {
           className="btn btn-success"
           disabled={userLoading || selectedUserIds.length === 0}
         >
-          Send SMS
+          Send Notifications
           {selectedUserIds.length > 0 && (
             <span className="ms-1 badge bg-white text-success">
               {selectedUserIds.length}

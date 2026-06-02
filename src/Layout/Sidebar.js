@@ -4,6 +4,7 @@ import {
   MdKeyboardArrowDown,
   MdRadioButtonUnchecked,
   MdCategory,
+  MdNotifications,
 } from "react-icons/md";
 
 import {
@@ -30,17 +31,17 @@ const Sidebar = ({ sidebarOpen }) => {
 
   // ✅ Separate dropdown states (nothing removed)
   const [openDropdown, setOpenDropdown] = useState(false);
-  const [openNotificationDropdown, setOpenNotificationDropdown] =
-    useState(false);
+  // const [openNotificationDropdown, setOpenNotificationDropdown] =
+  //   useState(false);
 
   useEffect(() => {
     if (currentPath === "/client" || currentPath === "/trainer") {
       setOpenDropdown(true);
     }
 
-    if (currentPath === "/sms") {
-      setOpenNotificationDropdown(true);
-    }
+    // if (currentPath === "/sms") {
+    //   setOpenNotificationDropdown(true);
+    // }
   }, [currentPath]);
 
   return (
@@ -212,7 +213,7 @@ const Sidebar = ({ sidebarOpen }) => {
               }`}
             />
           </div>
-        </li> */}
+        </li>
 
         {openNotificationDropdown && (
           <>
@@ -223,7 +224,17 @@ const Sidebar = ({ sidebarOpen }) => {
               </NavLink>
             </li>
           </>
-        )}
+        )} */}
+
+        <li className="menu-item">
+          <NavLink
+            to="/sms"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <MdNotifications className="menu-icon" />
+            Push Notifications
+          </NavLink>
+        </li>
 
         {/* Transactions */}
         <li className="menu-item">
