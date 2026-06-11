@@ -211,50 +211,50 @@ const Home = () => {
       {/* === CLASSES === */}
       
       <section id="classes" className="classes-section">
-  <div className="container text-center">
-    <h2 className="animated-underline">Our Classes</h2>
-    <p className="classes-description">
-      Discover mindful yoga practices that enhance flexibility, improve strength,
-      and bring peace to your everyday life.
-    </p>
+        <div className="container text-center">
+          <h2 className="animated-underline">Our Classes</h2>
+          <p className="classes-description">
+            Discover mindful yoga practices that enhance flexibility, improve strength,
+            and bring peace to your everyday life.
+          </p>
 
-    <div className="row mt-4">
+          <div className="row mt-4">
 
-      {[
-        { title: "Pranayama", desc: "Breath Control & Inner Calm", img: "for_pranayama.png" },
-        { title: "Power Yoga", desc: "Strength, Sweat & Energy", img: "/poweryoga.png" },
-       { title: "Chair Yoga", desc: "Gentle Yoga for All Ages", img: "/for_chairyoga.png" },
+            {[
+              { title: "Pranayama", desc: "Breath Control & Inner Calm", img: "for_pranayama.png" },
+              { title: "Power Yoga", desc: "Strength, Sweat & Energy", img: "/poweryoga.png" },
+            { title: "Chair Yoga", desc: "Gentle Yoga for All Ages", img: "/for_chairyoga.png" },
 
-        { title: "Advanced Yoga", desc: "Deep Practice & Mastery", img: "/advanced_yoga.png" },
-        { title: "Yoga for Children", desc: "Fun, Focus & Flexibility", img: "/for_kidayoga.png" },
-        { title: "Stress Relief Yoga", desc: "Relax Mind & Body", img: "/stressreliefyoga.png" },
-        { title: "Hypertension & Heart Yoga", desc: "Support Heart Health", img: "/hypertension.png" },
-        { title: "Yoga for Beginners", desc: "Start Your Yoga Journey", img: "/for_beginners.png" },
-        { title: "Prenatal Yoga", desc: "Healthy Pregnancy Practice", img: "/for_prenatal.png" },
-        { title: "Yoga for Diabetics", desc: "Balance Sugar Naturally", img: "/for_diabetes.png" },
-        { title: "Therapy Yoga", desc: "Healing Through Movement", img: "/theraphy.png" },
-        { title: "Postnatal Yoga", desc: "Recover & Rebuild Strength", img: "/postnatal.png" },
-        
-      ].map((item, index) => (
-        <div className="col-md-4 mb-3" key={index}>
-          <a
-            href={PLAYSTORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="card-link"
-          >
-            <div className="class-card">
-              <img src={item.img} alt={item.title} />
-              <h5 className="hatha-yoga">{item.title}</h5>
-              <p>{item.desc}</p>
-            </div>
-          </a>
+              { title: "Advanced Yoga", desc: "Deep Practice & Mastery", img: "/advanced_yoga.png" },
+              { title: "Yoga for Children", desc: "Fun, Focus & Flexibility", img: "/for_kidayoga.png" },
+              { title: "Stress Relief Yoga", desc: "Relax Mind & Body", img: "/stressreliefyoga.png" },
+              { title: "Hypertension & Heart Yoga", desc: "Support Heart Health", img: "/hypertension.png" },
+              { title: "Yoga for Beginners", desc: "Start Your Yoga Journey", img: "/for_beginners.png" },
+              { title: "Prenatal Yoga", desc: "Healthy Pregnancy Practice", img: "/for_prenatal.png" },
+              { title: "Yoga for Diabetics", desc: "Balance Sugar Naturally", img: "/for_diabetes.png" },
+              { title: "Therapy Yoga", desc: "Healing Through Movement", img: "/theraphy.png" },
+              { title: "Postnatal Yoga", desc: "Recover & Rebuild Strength", img: "/postnatal.png" },
+              
+            ].map((item, index) => (
+              <div className="col-md-4 mb-3" key={index}>
+                <a
+                  href={PLAYSTORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="card-link"
+                >
+                  <div className="class-card">
+                    <img src={item.img} alt={item.title} />
+                    <h5 className="hatha-yoga">{item.title}</h5>
+                    <p>{item.desc}</p>
+                  </div>
+                </a>
+              </div>
+            ))}
+
+          </div>
         </div>
-      ))}
-
-    </div>
-  </div>
-</section>
+      </section>
 
 
 
@@ -394,8 +394,29 @@ const Home = () => {
 
       {/* === FOOTER === */}
       <footer className="footer">
-        <div className="container text-center reserved">
-          <p className="rights">© 2025 Yoga Bharat. All rights reserved.| Design & Developed by <a href="https://macsof.com/">macsof technologies.</a></p>
+        <div className="container">
+
+          <div className="footer-links-row">
+            <a href="/disclaimer-policy" className="footer-policy-link">Disclaimer Policy</a>
+            <span className="footer-divider">|</span>
+            <a href="/learner-usage-policy" className="footer-policy-link">Learner Usage Policy</a>
+            <span className="footer-divider">|</span>
+            <a href="/privacy-policy-info" className="footer-policy-link">Privacy Policy</a>
+            <span className="footer-divider">|</span>
+            <a href="/refund-cancellation-policy" className="footer-policy-link">Refund & Cancellation Policy</a>
+            <span className="footer-divider">|</span>
+            <a href="/terms-of-service" className="footer-policy-link">Terms of Service</a>
+            <span className="footer-divider">|</span>
+            <a href="/trainer-agreement" className="footer-policy-link">Trainer Agreement</a>
+          </div>
+
+          <div className="text-center reserved">
+            <p className="rights">
+              © 2025 Yoga Bharat. All rights reserved. | Design & Developed by{" "}
+              <a href="https://macsof.com/">macsof technologies.</a>
+            </p>
+          </div>
+
         </div>
       </footer>
       </div>

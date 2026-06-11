@@ -459,3 +459,54 @@ body {
 .class-card {
   cursor: pointer;
 }
+
+/* ── Footer Policy Links ── */
+.footer-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 2px;
+  padding: 16px 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 14px;
+}
+
+.footer-policy-link {
+  color: #000000 !important;
+  font-size: 12.5px;
+  text-decoration: none !important;
+  padding: 4px 8px;
+  white-space: nowrap;
+  transition: color 0.2s;
+  font-weight: bolder;
+  font-size: 16px;
+}
+
+.footer-policy-link:hover {
+  color: #fdab2a !important;
+  text-decoration: none !important;
+}
+
+.footer-divider {
+  color: #000;
+  font-size: 12px;
+  user-select: none;
+}
+
+/* mobile: stack vertically */
+@media (max-width: 576px) {
+  .footer-links-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .footer-divider {
+    display: none;
+  }
+
+  .footer-policy-link {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+}

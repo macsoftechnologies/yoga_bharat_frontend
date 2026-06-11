@@ -15,7 +15,7 @@ import ProfessionDetails from "./pages/ProfessionDetails";
 import AppTutorial from "./pages/AppTutorial";
 import CallbackRequest from "./pages/CallbackRequest";
 import TermsConditions from "./pages/TermsConditions";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
+import PrivacyPolicy from "./pages/PrivacyPolicy";        // admin panel privacy page
 import FeatureBanners from "./pages/FeatureBanners";
 import Languages from "./pages/Languages";
 import PaymentCycle from "./pages/PaymentCycle";
@@ -25,28 +25,42 @@ import Home from "./pages/Home";
 import AdminOtp from "./pages/AdminOtp";
 import TrainerProfile from "./pages/TrainerProfile";
 import ClientProfile from "./pages/ClientProfile";
-import TotalEarnings   from "./pages/TotalEarnings";
-import TotalBookings   from "./pages/TotalBookings";
-import ActiveClients   from "./pages/ActiveClients";
-import ActiveTrainers  from "./pages/ActiveTrainers";
+import TotalEarnings from "./pages/TotalEarnings";
+import TotalBookings from "./pages/TotalBookings";
+import ActiveClients from "./pages/ActiveClients";
+import ActiveTrainers from "./pages/ActiveTrainers";
 import Sms from "./pages/Sms";
 import Category from "./pages/Category";
 
-
+// ── Public Policy Pages (website footer links) ──
+import DisclaimerPolicy from "./pages/Policies/DisclaimerPolicy";
+import LearnerUsagePolicy from "./pages/Policies/LearnerUsagePolicy";
+import RefundCancellationPolicy from "./pages/Policies/RefundCancellationPolicy";
+import TermsOfService from "./pages/Policies/TermsOfService";
+import TrainerAgreement from "./pages/Policies/TrainerAgreement";
+import PolicyPrivacyInfo from "./pages/Policies/PolicyPrivacyInfo";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* ✅ Public route */}
+        {/* ── Public Routes ── */}
         <Route path="/" element={<Home />} />
         <Route path="/admin" element={<Login />} />
         <Route path="/admin-otp" element={<AdminOtp />} />
-        <Route path="/admin-forgot-password" element={<AdminForgotPassword />}/>
+        <Route path="/admin-forgot-password" element={<AdminForgotPassword />} />
 
-        {/* ✅ Protected routes */}
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        {/* ── Public Policy Routes (accessible without login) ── */}
+        <Route path="/disclaimer-policy" element={<DisclaimerPolicy />} />
+        <Route path="/learner-usage-policy" element={<LearnerUsagePolicy />} />
+        <Route path="/privacy-policy-info" element={<PolicyPrivacyInfo />} />
+        <Route path="/refund-cancellation-policy" element={<RefundCancellationPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/trainer-agreement" element={<TrainerAgreement />} />
+
+        {/* ── Protected Routes ── */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/yoga" element={<Yoga />} />
           <Route path="/allusers" element={<AllUsers />} />
@@ -63,16 +77,17 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/feature-banners" element={<FeatureBanners />} />
           <Route path="/languages" element={<Languages />} />
-          <Route path="/category" element={<Category />}/>
+          <Route path="/category" element={<Category />} />
           <Route path="/paymentcycle" element={<PaymentCycle />} />
           <Route path="/trainer/:userId" element={<TrainerProfile />} />
           <Route path="/client/:userId" element={<ClientProfile />} />
           <Route path="/paymentcycle/:cycleId" element={<PaymentCycleProfile />} />
-          <Route path="/dashboard/total-earnings"  element={<TotalEarnings />} />
-          <Route path="/dashboard/total-bookings"  element={<TotalBookings />} />
-          <Route path="/dashboard/active-clients"  element={<ActiveClients />} />
+          <Route path="/dashboard/total-earnings" element={<TotalEarnings />} />
+          <Route path="/dashboard/total-bookings" element={<TotalBookings />} />
+          <Route path="/dashboard/active-clients" element={<ActiveClients />} />
           <Route path="/dashboard/active-trainers" element={<ActiveTrainers />} />
         </Route>
+
       </Routes>
     </BrowserRouter>
   );
