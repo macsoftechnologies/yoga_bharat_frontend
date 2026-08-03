@@ -757,3 +757,9 @@ export const deleteTrainer = async (userId) => {
   return res.data;
 };
 
+export const deleteClient = async (userId) => {
+  const res = await api.post("/users/harddelete", { userId }, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data;
+};

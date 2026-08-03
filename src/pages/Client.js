@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
 import Swal from "sweetalert2";
-import { getClients, Activeuser } from "../services/authService";
+import { getClients, Activeuser, deleteClient } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import {
   FaFilter, FaFileCsv, FaFileExcel,
   FaChevronDown, FaSortAmountDown, FaSortAmountUp,
+  FaTrash,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
@@ -243,6 +244,48 @@ function Client() {
     }
   };
 
+  // ── Delete ─────────────────────────────────────────────────────────────────
+  const handleDelete = async (item) => {
+    const result = await Swal.fire({
+      title: "Delete Client?",
+      text: `Are you sure you want to delete "${item.name}"? This cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteClient(item.userId);
+
+      setClients((prev) => prev.filter((c) => c.userId !== item.userId));
+      setTotalCount((prev) => prev - 1);
+
+      Swal.fire({
+        title: "Deleted!",
+        text: "Client deleted successfully",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: "#d33",
+        color: "#ffffff",
+      });
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Delete failed",
+        "error"
+      );
+    }
+  };
+
   const goToProfile = (userId, clientData) =>
     navigate(`/client/${userId}`, { state: { client: clientData } });
 
@@ -317,6 +360,7 @@ function Client() {
     { header: CreatedDateHeader,   accessor: "createdDate" },
     { header: "Status",            accessor: "status" },
     { header: "Health Preference", accessor: "healthPrefNames" },
+    { header: "Actions",           accessor: "actions" },
   ];
 
   // ── Table rows ─────────────────────────────────────────────────────────────
@@ -399,13 +443,28 @@ function Client() {
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
-          maxWidth: "200px", // important
+          maxWidth: "200px",
           display: "block",
         }}
       >
         {item.health_preference?.length > 0
           ? item.health_preference.map((p) => p.preference_name).join(", ")
           : "N/A"}
+      </div>
+    ),
+
+    actions: (
+      <div className="actions">
+        <button
+          className="icon-btn delete"
+          title="Delete"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDelete(item);
+          }}
+        >
+          <FaTrash />
+        </button>
       </div>
     ),
   }));
