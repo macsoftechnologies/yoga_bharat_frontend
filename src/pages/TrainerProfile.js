@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Table from "../components/Table";
 import {
@@ -6,7 +8,7 @@ import {
   getBookings,
   getCertificatesByUser,
   getTrainerEarning,
-  getRatings, 
+  getRatings,
 } from "../services/authService";
 import {
   FaFilter, FaFileCsv, FaFileExcel,
@@ -28,13 +30,16 @@ const getFileType = (filePath) => {
 
 function TrainerProfile() {
   const { userId } = useParams();
-  const navigate   = useNavigate();
-  const location   = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [trainer,      setTrainer]      = useState(null);
+  const [trainer, setTrainer] = useState(null);
   const [certificates, setCertificates] = useState([]);
-  const [loading,      setLoading]      = useState(false);
-  const [exporting,    setExporting]    = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const pdfRef = useRef(null);
 
   const [selectedCertificates, setSelectedCertificates] = useState([]);
 
@@ -42,9 +47,9 @@ function TrainerProfile() {
   const [activeTab, setActiveTab] = useState("bookings");
 
   // ── Modal ──────────────────────────────────────────────────────────────────
-  const [modalOpen,  setModalOpen]  = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
-  const [modalType,  setModalType]  = useState("image"); // "image" | "pdf"
+  const [modalType, setModalType] = useState("image"); // "image" | "pdf"
 
   const openImageModal = (url) => {
     setModalImage(url);
@@ -54,64 +59,64 @@ function TrainerProfile() {
   const closeImageModal = () => { setModalOpen(false); setModalImage(""); setModalType("image"); };
 
   // ── Bookings state ─────────────────────────────────────────────────────────
-  const [ordersList,  setOrdersList]  = useState([]);
+  const [ordersList, setOrdersList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages,  setTotalPages]  = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [bookingYogaOptions, setBookingYogaOptions] = useState([]);
-  const [bookingLimit,      setBookingLimit]      = useState(10);
+  const [bookingLimit, setBookingLimit] = useState(10);
   const [bookingTotalCount, setBookingTotalCount] = useState(0);
 
   // ── Bookings filters ───────────────────────────────────────────────────────
   const [bookingFilters, setBookingFilters] = useState({
     bookingType: "",
-    status:      "",
-    fromDate:    "",
-    toDate:      "",
-    yogaName:    "",
+    status: "",
+    fromDate: "",
+    toDate: "",
+    yogaName: "",
   });
   const [appliedBookingFilters, setAppliedBookingFilters] = useState({
     bookingType: "",
-    status:      "",
-    fromDate:    "",
-    toDate:      "",
-    yogaName:    "",
+    status: "",
+    fromDate: "",
+    toDate: "",
+    yogaName: "",
   });
 
   // ── Earnings state ─────────────────────────────────────────────────────────
-  const [earnings,           setEarnings]           = useState([]);
-  const [earningsPage,       setEarningsPage]       = useState(1);
+  const [earnings, setEarnings] = useState([]);
+  const [earningsPage, setEarningsPage] = useState(1);
   const [earningsTotalPages, setEarningsTotalPages] = useState(1);
   const [earningsTotalCount, setEarningsTotalCount] = useState(0);
-  const [earningsLimit,      setEarningsLimit]      = useState(10);
-  const [earningsLoading,    setEarningsLoading]    = useState(false);
-  const [earningsTotal,      setEarningsTotal]      = useState(0);
+  const [earningsLimit, setEarningsLimit] = useState(10);
+  const [earningsLoading, setEarningsLoading] = useState(false);
+  const [earningsTotal, setEarningsTotal] = useState(0);
   const [appliedEarningFilters, setAppliedEarningFilters] = useState({
-    yogaType:    "",
+    yogaType: "",
     bookingType: "",
-    fromDate:    "",
-    toDate:      "",
+    fromDate: "",
+    toDate: "",
   });
 
   const [earningFilters, setEarningFilters] = useState({
-    yogaType:    "",
+    yogaType: "",
     bookingType: "",
-    fromDate:    "",
-    toDate:      "",
+    fromDate: "",
+    toDate: "",
   });
 
   const [yogaTypeOptions, setYogaTypeOptions] = useState([]);
 
   // ── Ratings state ──────────────────────────────────────────────────────────
-  const [ratings,           setRatings]           = useState([]);
-  const [ratingsPage,       setRatingsPage]       = useState(1);
+  const [ratings, setRatings] = useState([]);
+  const [ratingsPage, setRatingsPage] = useState(1);
   const [ratingsTotalPages, setRatingsTotalPages] = useState(1);
   const [ratingsTotalCount, setRatingsTotalCount] = useState(0);
-  const [ratingsLoading,    setRatingsLoading]    = useState(false);
-  const [averageRating,     setAverageRating]     = useState(0);
-  const [totalRatings,      setTotalRatings]      = useState(0);
-  const [totalReviews,      setTotalReviews]      = useState(0);
-  const [ratingsLimit,      setRatingsLimit]      = useState(10);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalRatings, setTotalRatings] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [ratingsLimit, setRatingsLimit] = useState(10);
 
   // ─── Fetch Trainer Info ────────────────────────────────────────────────────
   useEffect(() => {
@@ -130,7 +135,7 @@ function TrainerProfile() {
         for (let page = 1; page <= 50; page++) {
           const res = await getTrainers(page, 10);
           const arr = Array.isArray(res.data) ? res.data
-                    : Array.isArray(res)      ? res : [];
+            : Array.isArray(res) ? res : [];
           found = arr.find((t) => t.userId === userId);
           if (found) break;
           if (arr.length < 10) break;
@@ -180,10 +185,10 @@ function TrainerProfile() {
       try {
         const filters = {};
         if (appliedBookingFilters.bookingType) filters.bookingType = appliedBookingFilters.bookingType;
-        if (appliedBookingFilters.status)      filters.status      = appliedBookingFilters.status;
-        if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
-        if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
-        if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
+        if (appliedBookingFilters.status) filters.status = appliedBookingFilters.status;
+        if (appliedBookingFilters.fromDate) filters.fromDate = appliedBookingFilters.fromDate;
+        if (appliedBookingFilters.toDate) filters.toDate = appliedBookingFilters.toDate;
+        if (appliedBookingFilters.yogaName) filters.yogaName = appliedBookingFilters.yogaName;
 
         const res = await getBookings(currentPage, bookingLimit, {
           accepted_trainerId: trainer.userId,
@@ -239,20 +244,20 @@ function TrainerProfile() {
       try {
         setEarningsLoading(true);
         const activeFilters = overrideFilters !== undefined ? overrideFilters : earningFilters;
-        const activeLimit   = overrideLimit   !== undefined ? overrideLimit   : earningsLimit;
+        const activeLimit = overrideLimit !== undefined ? overrideLimit : earningsLimit;
 
         const payload = {
-          trainerId:   trainer.userId,
-          yogaType:    activeFilters.yogaType    || "",
+          trainerId: trainer.userId,
+          yogaType: activeFilters.yogaType || "",
           bookingType: activeFilters.bookingType || "",
-          fromDate:    activeFilters.fromDate    || "",
-          toDate:      activeFilters.toDate      || "",
+          fromDate: activeFilters.fromDate || "",
+          toDate: activeFilters.toDate || "",
         };
 
         const res = await getTrainerEarning(trainer.userId, page, activeLimit, payload);
 
         let data = [];
-        if (Array.isArray(res))                  data = res;
+        if (Array.isArray(res)) data = res;
         else if (res && Array.isArray(res.data)) data = res.data;
 
         let filteredData = [...data];
@@ -350,10 +355,10 @@ function TrainerProfile() {
     try {
       const filters = {};
       if (appliedBookingFilters.bookingType) filters.bookingType = appliedBookingFilters.bookingType;
-      if (appliedBookingFilters.status)      filters.status      = appliedBookingFilters.status;
-      if (appliedBookingFilters.fromDate)    filters.fromDate    = appliedBookingFilters.fromDate;
-      if (appliedBookingFilters.toDate)      filters.toDate      = appliedBookingFilters.toDate;
-      if (appliedBookingFilters.yogaName)    filters.yogaName    = appliedBookingFilters.yogaName;
+      if (appliedBookingFilters.status) filters.status = appliedBookingFilters.status;
+      if (appliedBookingFilters.fromDate) filters.fromDate = appliedBookingFilters.fromDate;
+      if (appliedBookingFilters.toDate) filters.toDate = appliedBookingFilters.toDate;
+      if (appliedBookingFilters.yogaName) filters.yogaName = appliedBookingFilters.yogaName;
       filters.isExport = true;
 
       const res = await getBookings(1, 10, { accepted_trainerId: trainer.userId, ...filters });
@@ -367,29 +372,29 @@ function TrainerProfile() {
 
   const buildBookingExportRows = (data) =>
     data.map((item, index) => ({
-      "S.No":           index + 1,
-      "Client Name":    item.clientId?.name || "-",
-      "Booking Type":   item.bookingType    || "-",
-      "Yoga Name":      (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.yoga_name : item.yogaId?.yoga_name) || "-",
-      "Language":       (Array.isArray(item.languageId) ? item.languageId?.[0]?.language_name : item.languageId?.language_name) || "-",
-      "Client Price":   (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.trainer_price : item.yogaId?.trainer_price)
-                          ? `₹${Array.isArray(item.yogaId) ? item.yogaId[0].trainer_price : item.yogaId.trainer_price}`
-                          : "-",
+      "S.No": index + 1,
+      "Client Name": item.clientId?.name || "-",
+      "Booking Type": item.bookingType || "-",
+      "Yoga Name": (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.yoga_name : item.yogaId?.yoga_name) || "-",
+      "Language": (Array.isArray(item.languageId) ? item.languageId?.[0]?.language_name : item.languageId?.language_name) || "-",
+      "Client Price": (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.trainer_price : item.yogaId?.trainer_price)
+        ? `₹${Array.isArray(item.yogaId) ? item.yogaId[0].trainer_price : item.yogaId.trainer_price}`
+        : "-",
       "Scheduled Date": item.scheduledDate
-                          ? new Date(item.scheduledDate).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
-                          : "-",
-      "Time":           item.time   || "-",
-      "Status":         item.status || "-",
+        ? new Date(item.scheduledDate).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+        : "-",
+      "Time": item.time || "-",
+      "Status": item.status || "-",
     }));
 
   const exportBookingsCSV = async () => {
     try {
       setExporting(true);
       const allData = await fetchAllBookingsForExport();
-      const rows    = buildBookingExportRows(allData);
+      const rows = buildBookingExportRows(allData);
       if (!rows.length) return alert("No booking data to export.");
 
-      const headers  = Object.keys(rows[0]);
+      const headers = Object.keys(rows[0]);
       const csvLines = [
         headers.join(","),
         ...rows.map((row) =>
@@ -398,9 +403,9 @@ function TrainerProfile() {
       ];
 
       const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
-      const url  = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href     = url;
+      link.href = url;
       link.download = `trainer_bookings_${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
       URL.revokeObjectURL(url);
@@ -416,11 +421,11 @@ function TrainerProfile() {
     try {
       setExporting(true);
       const allData = await fetchAllBookingsForExport();
-      const rows    = buildBookingExportRows(allData);
+      const rows = buildBookingExportRows(allData);
       if (!rows.length) return alert("No booking data to export.");
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook  = XLSX.utils.book_new();
+      const workbook = XLSX.utils.book_new();
       const colWidths = Object.keys(rows[0]).map((key) => ({
         wch: Math.max(key.length, ...rows.map((r) => String(r[key]).length)) + 2,
       }));
@@ -440,16 +445,16 @@ function TrainerProfile() {
     if (!trainer?.userId) return [];
     try {
       const payload = {
-        trainerId:   trainer.userId,
-        yogaType:    appliedEarningFilters.yogaType    || "",
+        trainerId: trainer.userId,
+        yogaType: appliedEarningFilters.yogaType || "",
         bookingType: appliedEarningFilters.bookingType || "",
-        fromDate:    appliedEarningFilters.fromDate    || "",
-        toDate:      appliedEarningFilters.toDate      || "",
+        fromDate: appliedEarningFilters.fromDate || "",
+        toDate: appliedEarningFilters.toDate || "",
       };
 
       const res = await getTrainerEarning(trainer.userId, payload);
       let data = [];
-      if (Array.isArray(res))                  data = res;
+      if (Array.isArray(res)) data = res;
       else if (res && Array.isArray(res.data)) data = res.data;
 
       let filteredData = [...data];
@@ -482,16 +487,16 @@ function TrainerProfile() {
 
   const buildEarningExportRows = (data) =>
     data.map((item, index) => ({
-      "S.No":          index + 1,
-      "Yoga Type":     item.yogaDetails?.yoga_name     || item.yogaId?.[0]?.yoga_name || "-",
-      "Booking Type":  item.bookingDetails?.bookingType || item.bookingType            || "-",
-      "Date":          item.date
-                         ? new Date(item.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
-                         : "-",
+      "S.No": index + 1,
+      "Yoga Type": item.yogaDetails?.yoga_name || item.yogaId?.[0]?.yoga_name || "-",
+      "Booking Type": item.bookingDetails?.bookingType || item.bookingType || "-",
+      "Date": item.date
+        ? new Date(item.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+        : "-",
       "Trainer Price": item.yogaDetails?.trainer_price
-                         ? `₹${item.yogaDetails.trainer_price}`
-                         : item.yogaId?.[0]?.trainer_price
-                           ? `₹${item.yogaId[0].trainer_price}` : "-",
+        ? `₹${item.yogaDetails.trainer_price}`
+        : item.yogaId?.[0]?.trainer_price
+          ? `₹${item.yogaId[0].trainer_price}` : "-",
       "Earned Amount": item.earned_amount ? `₹${item.earned_amount}` : "₹0",
     }));
 
@@ -499,10 +504,10 @@ function TrainerProfile() {
     try {
       setExporting(true);
       const allData = await fetchAllEarningsForExport();
-      const rows    = buildEarningExportRows(allData);
+      const rows = buildEarningExportRows(allData);
       if (!rows.length) return alert("No data to export.");
 
-      const headers  = Object.keys(rows[0]);
+      const headers = Object.keys(rows[0]);
       const csvLines = [
         headers.join(","),
         ...rows.map((row) =>
@@ -511,9 +516,9 @@ function TrainerProfile() {
       ];
 
       const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
-      const url  = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href     = url;
+      link.href = url;
       link.download = `trainer_earnings_${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
       URL.revokeObjectURL(url);
@@ -529,11 +534,11 @@ function TrainerProfile() {
     try {
       setExporting(true);
       const allData = await fetchAllEarningsForExport();
-      const rows    = buildEarningExportRows(allData);
+      const rows = buildEarningExportRows(allData);
       if (!rows.length) return alert("No data to export.");
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook  = XLSX.utils.book_new();
+      const workbook = XLSX.utils.book_new();
       const colWidths = Object.keys(rows[0]).map((key) => ({
         wch: Math.max(key.length, ...rows.map((r) => String(r[key]).length)) + 2,
       }));
@@ -548,22 +553,77 @@ function TrainerProfile() {
     }
   };
 
+  // ── Generate & Download PDF ─────────────────────────────────────────────────
+  const generatePDF = async () => {
+    if (!pdfRef.current) return;
+    try {
+      setGeneratingPdf(true);
+      const element = pdfRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let yPosition = margin;
+      let firstPage = true;
+
+      while (heightLeft > 0) {
+        if (!firstPage) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        const sliceHeight = Math.min(heightLeft, pageHeight - margin * 2);
+        pdf.addImage(
+          imgData, "PNG",
+          margin, yPosition,
+          contentWidth, imgHeight,
+          "", "FAST"
+        );
+        heightLeft -= sliceHeight;
+        firstPage = false;
+        if (heightLeft > 0) yPosition -= pageHeight - margin * 2;
+      }
+
+      const trainerName = trainer?.name
+        ? trainer.name.replace(/\s+/g, "_")
+        : "trainer";
+      pdf.save(`trainer_profile_${trainerName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   // ── CHANGE 1: Single certificate download — correct extension for PDF ──────
   const downloadSingleCertificate = async (cert) => {
     try {
-      const url      = getImageUrl(cert.certificate);
+      const url = getImageUrl(cert.certificate);
       const fileType = getFileType(cert.certificate);
-      const ext      = fileType === "pdf" ? "pdf" : "jpg";
+      const ext = fileType === "pdf" ? "pdf" : "jpg";
 
       const response = await fetch(url);
-      const blob     = await response.blob();
+      const blob = await response.blob();
 
-      const link     = document.createElement("a");
-      link.href      = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
       const fileName = cert.headline
         ? cert.headline.replace(/\s+/g, "_")
         : "certificate";
-      link.download  = `${fileName}.${ext}`;
+      link.download = `${fileName}.${ext}`;
       link.click();
       URL.revokeObjectURL(link.href);
     } catch (error) {
@@ -574,43 +634,43 @@ function TrainerProfile() {
 
   // ── CHANGE 2: Download all — correct extension per file ───────────────────
   const downloadAllCertificates = async () => {
-  if (!selectedCertificates.length) {
-    alert("Please select at least one certificate");
-    return;
-  }
-  try {
-    const zip = new JSZip();
-
-    const selectedItems = certificates.filter((c, i) =>
-      selectedCertificates.includes(c._id || `cert-${i}`)
-    );
-    for (let i = 0; i < selectedItems.length; i++) {
-      const cert = selectedItems[i];
-      const url = getImageUrl(cert.certificate);
-      const fileType = getFileType(cert.certificate);
-      const ext = fileType === "pdf" ? "pdf" : "jpg";
-
-      const response = await fetch(url);
-      const blob = await response.blob();
-
-      // Build unique filename using index to guarantee uniqueness
-      const baseName = cert.headline
-        ? cert.headline.replace(/\s+/g, "_")
-        : `certificate`;
-
-      // Always append index so duplicates never clash
-      const fileName = `${baseName}_${i + 1}.${ext}`;
-
-      zip.file(fileName, blob);
+    if (!selectedCertificates.length) {
+      alert("Please select at least one certificate");
+      return;
     }
+    try {
+      const zip = new JSZip();
 
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-    saveAs(zipBlob, "selected_certificates.zip");
-  } catch (error) {
-    console.error("Download error:", error);
-    alert("Failed to download certificates");
-  }
-};
+      const selectedItems = certificates.filter((c, i) =>
+        selectedCertificates.includes(c._id || `cert-${i}`)
+      );
+      for (let i = 0; i < selectedItems.length; i++) {
+        const cert = selectedItems[i];
+        const url = getImageUrl(cert.certificate);
+        const fileType = getFileType(cert.certificate);
+        const ext = fileType === "pdf" ? "pdf" : "jpg";
+
+        const response = await fetch(url);
+        const blob = await response.blob();
+
+        // Build unique filename using index to guarantee uniqueness
+        const baseName = cert.headline
+          ? cert.headline.replace(/\s+/g, "_")
+          : `certificate`;
+
+        // Always append index so duplicates never clash
+        const fileName = `${baseName}_${i + 1}.${ext}`;
+
+        zip.file(fileName, blob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(zipBlob, "selected_certificates.zip");
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download certificates");
+    }
+  };
 
   // ── Loading state ──────────────────────────────────────────────────────────
   if (loading) {
@@ -640,11 +700,11 @@ function TrainerProfile() {
   const renderStars = (rating) => {
     const num = parseFloat(rating) || 0;
     const fullStars = Math.floor(num);
-    const hasHalf   = num % 1 >= 0.5;
+    const hasHalf = num % 1 >= 0.5;
     return (
       <span>
         {Array.from({ length: 5 }, (_, i) => {
-          if (i < fullStars)              return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>★</span>;
+          if (i < fullStars) return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>★</span>;
           if (i === fullStars && hasHalf) return <span key={i} style={{ color: "#f59e0b", fontSize: "16px" }}>½</span>;
           return <span key={i} style={{ color: "#d1d5db", fontSize: "16px" }}>★</span>;
         })}
@@ -655,50 +715,50 @@ function TrainerProfile() {
 
   // ── Bookings columns ───────────────────────────────────────────────────────
   const columns = [
-    { header: "S.No",           accessor: "srNo" },
-    { header: "Client Name",    accessor: "clientName" },
-    { header: "Booking Type",   accessor: "bookingType" },
-    { header: "Yoga Name",      accessor: "yogaName" },
-    { header: "Language",       accessor: "language" },
-    { header: "Client Price",   accessor: "clientPrice" },
+    { header: "S.No", accessor: "srNo" },
+    { header: "Client Name", accessor: "clientName" },
+    { header: "Booking Type", accessor: "bookingType" },
+    { header: "Yoga Name", accessor: "yogaName" },
+    { header: "Language", accessor: "language" },
+    { header: "Client Price", accessor: "clientPrice" },
     { header: "Scheduled Date", accessor: "scheduledDate" },
-    { header: "Time",           accessor: "time" },
-    { header: "Status",         accessor: "status" },
+    { header: "Time", accessor: "time" },
+    { header: "Status", accessor: "status" },
   ];
 
   const tableData = ordersList.map((item, index) => ({
-    srNo:         (currentPage - 1) * 10 + index + 1,
-    clientName:   item.clientId?.name || "-",
-    bookingType:  item.bookingType    || "-",
-    yogaName:     (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.yoga_name : item.yogaId?.yoga_name) || "-",
-    language:     (Array.isArray(item.languageId) ? item.languageId?.[0]?.language_name : item.languageId?.language_name) || "-",
-    clientPrice:  `₹${(Array.isArray(item.yogaId) ? item.yogaId?.[0]?.trainer_price : item.yogaId?.trainer_price) || 0}`,
+    srNo: (currentPage - 1) * 10 + index + 1,
+    clientName: item.clientId?.name || "-",
+    bookingType: item.bookingType || "-",
+    yogaName: (Array.isArray(item.yogaId) ? item.yogaId?.[0]?.yoga_name : item.yogaId?.yoga_name) || "-",
+    language: (Array.isArray(item.languageId) ? item.languageId?.[0]?.language_name : item.languageId?.language_name) || "-",
+    clientPrice: `₹${(Array.isArray(item.yogaId) ? item.yogaId?.[0]?.trainer_price : item.yogaId?.trainer_price) || 0}`,
     scheduledDate: item.scheduledDate
       ? new Date(item.scheduledDate).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "-",
-    time:   item.time   || "-",
+    time: item.time || "-",
     status: item.status || "-",
   }));
 
   // ── Earnings columns ───────────────────────────────────────────────────────
   const earningColumns = [
-    { header: "S.No",           accessor: "srNo" },
-    { header: "Yoga Type",      accessor: "yogaType" },
-    { header: "Booking Type",   accessor: "bookingType" },
+    { header: "S.No", accessor: "srNo" },
+    { header: "Yoga Type", accessor: "yogaType" },
+    { header: "Booking Type", accessor: "bookingType" },
     { header: "Scheduled Date", accessor: "date" },
-    { header: "Trainer Price",  accessor: "trainer_price" },
-    { header: "Earned Amount",  accessor: "earned_amount" },
+    { header: "Trainer Price", accessor: "trainer_price" },
+    { header: "Earned Amount", accessor: "earned_amount" },
   ];
 
   const earningTableData = earnings.map((item, index) => ({
-    srNo:          (earningsPage - 1) * earningsLimit + index + 1,
-    yogaType:      item.yogaDetails?.yoga_name           || "-",
-    bookingType:   item.bookingDetails?.bookingType      || "-",
-    date:          item.date
+    srNo: (earningsPage - 1) * earningsLimit + index + 1,
+    yogaType: item.yogaDetails?.yoga_name || "-",
+    bookingType: item.bookingDetails?.bookingType || "-",
+    date: item.date
       ? new Date(item.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "-",
     trainer_price: item.yogaDetails?.trainer_price ? `₹${item.yogaDetails.trainer_price}` : "-",
-    earned_amount: item.earned_amount               ? `₹${item.earned_amount}` : "₹0",
+    earned_amount: item.earned_amount ? `₹${item.earned_amount}` : "₹0",
   }));
 
   // ── Tab styles ─────────────────────────────────────────────────────────────
@@ -760,100 +820,214 @@ function TrainerProfile() {
         </div>
       )}
 
+      {/* PDF generation overlay */}
+      {generatingPdf && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+          zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: "12px", padding: "32px 48px",
+            textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+          }}>
+            <div className="spinner-border mb-3" role="status"
+              style={{ color: "#dc2626", width: "2rem", height: "2rem" }} />
+            <p style={{ margin: 0, fontWeight: 700, color: "#dc2626", fontSize: "16px" }}>
+              Generating PDF… please wait
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#777" }}>
+              This may take a few seconds
+            </p>
+          </div>
+        </div>
+      )}
+
+
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>TRAINER PROFILE</h2>
-        <button className="btn btn-secondary" onClick={() => navigate("/trainer")}>← Back</button>
+        <div className="d-flex align-items-center gap-2">
+          <button
+            onClick={generatePDF}
+            disabled={generatingPdf}
+            style={{
+              background: generatingPdf
+                ? "#aaa"
+                : "linear-gradient(135deg, #dc2626, #f87171)",
+              color: "#fff",
+              border: "none",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: 600,
+              fontSize: "14px",
+              cursor: generatingPdf ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: "0 2px 8px rgba(220,38,38,0.25)",
+              transition: "all 0.2s",
+            }}
+          >
+            {generatingPdf ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  style={{ width: "14px", height: "14px" }}
+                />
+                Generating…
+              </>
+            ) : (
+              <>📄 Download PDF</>
+            )}
+          </button>
+          <button className="btn btn-secondary" onClick={() => navigate("/trainer")}>← Back</button>
+        </div>
       </div>
 
-      {/* Trainer Info */}
-      <div className="card p-3 shadow-sm mb-4">
-        <div className="row align-items-start">
-          
-          <div className="col-md-4 text-center mb-3">
-            <img
-              src={getImageUrl(trainer.profile_pic)}
-              alt="Trainer"
-              className="img-fluid"
-              style={{ borderRadius: "12px", maxWidth: "150px" }}
-            />
+      {/* ── PDF capture area starts here ────────────────────────────────── */}
+      <div ref={pdfRef}>
+
+        {/* Trainer Info */}
+        <div className="card p-3 shadow-sm mb-4">
+          <div className="row align-items-start">
+
+            <div className="col-md-4 text-center mb-3">
+              <img
+                src={getImageUrl(trainer.profile_pic)}
+                alt="Trainer"
+                className="img-fluid"
+                style={{ borderRadius: "12px", maxWidth: "150px" }}
+              />
+            </div>
+
+            <div className="col-md-4 mb-3">
+              <p><b>Name:</b> {trainer.name}</p>
+              <p><b>Email:</b> {trainer.email}</p>
+              <p><b>Mobile:</b> {trainer.mobileNumber}</p>
+            </div>
+
+            <div className="col-md-4 mb-3">
+              <p><b>Gender:</b> {trainer.gender}</p>
+              <p><b>Age:</b> {trainer.age}</p>
+
+              <p>
+                <b>eKYC Status:</b>{" "}
+                <span
+                  style={{
+                    ...getStatusStyle(trainer.ekyc_status),
+                    borderRadius: "6px",
+                    padding: "2px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    textTransform: "capitalize",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {trainer.ekyc_status || "-"}
+                </span>
+              </p>
+
+              {trainer.ekyc_status?.toLowerCase() === "rejected" && (
+                <>
+                  <p>
+                    <b>Reject Type:</b>{" "}
+                    <span style={{ color: "#dc2626", fontWeight: 500 }}>
+                      {trainer.reject_type || "-"}
+                    </span>
+                  </p>
+
+                  <p>
+                    <b>Reject Reason:</b>{" "}
+                    <span style={{ color: "#dc2626" }}>
+                      {trainer.reject_reason || "-"}
+                    </span>
+                  </p>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="col-md-4 mb-3">
-            <p><b>Name:</b> {trainer.name}</p>
-            <p><b>Email:</b> {trainer.email}</p>
-            <p><b>Mobile:</b> {trainer.mobileNumber}</p>
-          </div>
+          {/* Separate Languages Row */}
+          {trainer.languageDetails && trainer.languageDetails.length > 0 && (
+            <div className="row mt-2">
+              <div className="col-12">
+                <b>Languages:</b>
 
-          <div className="col-md-4 mb-3">
-            <p><b>Gender:</b> {trainer.gender}</p>
-            <p><b>Age:</b> {trainer.age}</p>
+                <div className="d-flex flex-wrap gap-2 mt-2">
+                  {trainer.languageDetails.map((lang, index) => (
+                    <span
+                      key={lang._id || index}
+                      className="badge"
+                      style={{
+                        background: "linear-gradient(135deg, #ff7a00, #f59e0b)",
+                        color: "#fff",
+                        fontSize: "13px",
+                        padding: "7px 12px",
+                        borderRadius: "20px",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {lang.special_character} - {lang.language_name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-            <p>
-              <b>eKYC Status:</b>{" "}
-              <span
-                style={{
-                  ...getStatusStyle(trainer.ekyc_status),
-                  borderRadius: "6px",
-                  padding: "2px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  textTransform: "capitalize",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {trainer.ekyc_status || "-"}
-              </span>
-            </p>
-
-            {trainer.ekyc_status?.toLowerCase() === "rejected" && (
-              <>
-                <p>
-                  <b>Reject Type:</b>{" "}
-                  <span style={{ color: "#dc2626", fontWeight: 500 }}>
-                    {trainer.reject_type || "-"}
-                  </span>
-                </p>
-
-                <p>
-                  <b>Reject Reason:</b>{" "}
-                  <span style={{ color: "#dc2626" }}>
-                    {trainer.reject_reason || "-"}
-                  </span>
-                </p>
-              </>
-            )}
+        {/* Payment Details */}
+        <div className="card p-3 shadow-sm mb-4">
+          <h4>Payment Details</h4>
+          <div className="row mt-3">
+            <div className="col-md-6">
+              <p><b>Recipient:</b>      {trainer.recipient_name || "N/A"}</p>
+              <p><b>Account No:</b>     {trainer.account_no || "N/A"}</p>
+              <p><b>Account Branch:</b> {trainer.account_branch || "N/A"}</p>
+              <p><b>Branch Address:</b> {trainer.branch_address || "N/A"}</p>
+              <p><b>IFSC Code:</b>      {trainer.ifsc_code || "N/A"}</p>
+            </div>
+            <div className="col-md-6">
+              <h4 style={{ color: "#ff7a00", fontWeight: 700, marginBottom: "14px" }}>Additional Info</h4>
+              <p><b>UPI ID:</b>           {trainer.upi_id || "N/A"}</p>
+              <p><b>Registration No:</b>  {trainer.registration_no || "N/A"}</p>
+              <p><b>Experience:</b>       {trainer.experience ? `${trainer.experience} years` : "N/A"}</p>
+              <p><b>Specialization:</b>   {trainer.specialization || "N/A"}</p>
+            </div>
           </div>
         </div>
 
-        {/* Separate Languages Row */}
-        {trainer.languageDetails && trainer.languageDetails.length > 0 && (
-          <div className="row mt-2">
-            <div className="col-12">
-              <b>Languages:</b>
-
-              <div className="d-flex flex-wrap gap-2 mt-2">
-                {trainer.languageDetails.map((lang, index) => (
-                  <span
-                    key={lang._id || index}
-                    className="badge"
+        {/* Professional Details */}
+        <div className="card p-3 shadow-sm mb-4">
+          <h4 className="mb-3">Professional Details</h4>
+          <div className="row">
+            {trainer.professional_details?.length > 0 ? (
+              trainer.professional_details.map((item) => (
+                <div key={item._id} className="col-md-3 mb-3">
+                  <div
+                    className="p-3 text-white"
                     style={{
-                      background: "linear-gradient(135deg, #ff7a00, #f59e0b)",
-                      color: "#fff",
-                      fontSize: "13px",
-                      padding: "7px 12px",
-                      borderRadius: "20px",
-                      fontWeight: "500",
+                      background: "linear-gradient(135deg, #28a745, #20c997)",
+                      borderRadius: "10px", height: "100px",
                     }}
                   >
-                    {lang.special_character} - {lang.language_name}
-                  </span>
-                ))}
-              </div>
-            </div>
+                    <div style={{ fontSize: "13px", marginBottom: "15px" }}>
+                      <b>Type :</b> {item.yoga_name}
+                    </div>
+                    <div style={{ fontSize: "15px", fontWeight: "600" }}>
+                      <b>Price :</b> ₹{item.trainer_price}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted">N/A</p>
+            )}
           </div>
-        )}
+        </div>
       </div>
+      {/* ── PDF capture area ends here ──────────────────────────────────── */}
 
       {/* ══════════════════════════════════════════════════════════════════════
           CHANGE 3 — Certificates card: PDF iframe + image preview + badges
@@ -895,11 +1069,11 @@ function TrainerProfile() {
         </div>
 
         {/* Certificate Cards */}
-      <div className="col-12 mt-3">
+        <div className="col-12 mt-3">
           {certificates.length > 0 ? (
             <div className="row">
               {certificates.map((c) => {
-                const fileUrl  = getImageUrl(c.certificate);
+                const fileUrl = getImageUrl(c.certificate);
                 const fileType = getFileType(c.certificate);
 
                 return (
@@ -966,7 +1140,7 @@ function TrainerProfile() {
                           padding: "2px 8px", borderRadius: "4px",
                           fontSize: "11px", fontWeight: 600, textTransform: "uppercase",
                           background: fileType === "pdf" ? "#fee2e2" : "#dbeafe",
-                          color:      fileType === "pdf" ? "#dc2626" : "#1d4ed8",
+                          color: fileType === "pdf" ? "#dc2626" : "#1d4ed8",
                         }}>
                           {fileType === "pdf" ? "📄 PDF" : "🖼️ Image"}
                         </span>
@@ -978,61 +1152,6 @@ function TrainerProfile() {
             </div>
           ) : (
             <p>N/A</p>
-          )}
-        </div>
-      </div>
-
-      {/* Payment Details */}
-      <div className="card p-3 shadow-sm mb-4">
-        <h4>Payment Details</h4>
-        <div className="row mt-3">
-          <div className="col-md-6">
-            <p><b>Recipient:</b>      {trainer.recipient_name || "N/A"}</p>
-            <p><b>Account No:</b>     {trainer.account_no     || "N/A"}</p>
-            <p><b>Account Branch:</b> {trainer.account_branch || "N/A"}</p>
-            <p><b>Branch Address:</b> {trainer.branch_address || "N/A"}</p>
-            <p><b>IFSC Code:</b>      {trainer.ifsc_code      || "N/A"}</p>
-          </div>
-          <div className="col-md-6">
-            <h4>Yoga Video</h4>
-            {trainer.yoga_video ? (
-              <video
-                src={getImageUrl(trainer.yoga_video)}
-                width="100%" height="250" controls playsInline
-                style={{ borderRadius: "12px", marginTop: "10px", boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }}
-              >
-                Your browser does not support the video tag.
-              </video>
-            ) : <p>N/A</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Professional Details */}
-      <div className="card p-3 shadow-sm mb-4">
-        <h4 className="mb-3">Professional Details</h4>
-        <div className="row">
-          {trainer.professional_details?.length > 0 ? (
-            trainer.professional_details.map((item) => (
-              <div key={item._id} className="col-md-3 mb-3">
-                <div
-                  className="p-3 text-white"
-                  style={{
-                    background: "linear-gradient(135deg, #28a745, #20c997)",
-                    borderRadius: "10px", height: "100px",
-                  }}
-                >
-                  <div style={{ fontSize: "13px", marginBottom: "15px" }}>
-                    <b>Type :</b> {item.yoga_name}
-                  </div>
-                  <div style={{ fontSize: "15px", fontWeight: "600" }}>
-                    <b>Price :</b> ₹{item.trainer_price}
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-muted">N/A</p>
           )}
         </div>
       </div>
@@ -1066,7 +1185,7 @@ function TrainerProfile() {
         }}>
           <button style={tabStyle("bookings")} onClick={() => setActiveTab("bookings")}>📋 Trainer Bookings</button>
           <button style={tabStyle("earnings")} onClick={() => setActiveTab("earnings")}>💰 Trainer Earnings</button>
-          <button style={tabStyle("ratings")}  onClick={() => setActiveTab("ratings")}>⭐ Trainer Ratings</button>
+          <button style={tabStyle("ratings")} onClick={() => setActiveTab("ratings")}>⭐ Trainer Ratings</button>
         </div>
 
         {/* Bookings Tab */}
@@ -1121,7 +1240,7 @@ function TrainerProfile() {
               <div className="text-end mt-3 d-flex justify-content-end gap-3 flex-wrap">
                 <button onClick={handleApplyBookingFilters} style={btnFilter}><FaFilter /><span>Filter</span></button>
                 <button onClick={handleClearBookingFilters} style={btnClear}>Clear</button>
-                <button onClick={exportBookingsCSV}   disabled={exporting} style={btnCSV(exporting)}>CSV <FaFileCsv style={{ fontSize: "16px" }} /></button>
+                <button onClick={exportBookingsCSV} disabled={exporting} style={btnCSV(exporting)}>CSV <FaFileCsv style={{ fontSize: "16px" }} /></button>
                 <button onClick={exportBookingsExcel} disabled={exporting} style={btnExcel(exporting)}>Excel <FaFileExcel style={{ fontSize: "16px" }} /></button>
               </div>
             </div>
@@ -1198,7 +1317,7 @@ function TrainerProfile() {
               <div className="text-end mt-3 d-flex justify-content-end gap-3 flex-wrap">
                 <button onClick={handleApplyEarningFilters} style={btnFilter}><FaFilter /><span>Filter</span></button>
                 <button onClick={handleClearEarningFilters} style={btnClear}>Clear</button>
-                <button onClick={exportCSV}   disabled={exporting} style={btnCSV(exporting)}>CSV <FaFileCsv style={{ fontSize: "16px" }} /></button>
+                <button onClick={exportCSV} disabled={exporting} style={btnCSV(exporting)}>CSV <FaFileCsv style={{ fontSize: "16px" }} /></button>
                 <button onClick={exportExcel} disabled={exporting} style={btnExcel(exporting)}>Excel <FaFileExcel style={{ fontSize: "16px" }} /></button>
               </div>
             </div>
@@ -1387,7 +1506,7 @@ function TrainerProfile() {
                 cursor: "default",
               }}
             />
-            
+
           ) : (
             <img
               src={modalImage}

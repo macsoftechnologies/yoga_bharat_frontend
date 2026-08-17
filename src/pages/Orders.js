@@ -14,19 +14,19 @@ function buildPayload({ filters, searchText, searchType, sortOrder, isExport = f
   const payload = {
     isExport,
     sortOrder: sortOrder === "asc" ? "asc" : sortOrder === "desc" ? "des" : "",
-    bookingType:          filters.bookingType   || "",
-    status:               filters.status        || "",
-    fromDate:             filters.fromDate       || "",
-    toDate:               filters.toDate         || "",
-    yogaName:             filters.yogaName       || "",
-    clientName:           "",
-    trainerName:          "",
-    clientId:             "",
-    accepted_trainerId:   "",
-    yogaId:               "",
-    bookingId:            "",
-    time:                 "",
-    scheduledDate:        "",
+    bookingType: filters.bookingType || "",
+    status: filters.status || "",
+    fromDate: filters.fromDate || "",
+    toDate: filters.toDate || "",
+    yogaName: filters.yogaName || "",
+    clientName: "",
+    trainerName: "",
+    clientId: "",
+    accepted_trainerId: "",
+    yogaId: "",
+    bookingId: "",
+    time: "",
+    scheduledDate: "",
   };
 
   // put the search text into the right field
@@ -38,31 +38,31 @@ function buildPayload({ filters, searchText, searchType, sortOrder, isExport = f
 }
 
 function Orders() {
-  const [ordersList,    setOrdersList]    = useState([]);
-  const [currentPage,   setCurrentPage]   = useState(1);
-  const [totalPages,    setTotalPages]    = useState(1);
-  const [totalCount,    setTotalCount]    = useState(0);
-  const [limit,         setLimit]         = useState(10);
-  const [loading,       setLoading]       = useState(false);
-  const [exporting,     setExporting]     = useState(false);
+  const [ordersList, setOrdersList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  const [viewOpen,      setViewOpen]      = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [yogaOptions,   setYogaOptions]   = useState([]);
+  const [yogaOptions, setYogaOptions] = useState([]);
 
   const [filters, setFilters] = useState({
     bookingType: "",
-    status:      "",
-    fromDate:    "",
-    toDate:      "",
-    yogaName:    "",
+    status: "",
+    fromDate: "",
+    toDate: "",
+    yogaName: "",
   });
 
   const [searchText, setSearchText] = useState("");
   const [searchType, setSearchType] = useState("");
 
   // ── sort state ───────────────────────────────────────────────────────────
-  const [sortOrder,        setSortOrder]        = useState("");   // "" | "asc" | "desc"
+  const [sortOrder, setSortOrder] = useState("");   // "" | "asc" | "desc"
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef(null);
 
@@ -101,7 +101,7 @@ function Orders() {
   // ── fetch (paginated, normal view) ───────────────────────────────────────
   const fetchOrders = useCallback(
     async (
-      page              = 1,
+      page = 1,
       overrideFilters,
       overrideSearchText,
       overrideSearchType,
@@ -111,18 +111,18 @@ function Orders() {
       try {
         setLoading(true);
 
-        const activeFilters    = overrideFilters    !== undefined ? overrideFilters    : filters;
+        const activeFilters = overrideFilters !== undefined ? overrideFilters : filters;
         const activeSearchText = overrideSearchText !== undefined ? overrideSearchText : searchText;
         const activeSearchType = overrideSearchType !== undefined ? overrideSearchType : searchType;
-        const activeLimit      = overrideLimit      !== undefined ? overrideLimit      : limit;
-        const activeSortOrder  = overrideSortOrder  !== undefined ? overrideSortOrder  : sortOrder;
+        const activeLimit = overrideLimit !== undefined ? overrideLimit : limit;
+        const activeSortOrder = overrideSortOrder !== undefined ? overrideSortOrder : sortOrder;
 
         const payload = buildPayload({
-          filters:    activeFilters,
+          filters: activeFilters,
           searchText: activeSearchText,
           searchType: activeSearchType,
-          sortOrder:  activeSortOrder,
-          isExport:   false,
+          sortOrder: activeSortOrder,
+          isExport: false,
         });
 
         const res = await getBookings(page, activeLimit, payload);
@@ -182,30 +182,37 @@ function Orders() {
   // ── helper: map raw API record → export row ──────────────────────────────
   const buildExportRows = (data) =>
     data.map((item, index) => ({
-      "S.No":           index + 1,
-      "Created Date":   item.createdAt
+      "S.No": index + 1,
+      "Created Date": item.createdAt
         ? new Date(item.createdAt).toLocaleDateString()
         : "-",
       "Scheduled Date": item.scheduledDate
         ? new Date(item.scheduledDate).toLocaleDateString()
         : "-",
-      "Booking Type":   item.bookingType                   || "-",
-      "Client Name":    item.clientId?.name                || "-",
-      "Trainer Name":   item.accepted_trainerId?.name      || "-",
-      "Yoga Name":      (Array.isArray(item.yogaId)
+      "Booking Type": item.bookingType || "-",
+      "Client Name": item.clientId?.name || "-",
+      "Trainer Name": item.accepted_trainerId?.name || "-",
+      "Yoga Name": (Array.isArray(item.yogaId)
         ? item.yogaId?.[0]?.yoga_name
-        : item.yogaId?.yoga_name)                          || "-",
-      "Language":       (Array.isArray(item.languageId)
+        : item.yogaId?.yoga_name) || "-",
+      "Language": (Array.isArray(item.languageId)
         ? item.languageId?.[0]?.language_name
-        : item.languageId?.language_name)                  || "-",
-      "Client Price":   `₹${(Array.isArray(item.yogaId)
+        : item.languageId?.language_name) || "-",
+      "Client Price": `₹${(Array.isArray(item.yogaId)
         ? item.yogaId?.[0]?.client_price
-        : item.yogaId?.client_price)                       || 0}`,
-      "Trainer Price":  `₹${(Array.isArray(item.yogaId)
+        : item.yogaId?.client_price) || 0}`,
+      "Trainer Price": `₹${(Array.isArray(item.yogaId)
         ? item.yogaId?.[0]?.trainer_price
-        : item.yogaId?.trainer_price)                      || 0}`,
-      "Time":           item.time || "-",
-      "Status":         item.status
+        : item.yogaId?.trainer_price) || 0}`,
+      "Time": item.time || "-",
+      "Started At": item.startedAt
+        ? new Date(item.startedAt).toLocaleString()
+        : "-",
+      "Ended At": item.endedAt
+        ? new Date(item.endedAt).toLocaleString()
+        : "-",
+      "Session Duration": item.session_duration || "-",
+      "Status": item.status
         ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
         : "-",
     }));
@@ -215,10 +222,10 @@ function Orders() {
     try {
       setExporting(true);
       const allData = await fetchAllForExport();
-      const rows    = buildExportRows(allData);
+      const rows = buildExportRows(allData);
       if (!rows.length) return alert("No data to export.");
 
-      const headers  = Object.keys(rows[0]);
+      const headers = Object.keys(rows[0]);
       const csvLines = [
         headers.join(","),
         ...rows.map((row) =>
@@ -229,9 +236,9 @@ function Orders() {
       ];
 
       const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
-      const url  = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href     = url;
+      link.href = url;
       link.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
       URL.revokeObjectURL(url);
@@ -248,11 +255,11 @@ function Orders() {
     try {
       setExporting(true);
       const allData = await fetchAllForExport();
-      const rows    = buildExportRows(allData);
+      const rows = buildExportRows(allData);
       if (!rows.length) return alert("No data to export.");
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook  = XLSX.utils.book_new();
+      const workbook = XLSX.utils.book_new();
 
       const colWidths = Object.keys(rows[0]).map((key) => ({
         wch: Math.max(key.length, ...rows.map((r) => String(r[key]).length)) + 2,
@@ -308,12 +315,12 @@ function Orders() {
           display: "flex", alignItems: "center", gap: "5px",
           cursor: "pointer", userSelect: "none", whiteSpace: "nowrap",
         }}
-        onClick={() => setSortDropdownOpen((prev) => !prev)}  
+        onClick={() => setSortDropdownOpen((prev) => !prev)}
       >
         <span>Created Date</span>
-        {sortOrder === "asc"  && <FaSortAmountDown style={{ fontSize: "12px", color: "#ff7a00" }} />}
-        {sortOrder === "desc" && <FaSortAmountUp   style={{ fontSize: "12px", color: "#ff7a00" }} />}
-        {!sortOrder           && <FaChevronDown    style={{ fontSize: "10px", color: "#888" }} />}
+        {sortOrder === "asc" && <FaSortAmountDown style={{ fontSize: "12px", color: "#ff7a00" }} />}
+        {sortOrder === "desc" && <FaSortAmountUp style={{ fontSize: "12px", color: "#ff7a00" }} />}
+        {!sortOrder && <FaChevronDown style={{ fontSize: "10px", color: "#888" }} />}
       </div>
 
       {sortDropdownOpen && (
@@ -324,8 +331,8 @@ function Orders() {
           minWidth: "175px", overflow: "hidden",
         }}>
           {[
-            { label: "Sort Ascending",  value: "asc",  Icon: FaSortAmountDown },
-            { label: "Sort Descending", value: "desc", Icon: FaSortAmountUp   },
+            { label: "Sort Ascending", value: "asc", Icon: FaSortAmountDown },
+            { label: "Sort Descending", value: "desc", Icon: FaSortAmountUp },
           ].map(({ label, value, Icon }, i) => (
             <React.Fragment key={value}>
               {i > 0 && <div style={{ borderTop: "1px solid #f0f0f0" }} />}
@@ -334,9 +341,9 @@ function Orders() {
                 style={{
                   display: "flex", alignItems: "center", gap: "10px",
                   padding: "10px 16px", cursor: "pointer", fontSize: "14px",
-                  color:      sortOrder === value ? "#ff7a00" : "#333",
+                  color: sortOrder === value ? "#ff7a00" : "#333",
                   background: sortOrder === value ? "#fff5eb" : "#fff",
-                  fontWeight: sortOrder === value ? "600"     : "400",
+                  fontWeight: sortOrder === value ? "600" : "400",
                   borderLeft: sortOrder === value ? "3px solid #ff7a00" : "3px solid transparent",
                   transition: "background 0.15s",
                 }}
@@ -355,61 +362,70 @@ function Orders() {
 
   // ── Table columns ────────────────────────────────────────────────────────
   const columns = [
-    { header: "S.No",            accessor: "srNo" },
-    { header: "Scheduled Date",  accessor: "scheduledDate" },
-    { header: "Time",            accessor: "time" },
-    { header: "Booking Type",    accessor: "bookingType" },
-    { header: "Client Name",     accessor: "clientName" },
-    { header: "Trainer Name",    accessor: "trainerName" },
-    { header: "Yoga Name",       accessor: "yogaName" },
-    { header: "Language",        accessor: "language" },
-    { header: "Client Price",    accessor: "clientPrice" },
-    { header: "Trainer Price",   accessor: "trainerPrice" },
+    { header: "S.No", accessor: "srNo" },
+    { header: "Scheduled Date", accessor: "scheduledDate" },
+    { header: "Time", accessor: "time" },
+    { header: "Booking Type", accessor: "bookingType" },
+    { header: "Client Name", accessor: "clientName" },
+    { header: "Trainer Name", accessor: "trainerName" },
+    { header: "Yoga Name", accessor: "yogaName" },
+    { header: "Language", accessor: "language" },
+    { header: "Client Price", accessor: "clientPrice" },
+    { header: "Trainer Price", accessor: "trainerPrice" },
     { header: CreatedDateHeader, accessor: "createdAt" },
-    { header: "Status",          accessor: "status" },
-    { header: "Actions",         accessor: "actions" },
+    { header: "Started At", accessor: "startedAt" },
+    { header: "Ended At", accessor: "endedAt" },
+    { header: "Session Duration", accessor: "sessionDuration" },
+    { header: "Status", accessor: "status" },
+    { header: "Actions", accessor: "actions" },
   ];
 
   const tableData = ordersList.map((item, index) => ({
-    srNo:          (currentPage - 1) * limit + index + 1,
+    srNo: (currentPage - 1) * limit + index + 1,
     createdAt: item.createdAt
       ? new Date(item.createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
       : "-",
-    bookingType:   item.bookingType                  || "-",
-    clientName:    item.clientId?.name               || "-",
-    trainerName:   item.accepted_trainerId?.name     || "-",
+    bookingType: item.bookingType || "-",
+    clientName: item.clientId?.name || "-",
+    trainerName: item.accepted_trainerId?.name || "-",
     yogaName: (Array.isArray(item.yogaId)
       ? item.yogaId?.[0]?.yoga_name
-      : item.yogaId?.yoga_name)                      || "-",
+      : item.yogaId?.yoga_name) || "-",
     language: (Array.isArray(item.languageId)
       ? item.languageId?.[0]?.language_name
-      : item.languageId?.language_name)              || "-",
-    clientPrice:  `₹${(Array.isArray(item.yogaId)
+      : item.languageId?.language_name) || "-",
+    clientPrice: `₹${(Array.isArray(item.yogaId)
       ? item.yogaId?.[0]?.client_price
-      : item.yogaId?.client_price)                   || 0}`,
+      : item.yogaId?.client_price) || 0}`,
     trainerPrice: `₹${(Array.isArray(item.yogaId)
       ? item.yogaId?.[0]?.trainer_price
-      : item.yogaId?.trainer_price)                  || 0}`,
+      : item.yogaId?.trainer_price) || 0}`,
     scheduledDate: item.scheduledDate
       ? new Date(item.scheduledDate).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
       : "-",
     time: item.time || "-",
+    startedAt: item.startedAt
+      ? new Date(item.startedAt).toLocaleString("en-IN")
+      : "-",
+    endedAt: item.endedAt
+      ? new Date(item.endedAt).toLocaleString("en-IN")
+      : "-",
+    sessionDuration: item.session_duration || "-",
     status: (
-      <span className={`status-badge ${
-        item.status === "ongoing"   ? "status-ongoing"   :
-        item.status === "accepted"  ? "status-accepted"  :
-        item.status === "opened"    ? "status-opened"    :
-        item.status === "completed" ? "status-completed" :
-        item.status === "cancelled" ? "status-cancelled" : ""
-      }`}>
+      <span className={`status-badge ${item.status === "ongoing" ? "status-ongoing" :
+          item.status === "accepted" ? "status-accepted" :
+            item.status === "opened" ? "status-opened" :
+              item.status === "completed" ? "status-completed" :
+                item.status === "cancelled" ? "status-cancelled" : ""
+        }`}>
         {item.status
           ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
           : "-"}

@@ -75,6 +75,7 @@ function Trainer() {
     gender: "",
     fromDate: "",
     toDate: "",
+    ekycStatus: "",
   });
 
   const [appliedFilters, setAppliedFilters] = useState({
@@ -83,6 +84,7 @@ function Trainer() {
     gender: "",
     fromDate: "",
     toDate: "",
+    ekycStatus: "",
   });
 
   // ── Core fetch (useCallback, no state deps — all values passed as args) ────
@@ -97,6 +99,7 @@ function Trainer() {
         if (activeFilters.gender) params.gender = activeFilters.gender;
         if (activeFilters.fromDate) params.fromDate = activeFilters.fromDate;
         if (activeFilters.toDate) params.toDate = activeFilters.toDate;
+        if (activeFilters.ekycStatus) params.ekycStatus = activeFilters.ekycStatus;
         // Backend expects "asc" or "des" (NOT "desc")
         if (activeSortOrder === "asc") params.sortOrder = "asc";
         if (activeSortOrder === "desc") params.sortOrder = "des";
@@ -155,6 +158,7 @@ function Trainer() {
       gender: "",
       fromDate: "",
       toDate: "",
+      ekycStatus: "",
     };
     setFilters(cleared);
     setAppliedFilters(cleared); // triggers useEffect
@@ -178,6 +182,7 @@ function Trainer() {
       if (appliedFilters.gender) params.gender = appliedFilters.gender;
       if (appliedFilters.fromDate) params.fromDate = appliedFilters.fromDate;
       if (appliedFilters.toDate) params.toDate = appliedFilters.toDate;
+      if (appliedFilters.ekycStatus) params.ekycStatus = appliedFilters.ekycStatus;
       if (sortOrder === "asc") params.sortOrder = "asc";
       if (sortOrder === "desc") params.sortOrder = "des";
       params.isExport = true;
@@ -963,6 +968,21 @@ function Trainer() {
               value={filters.toDate}
               onChange={(e) => handleFilterChange("toDate", e.target.value)}
             />
+          </div>
+
+          <div className="col-md-4 mb-2">
+            <label>eKYC Status</label>
+            <select
+              className="form-select"
+              value={filters.ekycStatus}
+              onChange={(e) => handleFilterChange("ekycStatus", e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="approved">✅ Approved</option>
+              <option value="incomplete">⚠️ Incomplete</option>
+              <option value="rejected">❌ Rejected</option>
+              <option value="pending">🕐 Pending</option>
+            </select>
           </div>
         </div>
 
